@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """\
-@file llsd_test.py
-@brief Types as well as parsing and formatting functions for handling LLSD.
+@file config_test.py
+@brief Test the config module
 
-$LicenseInfo:firstyear=2006&license=mit$
+$LicenseInfo:firstyear=2009&license=mit$
 
-Copyright (c) 2006-2009, Linden Research, Inc.
+Copyright (c) 2009, Linden Research, Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
