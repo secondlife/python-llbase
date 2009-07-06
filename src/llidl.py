@@ -34,9 +34,10 @@ the LLSD type system.
 import datetime
 import re
 from types import *
+import uuid
 
-from indra.base import llsd
-from indra.base import lluuid
+import llsd
+import lluuid
 
 class _Result(object):
     """
@@ -397,7 +398,7 @@ class _UUIDMatcher(Value):
             if actual == "":
                 return DEFAULTED
             return INCOMPATIBLE
-        if t == lluuid.UUID:
+        if t == uuid.UUID:
             return MATCHED
         return INCOMPATIBLE
 

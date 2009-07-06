@@ -167,4 +167,3 @@ def _format_value_for_path(value):
         return '/'.join([urllib.quote(str(item)) for item in value])
     else:
         return urllib.quote(str(value))
-
