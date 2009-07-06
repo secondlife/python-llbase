@@ -3,6 +3,7 @@
 import os.path
 from distutils.core import setup, Extension
 
+PACKAGE_NAME = 'llbase'
 LLBASE_VERSION = '0.1.0'
 LLBASE_SOURCE = 'src'
 CLASSIFIERS = """\
@@ -17,21 +18,19 @@ Operating System :: Microsoft :: Windows
 Operating System :: Unix
 """
 
-sources = ["cllsd.c"]
-sources = map(lambda x: os.path.join(LLBASE_SOURCE, x), sources)
-cllsd_ext = Extension('llbase.cllsd', sources)
-
+sources = [os.path.join(LLBASE_SOURCE, "cllsd.c")]
+cllsd_ext = Extension(PACKAGE_NAME + '._cllsd', sources)
 
 setup(
-    name='llbase',
+    name=PACKAGE_NAME,
     version=LLBASE_VERSION,
     description='Base Linden Lab Pythoon modules',
     #author='',
     #author_email='',
     #url='http://bitbucket.org/phoenix_linden/llbase/',
     platforms=["any"],
-    package_dir={'llbase':LLBASE_SOURCE},
-    packages=['llbase'],
+    package_dir={PACKAGE_NAME:LLBASE_SOURCE},
+    packages=[PACKAGE_NAME],
     license='MIT',
     classifiers=filter(None, CLASSIFIERS.split("\n")),
     requires=['eventlet', 'elementtree'],

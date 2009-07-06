@@ -659,7 +659,7 @@ static PyMethodDef methods[] = {
 	{NULL, NULL}
 };
 
-PyMODINIT_FUNC initcllsd(void)
+PyMODINIT_FUNC init_cllsd(void)
 {
-	Py_InitModule3("cllsd", methods, cllsd_doc);
+	Py_InitModule3("_cllsd", methods, cllsd_doc);
 }

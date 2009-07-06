@@ -38,7 +38,7 @@ import uuid
 from fastest_elementtree import ElementTreeError, fromstring
 
 try:
-    import cllsd
+    import _cllsd as cllsd
 except ImportError:
     cllsd = None
 
