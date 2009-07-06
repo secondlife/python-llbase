@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 import os.path
+import sys
+
 from distutils.core import setup, Extension
+
 
 PACKAGE_NAME = 'llbase'
 LLBASE_VERSION = '0.1.0'
@@ -17,9 +20,13 @@ Topic :: Software Development :: Libraries :: Python Modules
 Operating System :: Microsoft :: Windows
 Operating System :: Unix
 """
+PLATFORM_IS_WINDOWS = sys.platform.lower().startswith('win')
+
 
 sources = [os.path.join(LLBASE_SOURCE, "cllsd.c")]
-cllsd_ext = Extension(PACKAGE_NAME + '._cllsd', sources)
+ext_modules = [Extension(PACKAGE_NAME + '._cllsd', sources)]
+if PLATFORM_IS_WINDOWS:
+    ext_modules = None
 
 setup(
     name=PACKAGE_NAME,
@@ -34,5 +41,5 @@ setup(
     license='MIT',
     classifiers=filter(None, CLASSIFIERS.split("\n")),
     #requires=['eventlet', 'elementtree'],
-    ext_modules=[cllsd_ext],
+    ext_modules=ext_modules,
     )
