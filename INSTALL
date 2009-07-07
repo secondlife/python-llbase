@@ -2,5 +2,23 @@ Linden Lab Base Python Libraries Installation
 
 Debian
 ======
+
 $ make builddeb
-$ dpkg -i ../python-llbase_$version_$arch.deb
+$ sudo dpkg -i ../python-llbase_$version_$arch.deb  
+
+
+Windows
+=======
+
+You will need to have a reacent windows python installed. Open a
+command promt in this directory:
+
+C:\Python25\python.exe setup.py bdist_wininst
+
+Double click on the llbase exe and follow the instructions.
+
+
+Unix
+====
+
+$ python setup.py install
