@@ -35,7 +35,7 @@ setup(
     version=LLBASE_VERSION,
     author='Phoenix',
     author_email='phoenix@secondlife.com',
-    url='http://bitbucket.org/phoenix_linde/llbase/',
+    url='http://bitbucket.org/phoenix_linden/llbase/',
     description='Base Linden Lab Pythoon modules',
     platforms=["any"],
     package_dir={PACKAGE_NAME:LLBASE_SOURCE},
