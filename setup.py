@@ -8,7 +8,6 @@ from distutils.core import setup, Extension
 import test
 
 
-
 PACKAGE_NAME = 'llbase'
 LLBASE_VERSION = '0.1.0'
 LLBASE_SOURCE = 'llbase'
