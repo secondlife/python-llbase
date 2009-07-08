@@ -4,7 +4,7 @@ from distutils.core import Command
 from distutils.util import get_platform
 from glob import glob
 from os import getcwd
-from os.path import splitext, basename, join
+from os.path import basename, exists, join, splitext
 from unittest import TextTestRunner
 from unittest import TestLoader
 
@@ -31,14 +31,16 @@ class TestCommand(Command):
 
     def finalize_options(self):
         # We need distutil.util get_platform() to get arch
-        self.plat = get_platform()
-        #self.plat = "%s-%s" % (get_platform(), sys.version[:3])
+        self.plat = "%s-%s" % (get_platform(), sys.version[:3])
 
         # Figure out where setup may have built things
         if self.build_purelib is None:
             self.build_purelib = join(self.build_base, 'lib')
         if self.build_platlib is None:
             self.build_platlib = join(self.build_base, 'lib.' + self.plat)
+            if not exists(self.build_platlib):
+                self.plat = get_platform()
+                self.build_platlib = join(self.build_base, 'lib.' + self.plat)
 
         # Finally, if no actual build_lib was set then assign to the
         # pure or platform lib as appropriate.

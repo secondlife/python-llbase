@@ -485,24 +485,32 @@ static int LLSD_to_xml(Buffer *buf, PyObject *obj)
 
 static int UUID_to_xml(Buffer *buf, PyObject *obj)
 {
-	PyObject *isNull = NULL, *strobj = NULL;
+	PyObject *strobj = NULL;
 	int ret = 0;
+	Py_ssize_t len;
+	char *str = NULL;
 
-	isNull = PyObject_CallMethod(obj, "isNull", "()");
+	strobj = as_string(obj);
+	if (strobj == NULL)
+		goto bail;
 
-	if (isNull == Py_True) {
+	len = PyString_GET_SIZE(strobj);
+	str = PyString_AS_STRING(strobj);
+
+	if (0 == strcmp(str, "00000000-0000-0000-0000-000000000000")) {
 		ret = buf_extend(buf, "<uuid/>", 7);
 		goto bail;
 	}
 
-	strobj = PyObject_CallMethod(obj, "toString", "()");
-	if (strobj == NULL)
+	if (!buf_ensure(buf, 13 + len))
 		goto bail;
 
-	ret = obj_to_xml(buf, "uuid", strobj);
+	buf_append(buf, "<uuid>", 6);
+	buf_append(buf, str, len);
+	buf_append(buf, "</uuid>", 7);
+	ret = 1;
 
 bail:
-	Py_XDECREF(isNull);
 	Py_XDECREF(strobj);
 	return ret;
 }
