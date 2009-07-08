@@ -34,16 +34,7 @@ import sys
 import time
 import uuid
 
-
-# *HACK: in order to import a private library module, we have to dip
-# into the actual module level and import it there. Modify and restore
-old_first = sys.path[0]
-sys.path[0] = os.path.join(old_first, 'llbase')
-import _cllsd as cllsd
-sys.path[0] = old_first
-
 from llbase import llsd
-
 
 class myint(int):
     pass
@@ -72,6 +63,13 @@ def valuator(values):
         yield v
 
 def test():
+    # *HACK: in order to import a private library module, we have to dip
+    # into the actual module level and import it there. Modify and restore
+    old_first = sys.path[0]
+    sys.path[0] = os.path.join(old_first, 'llbase')
+    import _cllsd as cllsd
+    sys.path[0] = old_first
+
     longvalues = () # (values, list(values), iter(values), valuator(values))
 
     for v in values + longvalues:

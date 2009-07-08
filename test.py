@@ -31,8 +31,8 @@ class TestCommand(Command):
 
     def finalize_options(self):
         # We need distutil.util get_platform() to get arch
-        #self.plat = get_platform()
-        self.plat = "%s-%s" % (get_platform(), sys.version[:3])
+        self.plat = get_platform()
+        #self.plat = "%s-%s" % (get_platform(), sys.version[:3])
 
         # Figure out where setup may have built things
         if self.build_purelib is None:
