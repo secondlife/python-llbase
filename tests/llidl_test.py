@@ -31,9 +31,9 @@ import datetime
 import StringIO
 import unittest
 
-import llidl
-import llsd
-import lluuid
+from llbase import llidl
+from llbase import llsd
+from llbase import lluuid
 
 def _dateToday():
     return datetime.datetime.today()

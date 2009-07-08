@@ -5,6 +5,9 @@ import sys
 
 from distutils.core import setup, Extension
 
+import test
+
+
 
 PACKAGE_NAME = 'llbase'
 LLBASE_VERSION = '0.1.0'
@@ -42,4 +45,5 @@ setup(
     classifiers=filter(None, CLASSIFIERS.split("\n")),
     #requires=['eventlet', 'elementtree'],
     ext_modules=ext_modules,
+    cmdclass = {'test':test.TestCommand},
     )

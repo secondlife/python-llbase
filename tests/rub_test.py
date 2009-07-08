@@ -31,7 +31,7 @@ import os
 import tempfile
 import unittest
 
-import rub
+from llbase import rub
 
 class RubTester(unittest.TestCase):
     def setUp(self):

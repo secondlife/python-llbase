@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """\
-@file cllsd_test.py
-@brief Types as well as parsing and formatting functions for handling LLSD.
+@file rub_test.py
+@brief Test the config module
 
-$LicenseInfo:firstyear=2008&license=mit$
+$LicenseInfo:firstyear=2009&license=mit$
 
-Copyright (c) 2008-2009, Linden Research, Inc.
+Copyright (c) 2009, Linden Research, Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,59 +27,21 @@ THE SOFTWARE.
 $/LicenseInfo$
 """
 
+import unittest
 
-from datetime import datetime
-import sys
-import time
-import uuid
+from llbase import lluuid
 
-import cllsd
-import llsd
+class RubTester(unittest.TestCase):
+    def setUp(self):
+        pass
 
+    def tearDown(self):
+        pass
 
-class myint(int):
-    pass
+    def testNotEqual(self):
+        one = lluuid.generate()
+        two = lluuid.generate()
+        self.assertNotEqual(one, two)
 
-values = (
-    '&<>',
-    u'\u81acj',
-    llsd.uri('http://foo<'),
-    uuid.UUID(),
-    llsd.LLSD(['thing']),
-    1,
-    myint(31337),
-    sys.maxint + 10,
-    llsd.binary('foo'),
-    [],
-    {},
-    {u'f&\u1212': 3},
-    3.1,
-    True,
-    None,
-    datetime.fromtimestamp(time.time()),
-    )
-
-def valuator(values):
-    for v in values:
-        yield v
-
-longvalues = () # (values, list(values), iter(values), valuator(values))
-
-for v in values + longvalues:
-    print '%r => %r' % (v, cllsd.llsd_to_xml(v))
-
-a = [[{'a':3}]] * 1000000
-
-s = time.time()
-print hash(cllsd.llsd_to_xml(a))
-e = time.time()
-t1 = e - s
-print t1
-
-s = time.time()
-print hash(llsd.LLSDXMLFormatter()._format(a))
-e = time.time()
-t2 = e - s
-print t2
-
-print 'Speedup:', t2 / t1
+if __name__ == '__main__':
+    unittest.main()

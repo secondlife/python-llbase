@@ -31,7 +31,7 @@ import random
 import string
 import time
 
-import llidl
+from llbase import llidl
 
 def random_string():
     s = random.choice(string.ascii_uppercase)

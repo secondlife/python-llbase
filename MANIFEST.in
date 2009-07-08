@@ -1,0 +1,6 @@
+recursive-include llbase *
+recursive-include tests *.py
+include INSTALL
+include MANIFEST.in
+include setup.py setup.cfg
+include test.py

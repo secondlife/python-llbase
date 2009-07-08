@@ -32,8 +32,11 @@ import unittest
 
 import re
 
-import llsd
+from llbase import llsd
+# *HACK: null out cllsd so that we test the pure python implementation
+llsd.cllsd = None
 
+from llbase import uuid
 
 class Foo(object):
     pass
@@ -209,7 +212,6 @@ class LLSDNotationUnitTest(unittest.TestCase):
     #                                         base64_binary_notation)
 
     def testUUID(self):
-        import uuid
         uuid_tests = {
             uuid.UUID(hex='d7f4aeca-88f1-42a1-b385-b9db18abb255'):"ud7f4aeca-88f1-42a1-b385-b9db18abb255",
             uuid.UUID(hex='00000000-0000-0000-0000-000000000000'):"u00000000-0000-0000-0000-000000000000"
@@ -486,14 +488,13 @@ class LLSDXMLUnitTest(unittest.TestCase):
                                              base64_binary_xml)
 
     def testUUID(self):
-        import uuid
         uuid_tests = {
             uuid.UUID(hex='d7f4aeca-88f1-42a1-b385-b9db18abb255'):"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <uuid>d7f4aeca-88f1-42a1-b385-b9db18abb255</uuid>\
 </llsd>",
-            uuid.UUID(hex='00000000-0000-0000-0000-000000000000'):"\
+            uuid.UUID(int=0):"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <uuid />\

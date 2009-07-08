@@ -483,7 +483,7 @@ static int LLSD_to_xml(Buffer *buf, PyObject *obj)
 	return c;
 }
 
-static int LLUUID_to_xml(Buffer *buf, PyObject *obj)
+static int UUID_to_xml(Buffer *buf, PyObject *obj)
 {
 	PyObject *isNull = NULL, *strobj = NULL;
 	int ret = 0;
@@ -602,8 +602,8 @@ static int any_to_xml(Buffer *buf, PyObject *obj)
 	if (is_module_type(obj, "llbase.llsd", "LLSD"))
 		return LLSD_to_xml(buf, obj);
 
-	if (is_module_type(obj, "llbase.lluuid", "UUID"))
-		return LLUUID_to_xml(buf, obj); 
+	if (is_module_type(obj, "uuid", "UUID"))
+		return UUID_to_xml(buf, obj); 
 
 	PyErr_SetString(PyExc_TypeError, "invalid type");
 	return 0;

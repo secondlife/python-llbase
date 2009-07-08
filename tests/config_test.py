@@ -31,7 +31,7 @@ import os
 import tempfile
 import unittest
 
-import config
+from llbase import config
 
 class ConfigInstanceTester(unittest.TestCase):
     def setUp(self):
