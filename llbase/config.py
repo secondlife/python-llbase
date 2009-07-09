@@ -31,7 +31,6 @@ import errno
 import os
 import traceback
 import time
-import types
 
 from os.path import getmtime
 
