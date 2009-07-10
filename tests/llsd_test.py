@@ -28,12 +28,11 @@ $/LicenseInfo$
 """
 
 from datetime import datetime, tzinfo, timedelta
-import unittest
-
 import re
+import unittest
+import uuid
 
 from llbase import llsd
-from llbase import uuid
 
 class Foo(object):
     pass
@@ -258,6 +257,11 @@ class LLSDXMLUnitTest(unittest.TestCase):
         self.assertEqual(py, self.llsd.parse(formatted_xml))
         self.assertEqual(self.strip(xml),
                          self.strip(self.llsd.toXML(parsed_py)))
+
+    def test_cllsd(self):
+        import sys
+        if not sys.platform.lower().startswith('win'):
+            self.assert_(llsd.cllsd is not None)
 
     def testMap(self):
         map_xml = "\
@@ -1457,4 +1461,3 @@ class LLSDBinaryUnitTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
