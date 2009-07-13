@@ -149,15 +149,20 @@ class Config(object):
         Once any key/value pair is changed via the update method,
         that key/value pair will remain set with that value until
         change via the update or set method
+
+        @param new_conf a dict, filename, or file-like object to
+        update into the current config state.
         """
         if isinstance(new_conf, dict):
             overrides = new_conf
-        else:
-            # assuming that it is a filename
+        elif isinstance(new_conf, basestring):
             config_file = open(new_conf)
             overrides = llsd.parse(config_file.read())
             config_file.close()
-  
+        else:
+            # assume it is a file-like object
+            overrides = llsd.parse(new_conf.read())
+    
         self._config_overrides.update(overrides)
         self._combine_dictionaries()
 

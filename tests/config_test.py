@@ -33,6 +33,8 @@ import tempfile
 import time
 import unittest
 
+from StringIO import StringIO
+
 from llbase import config
 from llbase import llsd
 
@@ -50,14 +52,38 @@ class ConfigInstanceTester(unittest.TestCase):
         self._config.set('key2', 'value2')
         self.assertEquals('value2', self._config.get('key2'))
 
-    def test_update(self):
+    def setup_update(self):
         self._config['k1'] = 'v1'
         self._config['k2'] = 'v2'
-        new = {'k1': 'new_value', 'k3':'v3'}
-        self._config.update(new)
+
+    def update_assert(self):
         self.assertEquals('new_value', self._config.get('k1'))
         self.assertEquals('v2', self._config.get('k2'))
         self.assertEquals('v3', self._config.get('k3'))
+
+    def test_update_dict(self):
+        self.setup_update()
+        new = {'k1': 'new_value', 'k3':'v3'}
+        self._config.update(new)
+        self.update_assert()
+
+    def test_update_filename(self):
+        self.setup_update()
+        # not worried about race conditions, this is just some unit tests.
+        filename = tempfile.mktemp()
+        new = {'k1': 'new_value', 'k3':'v3'}
+        open(filename, 'wb').write(llsd.format_xml(new))
+        self._config.update(filename)
+        self.update_assert()
+        os.remove(filename)
+
+    def test_update_filelike(self):
+        self.setup_update()
+        new = {'k1': 'new_value', 'k3':'v3'}
+        filelike = StringIO(llsd.format_xml(new))
+        self._config.update(filelike)
+        self.update_assert()
+        
 
 class ConfigInstanceFileTester(unittest.TestCase):
     def setUp(self):
