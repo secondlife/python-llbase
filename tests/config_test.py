@@ -32,6 +32,7 @@ import tempfile
 import unittest
 
 from llbase import config
+from llbase import llsd
 
 class ConfigInstanceTester(unittest.TestCase):
     def setUp(self):
@@ -47,6 +48,34 @@ class ConfigInstanceTester(unittest.TestCase):
         self._config.set('key2', 'value2')
         self.assertEquals('value2', self._config.get('key2'))
 
+    def testUpdate(self):
+        self._config['k1'] = 'v1'
+        self._config['k2'] = 'v2'
+        new = {'k1': 'new_value', 'k3':'v3'}
+        self._config.update(new)
+        self.assertEquals('new_value', self._config.get('k1'))
+        self.assertEquals('v2', self._config.get('k2'))
+        self.assertEquals('v3', self._config.get('k3'))
+
+class ConfigInstanceFileTester(unittest.TestCase):
+    def setUp(self):
+        # not worried about race conditions, this is just some unit tests.
+        self.filename = tempfile.mktemp()
+        self.conf = {'k1':'v1', 'k2':'v2'}
+
+    def tearDown(self):
+        os.remove(self.filename)
+
+    def assertConfig(self):
+        self.assertEquals('v1', config.get('k1'))
+        self.assertEquals('v2', config.get('k2'))
+
+    def testXML(self):
+        conffile = open(self.filename, 'wb')
+        conffile.write(llsd.format_xml(self.conf))
+        conffile.close()
+        config.load(self.filename)
+        self.assertConfig()
 
 if __name__ == '__main__':
     unittest.main()
