@@ -29,7 +29,6 @@ $/LicenseInfo$
 import base64
 import datetime
 import re
-import string
 import struct
 import time
 import types
@@ -42,13 +41,9 @@ try:
 except ImportError:
     cllsd = None
 
-int_regex = re.compile(r"[-+]?\d+")
-real_regex = re.compile(r"[-+]?(\d+(\.\d*)?|\d*\.\d+)([eE][-+]?\d+)?")
-alpha_regex = re.compile(r"[a-zA-Z]+")
-date_regex = re.compile(r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T"
-                        r"(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})"
-                        r"(?P<second_float>(\.\d+)?)Z")
-#date: d"YYYY-MM-DDTHH:MM:SS.FFFFFFZ"
+XML_MIME_TYPE = 'application/llsd+xml'
+BINARY_MIME_TYPE = 'application/llsd+binary'
+NOTATION_MIME_TYPE = 'application/llsd+notation'
 
 class LLSDParseError(Exception):
     pass
@@ -63,10 +58,13 @@ class binary(str):
 class uri(str):
     pass
 
-
-BOOL_TRUE = ('1', '1.0', 'true')
-BOOL_FALSE = ('0', '0.0', 'false', '')
-
+_int_regex = re.compile(r"[-+]?\d+")
+_real_regex = re.compile(r"[-+]?(\d+(\.\d*)?|\d*\.\d+)([eE][-+]?\d+)?")
+_alpha_regex = re.compile(r"[a-zA-Z]+")
+_date_regex = re.compile(r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T"
+                        r"(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})"
+                        r"(?P<second_float>(\.\d+)?)Z")
+#date: d"YYYY-MM-DDTHH:MM:SS.FFFFFFZ"
 
 def format_datestr(v):
     """ Formats a datetime or date object into the string format shared by xml and notation serializations."""
@@ -80,7 +78,7 @@ def parse_datestr(datestr):
     if datestr == "":
         return datetime.datetime(1970, 1, 1)
     
-    match = re.match(date_regex, datestr)
+    match = re.match(_date_regex, datestr)
     if not match:
         raise LLSDParseError("invalid date string '%s'." % datestr)
     
@@ -97,79 +95,75 @@ def parse_datestr(datestr):
     return datetime.datetime(year, month, day, hour, minute, second, microsecond)
 
 
-def bool_to_python(node):
+def _bool_to_python(node):
     val = node.text or ''
-    if val in BOOL_TRUE:
+    if val in ('1', '1.0', 'true'):
         return True
     else:
         return False
 
-def int_to_python(node):
+def _int_to_python(node):
     val = node.text or ''
     if not val.strip():
         return 0
     return int(val)
 
-def real_to_python(node):
+def _real_to_python(node):
     val = node.text or ''
     if not val.strip():
         return 0.0
     return float(val)
 
-def uuid_to_python(node):
+def _uuid_to_python(node):
     if node.text:
         return uuid.UUID(hex=node.text)
     return uuid.UUID(int=0)
 
-def str_to_python(node):
+def _str_to_python(node):
     return node.text or ''
 
-def bin_to_python(node):
+def _bin_to_python(node):
     return binary(base64.decodestring(node.text or ''))
 
-def date_to_python(node):
+def _date_to_python(node):
     val = node.text or ''
     if not val:
         val = "1970-01-01T00:00:00Z"
     return parse_datestr(val)
     
 
-def uri_to_python(node):
+def _uri_to_python(node):
     val = node.text or ''
     if not val:
         return None
     return uri(val)
 
-def map_to_python(node):
+def _map_to_python(node):
     result = {}
     for index in range(len(node))[::2]:
-        result[node[index].text] = to_python(node[index+1])
+        result[node[index].text] = _to_python(node[index+1])
     return result
 
-def array_to_python(node):
-    return [to_python(child) for child in node]
+def _array_to_python(node):
+    return [_to_python(child) for child in node]
 
 
 NODE_HANDLERS = dict(
     undef=lambda x: None,
-    boolean=bool_to_python,
-    integer=int_to_python,
-    real=real_to_python,
-    uuid=uuid_to_python,
-    string=str_to_python,
-    binary=bin_to_python,
-    date=date_to_python,
-    uri=uri_to_python,
-    map=map_to_python,
-    array=array_to_python,
+    boolean=_bool_to_python,
+    integer=_int_to_python,
+    real=_real_to_python,
+    uuid=_uuid_to_python,
+    string=_str_to_python,
+    binary=_bin_to_python,
+    date=_date_to_python,
+    uri=_uri_to_python,
+    map=_map_to_python,
+    array=_array_to_python,
     )
 
-def to_python(node):
+def _to_python(node):
     return NODE_HANDLERS[node.tag](node)
-
-class Nothing(object):
-    pass
-
 
 class LLSDXMLFormatter(object):
     def __init__(self):
@@ -194,7 +188,7 @@ class LLSDXMLFormatter(object):
         }
 
     def elt(self, name, contents=None):
-        if(contents is None or contents is ''):
+        if contents in (None, ''):
             return "<%s />" % (name,)
         else:
             if type(contents) is unicode:
@@ -208,7 +202,7 @@ class LLSDXMLFormatter(object):
 
     def LLSD(self, v):
         return self.generate(v.thing)
-    def UNDEF(self, v):
+    def UNDEF(self, _v):
         return self.elt('undef')
     def BOOLEAN(self, v):
         if v:
@@ -540,7 +534,7 @@ class LLSDBinaryParser(object):
         return rv
 
     def _parse_string_delim(self, delim):
-        list = []
+        parts = []
         found_escape = False
         found_hex = False
         found_digit = False
@@ -556,7 +550,7 @@ class LLSDBinaryParser(object):
                         found_digit = False
                         byte <<= 4
                         byte |= _hex_as_nybble(cc)
-                        list.append(chr(byte))
+                        parts.append(chr(byte))
                         byte = 0
                     else:
                         found_digit = True
@@ -565,29 +559,29 @@ class LLSDBinaryParser(object):
                     found_hex = True
                 else:
                     if cc == 'a':
-                        list.append('\a')
+                        parts.append('\a')
                     elif cc == 'b':
-                        list.append('\b')
+                        parts.append('\b')
                     elif cc == 'f':
-                        list.append('\f')
+                        parts.append('\f')
                     elif cc == 'n':
-                        list.append('\n')
+                        parts.append('\n')
                     elif cc == 'r':
-                        list.append('\r')
+                        parts.append('\r')
                     elif cc == 't':
-                        list.append('\t')
+                        parts.append('\t')
                     elif cc == 'v':
-                        list.append('\v')
+                        parts.append('\v')
                     else:
-                        list.append(cc)
+                        parts.append(cc)
                     found_escape = False
             elif cc == '\\':
                 found_escape = True
             elif cc == delim:
                 break
             else:
-                list.append(cc)
-        return ''.join(list)
+                parts.append(cc)
+        return ''.join(parts)
 
 class LLSDNotationParser(object):
     """ Parse LLSD notation:
@@ -736,7 +730,7 @@ class LLSDNotationParser(object):
         return uuid.UUID(hex=self._buffer[start:self._index])
 
     def _skip_alpha(self):
-        match = re.match(alpha_regex, self._buffer[self._index:])
+        match = re.match(_alpha_regex, self._buffer[self._index:])
         if match:
             self._index += match.end()
             
@@ -747,7 +741,7 @@ class LLSDNotationParser(object):
         return parse_datestr(datestr)
 
     def _parse_real(self):
-        match = re.match(real_regex, self._buffer[self._index:])
+        match = re.match(_real_regex, self._buffer[self._index:])
         if not match:
             raise LLSDParseError("invalid real token at index %d." % self._index)
 
@@ -758,7 +752,7 @@ class LLSDNotationParser(object):
         return float( self._buffer[start:end] )
 
     def _parse_integer(self):
-        match = re.match(int_regex, self._buffer[self._index:])
+        match = re.match(_int_regex, self._buffer[self._index:])
         if not match:
             raise LLSDParseError("invalid integer token at index %d." % self._index)
 
@@ -784,7 +778,7 @@ class LLSDNotationParser(object):
 
     def _parse_string_delim(self, delim):
         """ string: "g'day 'un" | 'have a "nice" day' """
-        list = []
+        parts = []
         found_escape = False
         found_hex = False
         found_digit = False
@@ -800,7 +794,7 @@ class LLSDNotationParser(object):
                         found_digit = False
                         byte <<= 4
                         byte |= _hex_as_nybble(cc)
-                        list.append(chr(byte))
+                        parts.append(chr(byte))
                         byte = 0
                     else:
                         found_digit = True
@@ -809,29 +803,29 @@ class LLSDNotationParser(object):
                     found_hex = True
                 else:
                     if cc == 'a':
-                        list.append('\a')
+                        parts.append('\a')
                     elif cc == 'b':
-                        list.append('\b')
+                        parts.append('\b')
                     elif cc == 'f':
-                        list.append('\f')
+                        parts.append('\f')
                     elif cc == 'n':
-                        list.append('\n')
+                        parts.append('\n')
                     elif cc == 'r':
-                        list.append('\r')
+                        parts.append('\r')
                     elif cc == 't':
-                        list.append('\t')
+                        parts.append('\t')
                     elif cc == 'v':
-                        list.append('\v')
+                        parts.append('\v')
                     else:
-                        list.append(cc)
+                        parts.append(cc)
                     found_escape = False
             elif cc == '\\':
                 found_escape = True
             elif cc == delim:
                 break
             else:
-                list.append(cc)
-        return ''.join(list)
+                parts.append(cc)
+        return ''.join(parts)
 
     def _parse_string_raw(self):
         """ string: s(size)"raw data" """
@@ -931,24 +925,24 @@ def parse_binary(binary):
 
 def parse_xml(something):
     try:
-        return to_python(fromstring(something)[0])
+        return _to_python(fromstring(something)[0])
     except ElementTreeError, err:
         raise LLSDParseError(*err.args)
 
 def parse_notation(something):
     return LLSDNotationParser().parse(something)
 
-def parse(something, content_type = None):
-    if content_type in ('application/llsd+xml', 'application/llsd'):
+def parse(something, mime_type = None):
+    if mime_type in (XML_MIME_TYPE, 'application/llsd'):
         return parse_xml(something)
-    elif content_type in ('application/llsd+binary', 'application/binary'):
+    elif mime_type == BINARY_MIME_TYPE:
         return parse_binary(something)
-    elif content_type == 'application/llsd+notation':
+    elif mime_type == NOTATION_MIME_TYPE:
         return parse_notation(something)
     #elif content_type == 'application/json':
     #    return parse_notation(something)
     try:
-        something = string.lstrip(something)   #remove any pre-trailing whitespace
+        something = something.lstrip()   #remove any pre-trailing whitespace
         if something.startswith('<?llsd/binary?>'):
             return parse_binary(something)
         # This should be better.
@@ -972,82 +966,4 @@ class LLSD(object):
     toBinary = staticmethod(format_binary)
     toNotation = staticmethod(format_notation)
 
-
 undef = LLSD(None)
-
-XML_MIME_TYPE = 'application/llsd+xml'
-BINARY_MIME_TYPE = 'application/llsd+binary'
-
-# register converters for llsd in mulib, if it is available
-try:
-    from mulib import stacked, mu
-    stacked.NoProducer()  # just to exercise stacked
-    mu.safe_load(None)    # just to exercise mu
-except:
-    # mulib not available, don't print an error message since this is normal
-    pass
-else:
-    mu.add_parser(parse, XML_MIME_TYPE)
-    mu.add_parser(parse, 'application/llsd+binary')
-
-    def llsd_convert_xml(llsd_stuff, request):
-        request.write(format_xml(llsd_stuff))
-
-    def llsd_convert_binary(llsd_stuff, request):
-        request.write(format_binary(llsd_stuff))
-
-    for typ in [LLSD, dict, list, tuple, str, int, long, float, bool, unicode, type(None)]:
-        stacked.add_producer(typ, llsd_convert_xml, XML_MIME_TYPE)
-        stacked.add_producer(typ, llsd_convert_xml, 'application/xml')
-        stacked.add_producer(typ, llsd_convert_xml, 'text/xml')
-
-        stacked.add_producer(typ, llsd_convert_binary, 'application/llsd+binary')
-
-    stacked.add_producer(LLSD, llsd_convert_xml, '*/*')
-
-    # in case someone is using the legacy mu.xml wrapper, we need to
-    # tell mu to produce application/xml or application/llsd+xml
-    # (based on the accept header) from raw xml. Phoenix 2008-07-21
-    stacked.add_producer(mu.xml, mu.produce_raw, XML_MIME_TYPE)
-    stacked.add_producer(mu.xml, mu.produce_raw, 'application/xml')
-
-
-
-# mulib wsgi stuff
-# try:
-#     from mulib import mu, adapters
-#
-#     # try some known attributes from mulib to be ultra-sure we've imported it
-#     mu.get_current
-#     adapters.handlers
-# except:
-#     # mulib not available, don't print an error message since this is normal
-#     pass
-# else:
-#     def llsd_xml_handler(content_type):
-#         def handle_llsd_xml(env, start_response):
-#             llsd_stuff, _ = mu.get_current(env)
-#             result = format_xml(llsd_stuff)
-#             start_response("200 OK", [('Content-Type', content_type)])
-#             env['mu.negotiated_type'] = content_type
-#             yield result
-#         return handle_llsd_xml
-#    
-#     def llsd_binary_handler(content_type):
-#         def handle_llsd_binary(env, start_response):
-#             llsd_stuff, _ = mu.get_current(env)
-#             result = format_binary(llsd_stuff)
-#             start_response("200 OK", [('Content-Type', content_type)])
-#             env['mu.negotiated_type'] = content_type
-#             yield result
-#         return handle_llsd_binary
-#
-#     adapters.DEFAULT_PARSERS[XML_MIME_TYPE] = parse
-    
-#     for typ in [LLSD, dict, list, tuple, str, int, float, bool, unicode, type(None)]:
-#         for content_type in (XML_MIME_TYPE, 'application/xml'):
-#             adapters.handlers.set_handler(typ, llsd_xml_handler(content_type), content_type)
-#
-#         adapters.handlers.set_handler(typ, llsd_binary_handler(BINARY_MIME_TYPE), BINARY_MIME_TYPE)
-#
-#     adapters.handlers.set_handler(LLSD, llsd_xml_handler(XML_MIME_TYPE), '*/*')
