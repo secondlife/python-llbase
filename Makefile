@@ -12,6 +12,9 @@ all:
 	@echo "make builddeb - Generate a deb package"
 	@echo "make clean - Get rid of scratch and byte files"
 
+test:
+	$(PYTHON) setup.py test
+
 source:
 	$(PYTHON) setup.py sdist $(COMPILE)
 
@@ -29,3 +32,5 @@ clean:
 	fakeroot $(CURDIR)/debian/rules clean
 	rm -rf build/ dist/ MANIFEST
 	find . -name '*.pyc' -delete
+
+.PHONY: all, test, source, install, buildrpm, builddeb, clean
