@@ -83,7 +83,6 @@ class ConfigInstanceFileTester(unittest.TestCase):
         self.assertEquals('v1', self.conf.get('k1'))
         self.assertEquals('v2', self.conf.get('k2'))
 
-        
         now = time.time()
 
         new_conf = {'k1':'new value', 'k2':'v2'}
