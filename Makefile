@@ -7,16 +7,17 @@ DESTDIR=/
 
 all:
 	@echo "make source - Create source package"
+	@echo "make test - Run all tests"
 	@echo "make install - Install on local system"
 	@echo "make buildrpm - Generate a rpm package"
 	@echo "make builddeb - Generate a deb package"
 	@echo "make clean - Get rid of scratch and byte files"
 
-test:
-	$(PYTHON) setup.py test
-
 source:
 	$(PYTHON) setup.py sdist $(COMPILE)
+
+test:
+	$(PYTHON) setup.py test
 
 install:
 	$(PYTHON) setup.py install --root $(DESTDIR) $(COMPILE)

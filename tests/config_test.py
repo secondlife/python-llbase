@@ -27,8 +27,10 @@ THE SOFTWARE.
 $/LicenseInfo$
 """
 
+import mock
 import os
 import tempfile
+import time
 import unittest
 
 from llbase import config
@@ -42,13 +44,13 @@ class ConfigInstanceTester(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testSetAndGet(self):
+    def test_set_get(self):
         self._config['key'] = 'value'
         self.assertEquals('value', self._config['key'])
         self._config.set('key2', 'value2')
         self.assertEquals('value2', self._config.get('key2'))
 
-    def testUpdate(self):
+    def test_update(self):
         self._config['k1'] = 'v1'
         self._config['k2'] = 'v2'
         new = {'k1': 'new_value', 'k3':'v3'}
@@ -61,21 +63,39 @@ class ConfigInstanceFileTester(unittest.TestCase):
     def setUp(self):
         # not worried about race conditions, this is just some unit tests.
         self.filename = tempfile.mktemp()
-        self.conf = {'k1':'v1', 'k2':'v2'}
+        initial_config = {'k1':'v1', 'k2':'v2'}
+        self.write_conf(initial_config)
+        self.conf = config.Config(self.filename)
 
     def tearDown(self):
         os.remove(self.filename)
 
-    def assertConfig(self):
-        self.assertEquals('v1', config.get('k1'))
-        self.assertEquals('v2', config.get('k2'))
-
-    def testXML(self):
+    def write_conf(self, payload):
         conffile = open(self.filename, 'wb')
-        conffile.write(llsd.format_xml(self.conf))
+        conffile.write(llsd.format_xml(payload))
         conffile.close()
-        config.load(self.filename)
-        self.assertConfig()
+
+    def test_file(self):
+        self.assertEquals('v1', self.conf.get('k1'))
+        self.assertEquals('v2', self.conf.get('k2'))
+
+    def test_reload(self):
+        self.assertEquals('v1', self.conf.get('k1'))
+        self.assertEquals('v2', self.conf.get('k2'))
+
+        time.sleep(1.1)
+        new_conf = {'k1':'new value', 'k2':'v2'}
+        self.write_conf(new_conf)
+        self.conf._last_mod_time
+
+        now = time.time()
+        mock_time = mock.Mock(return_value=now+60) # 60 seconds into future
+        @mock.patch('time.time', mock_time)
+        def _check_reload(self):
+            self.assertEquals('new value', self.conf.get('k1'))
+            self.assertEquals('v2', self.conf.get('k2'))
+        _check_reload(self)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -94,7 +94,6 @@ class Config(object):
 
     def _reload_if_necessary(self):
         now = time.time()
-
         if (now - self._last_check_time) > self._reload_check_interval:
             self._last_check_time = now
             try:
@@ -145,7 +144,7 @@ class Config(object):
     def update(self, new_conf):
         """
         Load an XML file and apply its map as overrides or additions
-        to the existing config.  Update can be a file or a dict.
+        to the existing config. Update can be a file or a dict.
 
         Once any key/value pair is changed via the update method,
         that key/value pair will remain set with that value until
@@ -163,12 +162,15 @@ class Config(object):
         self._combine_dictionaries()
 
     def as_dict(self):
-        """
-        Returns immutable copy of the aConfig as a dictionary
-        """
+        "Returns immutable copy of the aConfig as a dictionary"
         return copy.deepcopy(self._combined_dict)
 
 def load(config_xml_file):
+    """\
+    @brief Load a config file from file
+
+    @param config_xml_file
+    """
     global _g_config
     _g_config = Config(config_xml_file)
 
@@ -180,13 +182,10 @@ def dump(indra_xml_file, indra_cfg = None, update_in_mem=False):
     Does NOT update global config unless requested.
     '''
     global _g_config
-
     if not indra_cfg:
         if _g_config is None:
             return
-
         indra_cfg = _g_config.as_dict()
-
     if not indra_cfg:
         return
 
@@ -199,41 +198,37 @@ def dump(indra_xml_file, indra_cfg = None, update_in_mem=False):
         update(indra_cfg)
 
 def update(new_conf):
+    """\
+    @brief Updates new_conf into the module config.
+
+    @param new_conf dict configuration to update into the current config.
+    """
     global _g_config
-
     if _g_config is None:
-        # To keep with how this function behaved
-        # previously, a call to update
-        # before the global is defined
-        # make a new global config which does not
-        # load data from a file.
         _g_config = Config(None)
-
     return _g_config.update(new_conf)
 
 def get(key, default = None):
+    """\
+    @brief Get the value for key.
+
+    @param key The key of the config value to get
+    @param default What to return if key is not found.
+    """
     global _g_config
-
     if _g_config is None:
-        load('config.xml')
-
+        _g_config = Config(None)
     return _g_config.get(key, default)
 
 def set(key, newval):
-    """
-    Sets the value of the config setting of key to be newval
+    """\
+    @brief Sets the value of the config setting of key to be newval
 
     Once any key/value pair is changed via the set method,
     that key/value pair will remain set with that value until
     change via the update or set method or program termination
     """
     global _g_config
-
     if _g_config is None:
         _g_config = Config(None)
-
     _g_config.set(key, newval)
-
-def get_config():
-    global _g_config
-    return _g_config
