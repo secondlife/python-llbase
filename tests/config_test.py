@@ -83,12 +83,14 @@ class ConfigInstanceFileTester(unittest.TestCase):
         self.assertEquals('v1', self.conf.get('k1'))
         self.assertEquals('v2', self.conf.get('k2'))
 
-        time.sleep(1.1)
+        
+        now = time.time()
+
         new_conf = {'k1':'new value', 'k2':'v2'}
         self.write_conf(new_conf)
         self.conf._last_mod_time
+        os.utime(self.filename, (now + 10, now + 10))
 
-        now = time.time()
         mock_time = mock.Mock(return_value=now+60) # 60 seconds into future
         @mock.patch('time.time', mock_time)
         def _check_reload(self):
