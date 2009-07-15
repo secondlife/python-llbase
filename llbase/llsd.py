@@ -46,16 +46,20 @@ BINARY_MIME_TYPE = 'application/llsd+binary'
 NOTATION_MIME_TYPE = 'application/llsd+notation'
 
 class LLSDParseError(Exception):
+    "@brief Exception raised when the parser fails."
     pass
 
 class LLSDSerializationError(TypeError):
+    "@brief Exception raised when serialization fails."
     pass
 
 
 class binary(str):
+    "@brief Simple wrapper for llsd.binary data."
     pass
 
 class uri(str):
+    "@brief Simple wrapper for llsd.uri data."
     pass
 
 _int_regex = re.compile(r"[-+]?\d+")
@@ -66,15 +70,21 @@ _date_regex = re.compile(r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T"
                         r"(?P<second_float>(\.\d+)?)Z")
 #date: d"YYYY-MM-DDTHH:MM:SS.FFFFFFZ"
 
-def format_datestr(v):
-    """ Formats a datetime or date object into the string format shared by xml and notation serializations."""
+def _format_datestr(v):
+    """
+    @brief Formats a datetime or date object into the string format
+    shared by xml and notation serializations.
+    """
     if hasattr(v, 'microsecond'):
         return v.isoformat() + 'Z'
     else:
         return v.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-def parse_datestr(datestr):
-    """Parses a datetime object from the string format shared by xml and notation serializations."""
+def _parse_datestr(datestr):
+    """
+    Parses a datetime object from the string format shared by
+    xml and notation serializations.
+    """
     if datestr == "":
         return datetime.datetime(1970, 1, 1)
     
@@ -89,13 +99,14 @@ def parse_datestr(datestr):
     minute = int(match.group('minute'))
     second = int(match.group('second'))
     seconds_float = match.group('second_float')
-    microsecond = 0
+    usec = 0
     if seconds_float:
-        microsecond = int(float('0' + seconds_float) * 1e6)
-    return datetime.datetime(year, month, day, hour, minute, second, microsecond)
+        usec = int(float('0' + seconds_float) * 1e6)
+    return datetime.datetime(year, month, day, hour, minute, second, usec)
 
 
 def _bool_to_python(node):
+    "Convert boolean node to a python object."
     val = node.text or ''
     if val in ('1', '1.0', 'true'):
         return True
@@ -103,48 +114,56 @@ def _bool_to_python(node):
         return False
 
 def _int_to_python(node):
+    "Convert integer node to a python object."
     val = node.text or ''
     if not val.strip():
         return 0
     return int(val)
 
 def _real_to_python(node):
+    "Convert floating point node to a python object."
     val = node.text or ''
     if not val.strip():
         return 0.0
     return float(val)
 
 def _uuid_to_python(node):
+    "Convert uuid node to a python object."
     if node.text:
         return uuid.UUID(hex=node.text)
     return uuid.UUID(int=0)
 
 def _str_to_python(node):
+    "Convert string node to a python object."
     return node.text or ''
 
 def _bin_to_python(node):
     return binary(base64.decodestring(node.text or ''))
 
 def _date_to_python(node):
+    "Convert date node to a python object."
     val = node.text or ''
     if not val:
         val = "1970-01-01T00:00:00Z"
-    return parse_datestr(val)
+    return _parse_datestr(val)
     
 
 def _uri_to_python(node):
+    "Convert uri node to a python object."
     val = node.text or ''
     if not val:
         return None
     return uri(val)
 
 def _map_to_python(node):
+    "Convert map node to a python object."
     result = {}
     for index in range(len(node))[::2]:
         result[node[index].text] = _to_python(node[index+1])
     return result
 
 def _array_to_python(node):
+    "Convert array node to a python object."
     return [_to_python(child) for child in node]
 
 
@@ -163,10 +182,23 @@ NODE_HANDLERS = dict(
     )
 
 def _to_python(node):
+    "Convert node to a python object."
     return NODE_HANDLERS[node.tag](node)
 
 class LLSDXMLFormatter(object):
+    """
+    @brief Class which implements LLSD XML serialization..
+    @see http://wiki.secondlife.com/wiki/LLSD#XML_Serialization
+
+    This class wraps both a pure python and c-extension for formatting
+    a limited subset of python objects as application/llsd+xml. You do
+    not generally need to make an instance of this object since the
+    module level format_xml is the most convenient interface to this
+    functionality.
+    """
+
     def __init__(self):
+        "Construct a new formatter."
         self.type_map = {
             type(None) : self.UNDEF,
             bool : self.BOOLEAN,
@@ -185,9 +217,10 @@ class LLSDXMLFormatter(object):
             types.GeneratorType : self.ARRAY,
             dict : self.MAP,
             LLSD : self.LLSD
-        }
+            }
 
-    def elt(self, name, contents=None):
+    def _elt(self, name, contents=None):
+        "Serialize a single element."
         if contents in (None, ''):
             return "<%s />" % (name,)
         else:
@@ -196,70 +229,102 @@ class LLSDXMLFormatter(object):
             return "<%s>%s</%s>" % (name, contents, name)
 
     def xml_esc(self, v):
+        "Escape string or unicode object v for xml output"
         if type(v) is unicode:
             v = v.encode('utf-8')
-        return v.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        return v.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
 
     def LLSD(self, v):
-        return self.generate(v.thing)
+        return self._generate(v.thing)
     def UNDEF(self, _v):
-        return self.elt('undef')
+        return self._elt('undef')
     def BOOLEAN(self, v):
         if v:
-            return self.elt('boolean', 'true')
+            return self._elt('boolean', 'true')
         else:
-            return self.elt('boolean', 'false')
+            return self._elt('boolean', 'false')
     def INTEGER(self, v):
-        return self.elt('integer', v)
+        return self._elt('integer', v)
     def REAL(self, v):
-        return self.elt('real', v)
+        return self._elt('real', v)
     def UUID(self, v):
         if v.int == 0:
-            return self.elt('uuid')
+            return self._elt('uuid')
         else:
-            return self.elt('uuid', v)
+            return self._elt('uuid', v)
     def BINARY(self, v):
-        return self.elt('binary', base64.encodestring(v))
+        return self._elt('binary', base64.encodestring(v))
     def STRING(self, v):
-        return self.elt('string', self.xml_esc(v))
+        return self._elt('string', self.xml_esc(v))
     def URI(self, v):
-        return self.elt('uri', self.xml_esc(str(v)))
+        return self._elt('uri', self.xml_esc(str(v)))
     def DATE(self, v):
-        return self.elt('date', format_datestr(v))
+        return self._elt('date', _format_datestr(v))
     def ARRAY(self, v):
-        return self.elt('array', ''.join([self.generate(item) for item in v]))
+        return self._elt(
+            'array',
+            ''.join([self._generate(item) for item in v]))
     def MAP(self, v):
-        return self.elt(
+        return self._elt(
             'map',
-            ''.join(["%s%s" % (self.elt('key', key), self.generate(value))
+            ''.join(["%s%s" % (self._elt('key', key), self._generate(value))
              for key, value in v.items()]))
 
     typeof = type
-    def generate(self, something):
+    def _generate(self, something):
+        "Generate xml from a single python object."
         t = self.typeof(something)
         if self.type_map.has_key(t):
             return self.type_map[t](something)
         else:
-            raise LLSDSerializationError("Cannot serialize unknown type: %s (%s)" % (
-                t, something))
+            raise LLSDSerializationError(
+                "Cannot serialize unknown type: %s (%s)" % (t, something))
 
     def _format(self, something):
-        return '<?xml version="1.0" ?>' + self.elt("llsd", self.generate(something))
+        "Pure Python implementation of the formatter."
+        return '<?xml version="1.0" ?>' + self._elt("llsd", self._generate(something))
 
     def format(self, something):
+        """
+        @brief Format a python object as application/llsd+xml
+        @param something A python object (typically a dict) to be serialized.
+        @return Returns an XML formatted string.
+        """
         if cllsd:
             return cllsd.llsd_to_xml(something)
         return self._format(something)
 
 _g_xml_formatter = None
 def format_xml(something):
+    """
+    @brief Format a python object as application/llsd+xml
+    @param something a python object (typically a dict) to be serialized.
+    @return Returns an XML formatted string.
+    @see http://wiki.secondlife.com/wiki/LLSD#XML_Serialization
+
+    This function wraps both a pure python and c-extension for formatting
+    a limited subset of python objects as application/llsd+xml.
+    """
     global _g_xml_formatter
     if _g_xml_formatter is None:
         _g_xml_formatter = LLSDXMLFormatter()
     return _g_xml_formatter.format(something)
 
 class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
+    """
+    @brief Class which implements 'pretty' LLSD XML serialization..
+    @see http://wiki.secondlife.com/wiki/LLSD#XML_Serialization
+
+    The output conforms to the LLSD DTD, unlike the output from the
+    standard python xml.dom DOM::toprettyxml() method which does not
+    preserve significant whitespace. 
+
+    This class is not necessarily suited for serializing very large
+    objects. It is not optimized by the cllsd module, and sorts on
+    dict (llsd map) keys alphabetically to ease human reading.
+    """
     def __init__(self, indent_atom = None):
+        "Construct a pretty serializer."
         # Call the super class constructor so that we have the type map
         super(LLSDXMLPrettyFormatter, self).__init__()
 
@@ -282,12 +347,13 @@ class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
         return self._indent_atom * self._indent_level
 
     def PRETTY_ARRAY(self, v):
+        "Recursively format an array with pretty turned on."
         rv = []
         rv.append('<array>\n')
         self._indent_level = self._indent_level + 1
         rv.extend(["%s%s\n" %
                    (self._indent(),
-                    self.generate(item))
+                    self._generate(item))
                    for item in v])
         self._indent_level = self._indent_level - 1
         rv.append(self._indent())
@@ -295,6 +361,7 @@ class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
         return ''.join(rv)
 
     def PRETTY_MAP(self, v):
+        "Recursively format a map with pretty turned on."
         rv = []
         rv.append('<map>\n')
         self._indent_level = self._indent_level + 1
@@ -302,9 +369,9 @@ class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
         keys.sort()
         rv.extend(["%s%s\n%s%s\n" %
                    (self._indent(),
-                    self.elt('key', key),
+                    self._elt('key', key),
                     self._indent(),
-                    self.generate(v[key]))
+                    self._generate(v[key]))
                    for key in keys])
         self._indent_level = self._indent_level - 1
         rv.append(self._indent())
@@ -312,14 +379,23 @@ class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
         return ''.join(rv)
 
     def format(self, something):
+        """
+        @brief Format a python object as application/llsd+xml
+        @param something a python object (typically a dict) to be serialized.
+        @return Returns an XML formatted string.
+        """
         data = []
         data.append('<?xml version="1.0" ?>\n<llsd>')
-        data.append(self.generate(something))
+        data.append(self._generate(something))
         data.append('</llsd>\n')
         return '\n'.join(data)
 
 def format_pretty_xml(something):
-    """@brief Serialize a python object as 'pretty' llsd xml.
+    """
+    @brief Serialize a python object as 'pretty' application/llsd+xml.
+    @param something a python object (typically a dict) to be serialized.
+    @return Returns an XML formatted string.
+    @see http://wiki.secondlife.com/wiki/LLSD#XML_Serialization
 
     The output conforms to the LLSD DTD, unlike the output from the
     standard python xml.dom DOM::toprettyxml() method which does not
@@ -331,7 +407,12 @@ def format_pretty_xml(something):
     return LLSDXMLPrettyFormatter().format(something)
 
 class LLSDNotationFormatter(object):
+    """
+    @brief Serialize a python object as application/llsd+notation 
+    @see http://wiki.secondlife.com/wiki/LLSD#Notation_Serialization
+    """
     def __init__(self):
+        "Construct a notation serializer."
         self.type_map = {
             type(None) : self.UNDEF,
             bool : self.BOOLEAN,
@@ -353,7 +434,7 @@ class LLSDNotationFormatter(object):
         }
 
     def LLSD(self, v):
-        return self.generate(v.thing)
+        return self._generate(v.thing)
     def UNDEF(self, v):
         return '!'
     def BOOLEAN(self, v):
@@ -376,18 +457,19 @@ class LLSDNotationFormatter(object):
     def URI(self, v):
         return 'l"%s"' % str(v).replace("\\", "\\\\").replace('"', '\\"')
     def DATE(self, v):
-        return 'd"%s"' % format_datestr(v)
+        return 'd"%s"' % _format_datestr(v)
     def ARRAY(self, v):
-        return "[%s]" % ','.join([self.generate(item) for item in v])
+        return "[%s]" % ','.join([self._generate(item) for item in v])
     def MAP(self, v):
         def fix(key):
             if isinstance(key, unicode):
                 return key.encode('utf-8')
             return key
-        return "{%s}" % ','.join(["'%s':%s" % (fix(key).replace("\\", "\\\\").replace("'", "\\'"), self.generate(value))
+        return "{%s}" % ','.join(["'%s':%s" % (fix(key).replace("\\", "\\\\").replace("'", "\\'"), self._generate(value))
              for key, value in v.items()])
 
-    def generate(self, something):
+    def _generate(self, something):
+        "Generate xml from a single python object."
         t = type(something)
         handler = self.type_map.get(t)
         if handler:
@@ -400,12 +482,24 @@ class LLSDNotationFormatter(object):
                     "Cannot serialize unknown type: %s (%s)" % (t, something))
 
     def format(self, something):
-        return self.generate(something)
+        """
+        @brief Format a python object as application/llsd+notation
+        @param something a python object (typically a dict) to be serialized.
+        @return Returns a LLSD notation formatted string.
+        """
+        return self._generate(something)
 
 def format_notation(something):
+    """
+    @brief Format a python object as application/llsd+notation
+    @param something a python object (typically a dict) to be serialized.
+    @return Returns a LLSD notation formatted string.
+    @see http://wiki.secondlife.com/wiki/LLSD#Notation_Serialization
+    """
     return LLSDNotationFormatter().format(something)
 
 def _hex_as_nybble(hex):
+    "Accepts a single hex character and returns a nybble."
     if (hex >= '0') and (hex <= '9'):
         return ord(hex) - ord('0')
     elif (hex >= 'a') and (hex <='f'):
@@ -414,13 +508,16 @@ def _hex_as_nybble(hex):
         return 10 + ord(hex) - ord('A');
 
 class LLSDBinaryParser(object):
+    """
+    @brief Parse application/llsd+binary to a python object.
+    @see http://wiki.secondlife.com/wiki/LLSD#Binary_Serialization
+    """
     def __init__(self):
         pass
 
     def parse(self, buffer, ignore_binary = False):
         """
-        This is the basic public interface for parsing.
-
+        @brief This is the basic public interface for parsing.
         @param buffer the binary data to parse in an indexable sequence.
         @param ignore_binary parser throws away data in llsd binary nodes.
         @return returns a python object.
@@ -431,6 +528,7 @@ class LLSDBinaryParser(object):
         return self._parse()
 
     def _parse(self):
+        "The actual parser which is called recursively when necessary."
         cc = self._buffer[self._index]
         self._index += 1
         if cc == '{':
@@ -485,6 +583,7 @@ class LLSDBinaryParser(object):
                 self._index - 1, ord(cc)))
 
     def _parse_map(self):
+        "Parse a single llsd map"
         rv = {}
         size = struct.unpack("!i", self._buffer[self._index:self._index+4])[0]
         self._index += 4
@@ -511,6 +610,7 @@ class LLSDBinaryParser(object):
         return rv
 
     def _parse_array(self):
+        "Parse a single llsd array"
         rv = []
         size = struct.unpack("!i", self._buffer[self._index:self._index+4])[0]
         self._index += 4
@@ -527,6 +627,7 @@ class LLSDBinaryParser(object):
         return rv
 
     def _parse_string(self):
+        "Parse a string which has the leadings size indicator"
         size = struct.unpack("!i", self._buffer[self._index:self._index+4])[0]
         self._index += 4
         rv = self._buffer[self._index:self._index+size]
@@ -534,6 +635,7 @@ class LLSDBinaryParser(object):
         return rv
 
     def _parse_string_delim(self, delim):
+        "Parse a delimited string."
         parts = []
         found_escape = False
         found_hex = False
@@ -584,7 +686,11 @@ class LLSDBinaryParser(object):
         return ''.join(parts)
 
 class LLSDNotationParser(object):
-    """ Parse LLSD notation:
+    """
+    @brief Parse LLSD notation.
+    @see http://wiki.secondlife.com/wiki/LLSD#Notation_Serialization
+
+    @verbatim
     map: { string:object, string:object }
     array: [ object, object, object ]
     undef: !
@@ -596,14 +702,15 @@ class LLSDNotationParser(object):
     uri: l"escaped"
     date: d"YYYY-MM-DDTHH:MM:SS.FFZ"
     binary: b##"ff3120ab1" | b(size)"raw data"
+    @endverbatim
     """
     def __init__(self):
+        "Construct a notation parser"
         pass
 
     def parse(self, buffer, ignore_binary = False):
         """
-        This is the basic public interface for parsing.
-
+        @brief This is the basic public interface for parsing.
         @param buffer the notation string to parse.
         @param ignore_binary parser throws away data in llsd binary nodes.
         @return returns a python object.
@@ -616,6 +723,7 @@ class LLSDNotationParser(object):
         return self._parse()
 
     def _parse(self):
+        "The notation parser workhorse."
         cc = self._buffer[self._index]
         self._index += 1
         if cc == '{':
@@ -663,6 +771,7 @@ class LLSDNotationParser(object):
                 self._index - 1, ord(cc)))
 
     def _parse_binary(self):
+        "parse a single binary object."
         i = self._index
         if self._buffer[i:i+2] == '64':
             q = self._buffer[i+2]
@@ -675,7 +784,11 @@ class LLSDNotationParser(object):
             raise LLSDParseError('random horrible binary format not supported')
 
     def _parse_map(self):
-        """ map: { string:object, string:object } """
+        """
+        parse a single map
+
+        map: { string:object, string:object }
+        """
         rv = {}
         cc = self._buffer[self._index]
         self._index += 1
@@ -707,7 +820,11 @@ class LLSDNotationParser(object):
         return rv
 
     def _parse_array(self):
-        """ array: [ object, object, object ] """
+        """
+        parse a single array.
+
+        array: [ object, object, object ]
+        """
         rv = []
         cc = self._buffer[self._index]
         while (cc != ']'):
@@ -725,6 +842,7 @@ class LLSDNotationParser(object):
         return rv
 
     def _parse_uuid(self):
+        "Parse a uuid."
         start = self._index
         self._index += 36
         return uuid.UUID(hex=self._buffer[start:self._index])
@@ -735,12 +853,14 @@ class LLSDNotationParser(object):
             self._index += match.end()
             
     def _parse_date(self):
+        "Parse a date."
         delim = self._buffer[self._index]
         self._index += 1
         datestr = self._parse_string(delim)
-        return parse_datestr(datestr)
+        return _parse_datestr(datestr)
 
     def _parse_real(self):
+        "Parse a floating point number."
         match = re.match(_real_regex, self._buffer[self._index:])
         if not match:
             raise LLSDParseError("invalid real token at index %d." % self._index)
@@ -752,6 +872,7 @@ class LLSDNotationParser(object):
         return float( self._buffer[start:end] )
 
     def _parse_integer(self):
+        "Parse an integer."
         match = re.match(_int_regex, self._buffer[self._index:])
         if not match:
             raise LLSDParseError("invalid integer token at index %d." % self._index)
@@ -763,7 +884,11 @@ class LLSDNotationParser(object):
         return int( self._buffer[start:end] )
 
     def _parse_string(self, delim):
-        """ string: "g\'day" | 'have a "nice" day' | s(size)"raw data" """
+        """
+        Parse a string
+
+        string: "g\'day" | 'have a "nice" day' | s(size)"raw data"
+        """
         rv = ""
 
         if delim in ("'", '"'):
@@ -777,7 +902,11 @@ class LLSDNotationParser(object):
 
 
     def _parse_string_delim(self, delim):
-        """ string: "g'day 'un" | 'have a "nice" day' """
+        """
+        Parse a delimited string
+
+        string: "g'day 'un" | 'have a "nice" day'
+        """
         parts = []
         found_escape = False
         found_hex = False
@@ -828,7 +957,11 @@ class LLSDNotationParser(object):
         return ''.join(parts)
 
     def _parse_string_raw(self):
-        """ string: s(size)"raw data" """
+        """
+        Parse a sized specified string.
+
+        string: s(size)"raw data"
+        """ 
         # Read the (size) portion.
         cc = self._buffer[self._index]
         self._index += 1
@@ -857,9 +990,15 @@ class LLSDNotationParser(object):
         return rv
         
 def format_binary(something):
+    """
+    @brief Format application/llsd+binary to a python object.
+    @return Returns a LLSD binary formatted string.
+    @see http://wiki.secondlife.com/wiki/LLSD#Binary_Serialization
+    """
     return '<?llsd/binary?>\n' + _format_binary_recurse(something)
 
 def _format_binary_recurse(something):
+    "Binary formatter workhorse."
     def _format_list(something):
         array_builder = []
         array_builder.append('[' + struct.pack('!i', len(something)))
@@ -916,23 +1055,44 @@ def _format_binary_recurse(something):
                 (type(something), something))
 
 
-def parse_binary(binary):
-    if binary.startswith('<?llsd/binary?>'):
-        just_binary = binary.split('\n', 1)[1]
+def parse_binary(something):
+    """
+    @brief This is the basic public interface for parsing llsd+binary.
+    @param something The data to parse in an indexable sequence.
+    @return Returns a python object.
+    """
+    if something.startswith('<?llsd/binary?>'):
+        just_binary = something.split('\n', 1)[1]
     else:
-        just_binary = binary
+        just_binary = something
     return LLSDBinaryParser().parse(just_binary)
 
 def parse_xml(something):
+    """
+    @brief This is the basic public interface for parsing llsd+xml.
+    @param something The data to parse.
+    @return Returns a python object.
+    """
     try:
         return _to_python(fromstring(something)[0])
     except ElementTreeError, err:
         raise LLSDParseError(*err.args)
 
 def parse_notation(something):
+    """
+    @brief This is the basic public interface for parsing llsd+notation.
+    @param something The data to parse.
+    @return Returns a python object.
+    """
     return LLSDNotationParser().parse(something)
 
 def parse(something, mime_type = None):
+    """
+    @brief This is the basic public interface for parsing llsd.
+    @param something The data to parse.
+    @param mime_type The mime_type of the data if it is known.
+    @return Returns a python object.
+    """
     if mime_type in (XML_MIME_TYPE, 'application/llsd'):
         return parse_xml(something)
     elif mime_type == BINARY_MIME_TYPE:
@@ -954,6 +1114,7 @@ def parse(something, mime_type = None):
         raise Exception('LLSD could not be parsed: %s' % (e,))
 
 class LLSD(object):
+    "Simple wrapper class for a thing."
     def __init__(self, thing=None):
         self.thing = thing
 
@@ -961,9 +1122,9 @@ class LLSD(object):
         return self.toXML(self.thing)
 
     parse = staticmethod(parse)
-    toXML = staticmethod(format_xml)
-    toPrettyXML = staticmethod(format_pretty_xml)
-    toBinary = staticmethod(format_binary)
-    toNotation = staticmethod(format_notation)
+    as_xml = staticmethod(format_xml)
+    as_pretty_xml = staticmethod(format_pretty_xml)
+    as_binary = staticmethod(format_binary)
+    as_notation = staticmethod(format_notation)
 
 undef = LLSD(None)

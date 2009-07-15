@@ -48,9 +48,9 @@ class LLSDNotationUnitTest(unittest.TestCase):
 
     def assert_notation_roundtrip(self, py_in, str_in, is_alternate_notation=False):
         py_out = self.llsd.parse(str_in)
-        str_out = self.llsd.toNotation(py_in)
+        str_out = self.llsd.as_notation(py_in)
         py_roundtrip = self.llsd.parse(str_out)
-        str_roundtrip = self.llsd.toNotation(py_out)
+        str_roundtrip = self.llsd.as_notation(py_out)
         self.assertEqual(py_in, py_out)
         self.assertEqual(py_in, py_roundtrip)
 
@@ -239,7 +239,7 @@ class LLSDNotationUnitTest(unittest.TestCase):
         python_native_obj = Foo()
 
         # assert than an exception is raised
-        self.assertRaises(TypeError, self.llsd.toNotation, python_native_obj)
+        self.assertRaises(TypeError, self.llsd.as_notation, python_native_obj)
         self.assertRaises(llsd.LLSDParseError, self.llsd.parse, '2')
 
 
@@ -250,13 +250,13 @@ class LLSDXMLUnitTest(unittest.TestCase):
 
     def assert_xml_roundtrip(self, py, xml):
         parsed_py = self.llsd.parse(xml)
-        formatted_xml = self.llsd.toXML(py)
+        formatted_xml = self.llsd.as_xml(py)
         self.assertEqual(parsed_py, py)
         self.assertEqual(self.strip(formatted_xml),
                          self.strip(xml))
         self.assertEqual(py, self.llsd.parse(formatted_xml))
         self.assertEqual(self.strip(xml),
-                         self.strip(self.llsd.toXML(parsed_py)))
+                         self.strip(self.llsd.as_xml(parsed_py)))
 
     def test_cllsd(self):
         import sys
@@ -531,7 +531,7 @@ class LLSDXMLUnitTest(unittest.TestCase):
         python_native_obj = Foo()
 
         # assert than an exception is raised
-        self.assertRaises(TypeError, self.llsd.toXML, python_native_obj)
+        self.assertRaises(TypeError, self.llsd.as_xml, python_native_obj)
 
 
     def strip(self, the_string):
@@ -543,7 +543,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         self.llsd = llsd.LLSD()
 
     def roundTrip(self, something):
-        binary = self.llsd.toBinary(something)
+        binary = self.llsd.as_binary(something)
         return self.llsd.parse(binary)
 
     def testMap(self):
@@ -865,13 +865,13 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 
     def assert_xml_roundtrip(self, py, xml):
         parsed_py = self.llsd.parse(xml)
-        formatted_xml = self.llsd.toXML(py)
+        formatted_xml = self.llsd.as_xml(py)
         self.assertEqual(parsed_py, py)
         self.assertEqual(self.strip(formatted_xml),
                          self.strip(xml))
         self.assertEqual(py, self.llsd.parse(formatted_xml))
         self.assertEqual(self.strip(xml),
-                         self.strip(self.llsd.toXML(parsed_py)))
+                         self.strip(self.llsd.as_xml(parsed_py)))
 
     def testMap(self):
         map_xml = "\
@@ -1141,7 +1141,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         python_native_obj = Foo()
 
         # assert than an exception is raised
-        self.assertRaises(TypeError, self.llsd.toXML, python_native_obj)
+        self.assertRaises(TypeError, self.llsd.as_xml, python_native_obj)
 
 
     def strip(self, the_string):
@@ -1153,7 +1153,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         self.llsd = llsd.LLSD()
 
     def roundTrip(self, something):
-        binary = self.llsd.toBinary(something)
+        binary = self.llsd.as_binary(something)
         return self.llsd.parse(binary)
 
     def testMap(self):

@@ -1,4 +1,4 @@
-"""\
+"""
 @file config.py
 @brief Utility module for parsing and using configuration files.
 
@@ -29,10 +29,7 @@ $/LicenseInfo$
 import copy
 import errno
 import os
-import traceback
 import time
-
-from os.path import getmtime
 
 import llsd
 
@@ -40,17 +37,32 @@ _g_config = None
 
 class Config(object):
     """
-    Config loads a 'indra' xml configuration file and loads into
-    memory.  This representation in memory can get updated to
-    overwrite values or add new values.
+    @brief Class for loading llsd files as configuration.
+
+    Config loads an llsd file and into memory and provides a pythonic
+    interface into that data. Typically, the llsd file wil be a map
+    with simple key-value pairs. The value can be anything supported
+    by llsd including another map with new childern. This
+    representation in memory can get updated to overwrite values or
+    add new values.
 
     The xml configuration file is considered a live file and changes
-    to the file are checked and reloaded periodically.  If a value had
+    to the file are checked and reloaded periodically. If a value had
     been overwritten via the update or set method, the loaded values
     from the file are ignored (the values from the update/set methods
     override)
+
+    The config is implemented as 2 sets of configuration -- one comes
+    from the file and the other is whatever has been set during
+    runtime. When a key is set during runtime it is treated as a
+    runtime override over the file config even if the file is updated.
     """
     def __init__(self, config_filename):
+        """
+        @brief Construct a new Config object with config_filename for state.
+        @param config_filename file for loading config. None creates
+        an empty config.
+        """
         self._config_filename = config_filename
         self._reload_check_interval = 30 # seconds
         self._last_check_time = 0
@@ -63,8 +75,7 @@ class Config(object):
         self._load()
 
     def _load(self):
-        # if you initialize the Config with None, no attempt
-        # is made to load any files
+        "@brief load contents from the configuration file"
         if self._config_filename is None:
             return
 
@@ -78,21 +89,31 @@ class Config(object):
 
     def _get_last_modified_time(self):
         """
-        Returns the mtime (last modified time) of the config file,
+        @brief Returns the mtime (last modified time) of the config file,
         if such exists.
         """
         if self._config_filename is not None:
             return os.path.getmtime(self._config_filename)
-
         return 0
 
     def _combine_dictionaries(self):
+        """
+        @brief Bring the defaults and overrides togeter into a
+        combined dictionary.
+        """
         self._combined_dict = {}
         if(self._config_file_dict):
             self._combined_dict.update(self._config_file_dict)
         self._combined_dict.update(self._config_overrides)
 
     def _reload_if_necessary(self):
+        """
+        @brief Reload config if the check interval has expired and
+        file is modified.
+
+        If the file goes missing, this is probably a transient error
+        so the old config is kept until reload succeeds.
+        """
         now = time.time()
         if (now - self._last_check_time) > self._reload_check_interval:
             self._last_check_time = now
@@ -100,28 +121,28 @@ class Config(object):
                 modtime = self._get_last_modified_time()
                 if modtime > self._last_mod_time:
                     self._load()
-            except OSError, e:
-                if e.errno == errno.ENOENT: # file not found
-                    # someone messed with our internal state
-                    # or removed the file
-
-                    print 'WARNING: Configuration file has been removed ' + (self._config_filename)
-                    print 'Disabling reloading of configuration file.'
-
-                    traceback.print_exc()
-
-                    self._config_filename = None
-                    self._last_check_time = 0
+            except OSError, exc:
+                if exc.errno == errno.ENOENT: # file not found
+                    print 'WARNING: Configuration file missing:',
+                    print self._config_filename
                     self._last_mod_time = 0
                 else:
                     raise  # pass the exception along to the caller
 
     def __getitem__(self, key):
+        """
+        @brief Get value of key via [].
+        @param key string key for the value to get.
+        """
         self._reload_if_necessary()
-
         return self._combined_dict[key]
 
     def get(self, key, default = None):
+        """
+        @brief Get the value for key.
+        @param key string key for the value to get.
+        @param default Default value to return if key not in config.
+        """
         try:
             return self.__getitem__(key)
         except KeyError:
@@ -129,7 +150,9 @@ class Config(object):
 
     def __setitem__(self, key, value):
         """
-        Sets the value of the config setting of key to be newval
+        @brief Set key to value in the overrides via [].
+        @param key The key to set.
+        @param value The value to set.
 
         Once any key/value pair is changed via the set method,
         that key/value pair will remain set with that value until
@@ -139,19 +162,29 @@ class Config(object):
         self._combine_dictionaries()
 
     def set(self, key, newval):
+        """
+        @brief Sets the value of the config setting of key to be newval
+        @param key The key to set.
+        @param newval The value to set.
+
+        Once any key/value pair is changed via the set method, that
+        key/value pair will remain set with that value until change
+        via the update or set method or program termination.
+        """
         return self.__setitem__(key, newval)
 
     def update(self, new_conf):
         """
+        @brief Updates new_conf into the config.
+        @param new_conf a dict, filename, or file-like object to
+        update into the current config state.
+
         Load an XML file and apply its map as overrides or additions
         to the existing config. Update can be a file or a dict.
 
         Once any key/value pair is changed via the update method,
         that key/value pair will remain set with that value until
         change via the update or set method
-
-        @param new_conf a dict, filename, or file-like object to
-        update into the current config state.
         """
         if isinstance(new_conf, dict):
             overrides = new_conf
@@ -171,41 +204,16 @@ class Config(object):
         return copy.deepcopy(self._combined_dict)
 
 def load(config_xml_file):
-    """\
-    @brief Load a config file from file
-
-    @param config_xml_file
+    """
+    @brief Load module config from a file.
+    @param config_xml_file The name of the file to load.
     """
     global _g_config
     _g_config = Config(config_xml_file)
 
-def dump(indra_xml_file, indra_cfg = None, update_in_mem=False):
-    '''
-    Dump config contents into a file
-    Kindof reverse of load.
-    Optionally takes a new config to dump.
-    Does NOT update global config unless requested.
-    '''
-    global _g_config
-    if not indra_cfg:
-        if _g_config is None:
-            return
-        indra_cfg = _g_config.as_dict()
-    if not indra_cfg:
-        return
-
-    config_file = open(indra_xml_file, 'w')
-    _config_xml = llsd.format_xml(indra_cfg)
-    config_file.write(_config_xml)
-    config_file.close()
-
-    if update_in_mem:
-        update(indra_cfg)
-
 def update(new_conf):
-    """\
+    """
     @brief Updates new_conf into the module config.
-
     @param new_conf dict configuration to update into the current config.
     """
     global _g_config
@@ -214,9 +222,8 @@ def update(new_conf):
     return _g_config.update(new_conf)
 
 def get(key, default = None):
-    """\
-    @brief Get the value for key.
-
+    """
+    @brief Get the value for key from the module config.
     @param key The key of the config value to get
     @param default What to return if key is not found.
     """
@@ -226,8 +233,10 @@ def get(key, default = None):
     return _g_config.get(key, default)
 
 def set(key, newval):
-    """\
-    @brief Sets the value of the config setting of key to be newval
+    """
+    @brief Sets the value of the module config setting of key to be newval
+    @param key The key to set.
+    @param newval The new value for key.
 
     Once any key/value pair is changed via the set method,
     that key/value pair will remain set with that value until
