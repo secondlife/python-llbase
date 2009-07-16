@@ -200,7 +200,7 @@ class Config(object):
         self._combine_dictionaries()
 
     def as_dict(self):
-        "Returns immutable copy of the aConfig as a dictionary"
+        "Returns immutable copy of the combined config as a dictionary."
         return copy.deepcopy(self._combined_dict)
 
 def load(config_xml_file):
