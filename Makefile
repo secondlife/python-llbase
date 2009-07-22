@@ -10,8 +10,8 @@ all:
 	@echo "make test - Run all tests"
 	@echo "make docs - Generate the documentation"
 	@echo "make install - Install on local system"
-	@echo "make buildrpm - Generate a rpm package"
-	@echo "make builddeb - Generate a deb package"
+	@echo "make rpm - Generate a rpm package"
+	@echo "make deb - Generate a deb package"
 	@echo "make clean - Get rid of scratch and byte files"
 
 source:
@@ -30,10 +30,10 @@ docs:
 install:
 	$(PYTHON) setup.py install --root $(DESTDIR) $(COMPILE)
 
-buildrpm:
+rpm:
 	$(PYTHON) setup.py bdist_rpm --post-install=rpm/postinstall --pre-uninstall=rpm/preuninstall
 
-builddeb:
+deb:
 	fakeroot $(CURDIR)/debian/rules binary
 
 clean:
@@ -42,4 +42,4 @@ clean:
 	rm -rf build/ dist/ MANIFEST
 	find . -name '*.pyc' -delete
 
-.PHONY: all, source, test, docs, install, buildrpm, builddeb, clean
+.PHONY: all, source, test, docs, install, rpm, deb, clean
