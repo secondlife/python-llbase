@@ -8,7 +8,7 @@ DESTDIR=/
 all:
 	@echo "make source - Create source package"
 	@echo "make test - Run all tests"
-	@echo "make docs - Generate the documentation"
+	@echo "make doc - Generate the documentation"
 	@echo "make install - Install on local system"
 	@echo "make rpm - Generate a rpm package"
 	@echo "make deb - Generate a deb package"
@@ -20,8 +20,8 @@ source:
 test:
 	$(PYTHON) setup.py test
 
-docs:
-	doxygen doc/Doxyfile
+doc:
+	doxygen docs/Doxyfile
 	mv build/html  ./llbase-doc
 	tar cvzf llbase-doc.tar.gz llbase-doc
 	rm -rf llbase-doc
@@ -42,4 +42,4 @@ clean:
 	rm -rf build/ dist/ MANIFEST
 	find . -name '*.pyc' -delete
 
-.PHONY: all, source, test, docs, install, rpm, deb, clean
+.PHONY: all, source, test, doc, install, rpm, deb, clean
