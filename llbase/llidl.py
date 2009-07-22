@@ -1,35 +1,34 @@
-"""\
+"""
 @file llidl.py
+@package llbase.llidl
 @brief LLIDL parser and value checker.
-
-$LicenseInfo:firstyear=2009&license=mit$
-
-Copyright (c) 2009, Linden Research, Inc.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-$/LicenseInfo$
-
 
 LLIDL is an interface description language for REST like protocols based on
 the LLSD type system.
-    
 """
+
+# $LicenseInfo:firstyear=2009&license=mit$
+#
+# Copyright (c) 2009, Linden Research, Inc.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# $/LicenseInfo$
 
 import datetime
 import re
@@ -41,6 +40,9 @@ import lluuid
 
 class _Result(object):
     """
+    @brief The result of a llsd/llidl spciciation comparison
+
+    @verbatim
     When comparing a particular llsd value to an llidl specification, there
     are several possible outcomes:
         MATCHED: the structure is as expected, the values all the right type
@@ -55,6 +57,7 @@ class _Result(object):
         MIXED: some were defaulted , some were newer
         INCOMPATIBLE: there were values that just didn't match and can't
             be converted        
+    @endverbatim
     """
     def __init__(self, value, name):
         self._value = value
@@ -97,9 +100,10 @@ class MatchError(Exception):
     
     
 class Value(object):
-
-    """A single value specification from a LLIDL suite
+    """
+    @brief A single value specification from a LLIDL suite
     
+    @verbatim
     Methods:
         match(actual)   -- True if the value matches exactly
         valid(actual)   -- True if the value matches, or has additional data
@@ -126,6 +130,7 @@ class Value(object):
         Exactly one of match(), has_additional(), or incompatible() is True
         for any given value.
         valid() is True if match() or has_additional() is True.
+    @endverbatim
     """
     
     def _set_suite(self, suite):
@@ -528,8 +533,10 @@ class _VariantMatcher(Value):
 
 
 class Suite(object):
-    """A full suite of LLIDL resource descriptions
+    """
+    @brief A full suite of LLIDL resource descriptions
     
+    @verbatim
     Methods:
         match_request(api_name, value, raises=None)
         match_response(api_name, value, raises=None)
@@ -538,7 +545,7 @@ class Suite(object):
         
         See Value.match() and Value.valid() for meanings of match and valid
         tests, and the operation of the optional raises keyword argument.
-    
+    @endverbatim
     """
     
     def __init__(self):
@@ -590,12 +597,14 @@ class Suite(object):
 
     
 class ParseError(Exception):
+    """
+    @brief An error encountered when parsing an LLIDL text.
 
-    """An error encountered when parsing an LLIDL text.
-    
+    @verbatim
     Properties:
         line - the line the error occurred on
         char - the character number on the line
+    @endverbatim
     """
     
     def __init__(self, msg, line, char):

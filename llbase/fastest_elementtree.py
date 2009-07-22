@@ -1,49 +1,46 @@
-"""\
+"""
 @file fastest_elementtree.py
+@package llbase.fastest_elementtree
 @brief Concealing some gnarly import logic in here. This should export
 the interface of elementtree.
 
-$LicenseInfo:firstyear=2008&license=mit$
+The parsing exception raised by the underlying library depends on the
+ElementTree implementation we're using, so we provide an alias here.
 
-Copyright (c) 2008-2009, Linden Research, Inc.
+Generally, you can use this module as a drop in replacement for how
+you would use ElementTree or cElementTree.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+<pre>
+from fastest_elementtree import fromstring
+fromstring(...)
+</pre>
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-$/LicenseInfo$
+Use ElementTreeError as the exception type for catching parsing
+errors.
 """
 
-##
-# The parsing exception raised by the underlying library depends
-# on the ElementTree implementation we're using, so we provide an
-# alias here.
+# $LicenseInfo:firstyear=2008&license=mit$
 #
-# Generally, you can use this module as a drop in replacement for how
-# you would use ElementTree or cElementTree.
+# Copyright (c) 2008-2009, Linden Research, Inc.
 #
-# <code>
-# from fastest_elementtree import fromstring
-# fromstring(...)
-# </code>
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# Use ElementTreeError as the exception type for catching parsing
-# errors.
-
-
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# $/LicenseInfo$
 
 ##
 # Using cElementTree might cause some unforeseen problems, so here's a
