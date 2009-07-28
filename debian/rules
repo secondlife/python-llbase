@@ -41,6 +41,14 @@ install-arch: build
 	done
 
 install-indep: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+	for python in $(PYVERS); do \
+            $$python setup.py install \
+		--root=$(CURDIR)/debian/python-llbase --no-compile; \
+	done
 
 # Build architecture-independent files here.
 binary-indep: build install-indep
