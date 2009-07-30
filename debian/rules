@@ -71,6 +71,7 @@ binary-arch: build install-arch
 	dh_testroot
 	#dh_installdocs -a README AUTHORS doc tests
 	dh_installchangelogs -a debian/changelog
+	dh_strip
 	dh_link -a
 	dh_compress -a
 	dh_fixperms -a
