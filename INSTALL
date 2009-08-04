@@ -3,7 +3,7 @@ Linden Lab Base Python Libraries Installation
 Debian
 ======
 
-$ make builddeb
+$ make deb
 $ sudo dpkg -i ../python-llbase_$version_$arch.deb  
 
 
