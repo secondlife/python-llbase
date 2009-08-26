@@ -2,6 +2,12 @@
 @file llsd.py
 @package llbase.llsd
 @brief Types as well as parsing and formatting functions for handling LLSD.
+
+This is the llsd module -- parsers and formatters between the
+supported subset of mime types and python objects. Documentation
+available on the Second Life wiki:
+
+http://wiki.secondlife.com/wiki/LLSD
 """
 
 # $LicenseInfo:firstyear=2006&license=mit$
