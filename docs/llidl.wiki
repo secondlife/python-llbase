@@ -1,0 +1,206 @@
+LLIDL is an interface description language for APIs based on [[LLSD]]. It allows a concise specification of an interface that is easily authored, and both human and machine readable.
+
+LLSD and LLIDL are being formally defined in a series of Internet Drafts, the latest of which is [http://tools.ietf.org/html/draft-hamrick-llsd-00 LLSD internet draft].  LLIDL is somewhat sparesly defined in [http://tools.ietf.org/html/draft-hamrick-llsd-00#section-4 section 4] and [http://tools.ietf.org/html/draft-hamrick-llsd-00#appendix-C appendix C].  See [[LLIDL Documentation]] for the pertinent information from these documents.
+
+There is also a public wiki page on [http://wiki.secondlife.com/wiki/LLSD LLSD], but it is out-of-date with both our implementations, and the proposed specification.
+
+This document is serves both as a more human readable documentation of the spec, and as a place to discuss extensions and modifications.
+
+== Current Form ==
+At its core, LLIDL is a description language for the expected structure of LLSD data. Given an LLIDL value description, an actual LLSD value can be checked if it conforms to the description.
+
+Because of the resilient nature of LLSD, there are two levels of conformance: The more strict "match" test only passes if the data is exactly of the same structure. Individual values within the structure must be either of specified type, or convertible to that type with a valid value. Absent values (which are defaulted in LLSD) are allowed. The looser ''valid'' test, is the same, but passes even if there are additional, unexpected data in the LLSD (such as additional map members.)
+
+'''Note:''' You will find that LLIDL cannot describe every possible LLSD interface you can dream up. This is by design. One of the goals has been to normalize how LLSD is used in APIs across an ever growing set of interfaces. That said, we've found LLIDL to be pretty expressive. If there are real API needs that require more of it -- we'll extend it, but with the understanding that we increase the burden on clients of all APIs to add another idiom to the toolset.
+
+To declare an interface, it picks up a name using the <code>%%</code> prefix at the start of a line. This is followed by a method declaration and a match value description. Adding a <code>;</code> begins a comment until the end of a line. When naming an API, prefer using that same name in other services which are referenced. For example:
+
+<pre>
+%% useful/resource         ; we now have a named API for useful/resource
+<< { uri: useful/service } ; which supports the GET (see below)
+                           ; interface which returns a dict with a
+                           ; uri key to a service value.
+
+%% useful/service          ; we now have a named API useful/service
+-> { name: string }        ; which accepts a POST body of a dict
+<- undef                   ; and responds with anything.
+</pre>
+
+'''Note:''' Dashes and other special characters are not allowed in resourse name definition. The only allowed characters are [a-zA-Z_][a-zA-Z0-9_/]*. So 
+<pre>
+%% some/resource ; Legal
+%% 1awesome/resource ; Illegal
+%% some/awesome-resource ; Illegal
+</pre>
+
+=== Methods ===
+
+; << : <b>GET</b> The value describes the response payload.
+; <> : <b>GET/PUT</b> The value describes the request and response payload.
+; -> <- : <b>POST</b> The value after the <code>-></code> describes the request payload. The value after <code><-</code> describes the response.
+
+=== Simple Values ===
+
+The simple types of LLSD are specified in LLIDL with the following keywords:
+
+* <code>undef</code>
+* <code>string</code>
+* <code>bool</code>
+* <code>int</code>
+* <code>real</code>
+*<code> date</code>
+* <code>uri</code>
+* <code>uuid</code>
+* <code>binary</code>
+
+When matched against an LLSD value, these are matched if the value is of that type, or can be converted to that type. When converting, specific values that cause an illegal conversion and result in the default value are considered non-matches. So the string "2010" matches <code>int</code>, but not <code>date</code>. 
+
+Of note, all data values match <code>undef</code>, and so <code>undef</code> can be used as a wildcard in LLIDL. You can think of it as "This value? It's undefined... ANYTHING can happen!"
+:This pattern worries me because it makes it impossible to say, for example, 'nothing comes back'. [[User:Phoenix|Phoenix]] 10:36, 3 June 2009 (PDT)
+:I guess the problem is that the 'matching' of LLSD has been coded but never explicitly stated. I would argue that nothing matches undef other than undef because <code>isUndefined()</code> is only true for undef. [[User:Phoenix|Phoenix]] 11:26, 8 June 2009 (PDT)
+
+=== Composite Values ===
+The two composite types in LLSD, map and array, are specified in LLIDL in a way that matches most informal specifications engineers use, and that matches how data is specified in many scripting languages (notably JavaScript). 
+
+Note that LLIDL enforces a more strict requirements on map keys: They must start with an alphabetic or underscore, then continue with alphanumerics, underscore or slashes. Note that the hyphen has been disallowed on purpose to eliminate hyphen / underscore confusion.
+ 
+;{ key1<nowiki>:</nowiki> ''value_1'', key2<nowiki>:</nowiki> ''value_2'' }
+:Specifies a map. There can be any one or more comma separated key/value pairs. A trailing comma is allowed and ignored. Keys are not quoted. The values can be any LLIDL specification, including other composites or variants.
+
+;{ <nowiki>$:</nowiki> ''value'' }
+:This specifies a map with arbitrary key names, each of which has the same structure as "value". It is used when we need map between string values and some type.  So, for example: { $: uri } would be a map of strings to uris. Note, that due to the specifics of map keys in LLSD, there are some restrictions on this usage - in particular, there can be no duplicate keys, and some Unicode normalization may take place, notably end of line normalization..
+
+;[ ''value'', ''value'', ''value'' ]
+:This example specifies a fixed-length array of three things where each thing has the same structure. Again, a trailing comma is allowed.  
+
+;[ ''value_1'', ''value_2'' ]
+:This is an example of a fixed-length array where each thing is a distinct structure.
+
+;[ ''value'', ... ]
+:Specifies a thing array of arbitrary length, including zero, each of which conforms to thing.
+
+;[ ''value_1'', ''value_2'', ... ]
+:Specifies an array of values, taken two at a time that match thing_1 and things_2s. The array can be any length, including zero.
+
+=== Variant Values ===
+It is often advantageous to represent several different variants of a message.  LLIDL defines variants with repeated assignments to the same variant name. 
+
+;&name = thing
+:This is how to specify a single variant. You can specify any number of variants.
+
+==== Example ====
+Imagine a simple service which attempts an agent transformation which may fail.
+
+<pre>
+%% agent/transform
+-> undef
+<- &response
+
+&response = {
+  success     : false,
+  description : string,
+  err_num     : int
+}
+
+&response = {
+  success     : true,
+  description : string
+}
+</pre>
+
+== Possible Extensions ==
+=== Any Thing ===
+;<nowiki>{ key: * }</nowiki>
+:Use of this form indicates that key can point to a value of any type.
+
+The type <code>undef</code> can be used for this, though this might be more obvious [[User:ZeroLinden|ZeroLinden]] 08:29, 3 June 2009 (PDT)
+:See complaint above. How do I say the service returns <undef/>? [[User:Phoenix|Phoenix]] 10:49, 3 June 2009 (PDT)
+
+=== Any Simple ===
+;<nowiki>{ key: . }</nowiki>
+:Use of this form indicates the key can point to a simple (non-composite) value.
+
+I don't see the need for this in any API [[User:ZeroLinden|ZeroLinden]] 08:29, 3 June 2009 (PDT)
+:This came up when I saw the keyword 'simple_map' appear in earlier documentation. It looked ugly. One of the proposed resolution protocols matches this: <code>{ properties: { $: . } }</code>[[User:Phoenix|Phoenix]] 10:51, 3 June 2009 (PDT)
+
+=== Acceptable Parameters ===
+;<nowiki>?? { $: . }</nowiki>
+:This is the proposed extension for parameters that can be added to the query part of the URL. It can be used with any of the other forms. The "simple_map" should be just that - a map of predefined keys (no $ here), and they should only map to simple types (no nested maps or arrays). I'm proposing that the query string be constructed as per the HTML 4.01 spec for forms, but with the clarity that the keys are to be expressed as UTF-8, then percent encoded.  We perhaps should also add that the key/value pairs be sorted in Unicode codepoint order by key.
+
+=== Named Values ===
+;<nowiki>{ key: uri%service_name }</nowiki>
+:Using this form, the use of %service_name matches a payload response value. This will allow documentation to specify anchor points into other APIs.
+
+==== Example ====
+This example shows the definition of a service which accepts a POST and generates a pair of urls which are in turn used by the client.
+
+<pre>
+%% billing/payment
+-> undef
+<- { interactive: uri%billing/interactive, immediate: uri%billing/immediate }
+
+%% billing/interactive
+-> { customer_id: uuid,  
+     amount: integer       # in US cents
+    }
+<- { method: string, action: uri }
+
+%% billing/immediate
+-> { customer_id: uuid, 
+     payment_type: string, 
+     amount: integer       # in US cents
+   }
+<- { method: string, action: uri }
+</pre>
+
+Why not just name the members in the initial map with the resource names? The spec for map key names explicitily allows slashes for this purpose. This would match how such URLs are passed back with seed-caps: <code><- { billing/interactive: uri, billing/immediate: uri }</code> [[User:ZeroLinden|ZeroLinden]]
+:Interesting idea. What I like about that is that it is simple. What I don't like is it makes connecting names to services a convention rather than something that can be parsed by a machine and turned into documentation that links discrete services. [[User:Phoenix|Phoenix]] 10:56, 3 June 2009 (PDT)
+
+== Examples ==
+Given the LLIDL file:
+
+<pre>
+%% example/transact
+-> { account: uuid, action: string, amount: int }
+<- { transaction: uuid, accepted: bool }
+
+%% example/enquire
+?? { account: uuid }
+<< { name: string, balance: int, as_of: date }
+
+%% example/description
+?? { account: uuid }
+<> { name: string, description: string }
+</pre>
+
+And given a capability URL that is for the example/transact service, a client could POST to that URL with:
+<pre>
+<llsd><map>
+  <key>account</key><uuid>95202636-eb7a-4916-81e1-ff5ea37161b9</uuid>
+  <key>action</key><string>deposit</string>
+  <key>amount</key><integer>350</integer>
+</map></llsd>
+</pre>
+
+and expect to see something like this in response:
+<pre>
+<llsd><map>
+  <key>transaction</key><uuid>aa42a042-313b-458c-bc23-4176d3067c27</uuid>
+  <key>accepted</key><boolean>true</boolean>
+</map></llsd>
+</pre>
+
+On the other hand, given a capability URL for the example/description service, say <nowiki>http://example.com/services/example-description.php</nowiki>, a client could GET or PUT to a URL constructed like this:
+
+<pre>
+http://example.com/services/example-description.php?account=95202636-eb7a-4916-81e1-ff5ea37161b9
+</pre>
+
+and either send or receive a body like:
+
+<pre>
+<llsd><map>
+  <key>name</key><string>Forestry Preservation Fund</string>
+  <key>description</key><string>a trust fund for the purchase and maintenance of forest land in Second Life</string>
+</map></llsd>
+</pre>
