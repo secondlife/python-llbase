@@ -58,15 +58,13 @@ class TestCommand(Command):
         old_path = sys.path[:]
 
         # extend sys.path
+        sys.path.insert(0, self.test_dir)
         sys.path.insert(0, self.build_lib)
-        #sys.path.insert(0, self.test_dir)
 
         testfiles = [ ]
         for t in glob(join(getcwd(), 'tests', '*.py')):
             if not t.endswith('__init__.py'):
-                testfiles.append('/'.join(
-                    ['tests', splitext(basename(t))[0]])
-                )
+                testfiles.append(splitext(basename(t))[0])
 
         tests = TestLoader().loadTestsFromNames(testfiles)
         t = TextTestRunner(verbosity = 1)
