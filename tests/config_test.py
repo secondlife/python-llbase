@@ -40,8 +40,18 @@ from llbase import llsd
 
 class ConfigInstanceTester(unittest.TestCase):
     def setUp(self):
-        self._file = tempfile.NamedTemporaryFile()
-        self._config = config.Config(self._file.name)
+        # use tempfile.mktemp() since it works across platforms and
+        # python versions for our needs
+        self._filename = tempfile.mktemp()
+        fd = open(self._filename, "w")
+        fd.close()
+        self._config = config.Config(self._filename)
+
+        # this would be preferred though cannot be used until python
+        # 2.6 so that we can use the delete=False parameter on
+        # initialization.
+        #self._file = tempfile.NamedTemporaryFile()
+        #self._config = config.Config(self._file.name)
 
     def tearDown(self):
         pass
