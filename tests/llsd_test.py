@@ -1160,7 +1160,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         return re.sub('\s', '', the_string)
 
     def test_segfault(self):
-        bad_input = '<?xml v{aub\xcb\x8cAion="1.0" ?><llsd><map><key>c</key><string>this is some xml: &lt;xml&gt; &amp;amp;</string><key>b</key><array><integer>1234555</integer><undef /></array><key>d</key><array><string>\xee\x83\x82*\nUvH/?]q\'-iGh8dj%G8=P\x8b\x0f\xcbF\xeestring>\xec\x85Q\x00\rE\xb9Z\x9f\x0f\xa8\xafR\x06\xacM.B\xe8\x8d\xaf\xec\x8d\x98\xe7\xac\x9d\xe8\xb9\x89\xef\x9a\x88\xe2\xbd\xb6text]H5:/JdI[r*-A:</string></array></map></llsd>'
+        bad_input = '<?xml \xcb\x8c ?>'
         llsd.parse(bad_input)
         
     def test_fuzz_parsing(self):
