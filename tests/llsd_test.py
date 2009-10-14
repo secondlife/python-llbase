@@ -1158,6 +1158,10 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 
     def strip(self, the_string):
         return re.sub('\s', '', the_string)
+
+    def test_segfault(self):
+        bad_input = '<?xml v{aub\xcb\x8cAion="1.0" ?><llsd><map><key>c</key><string>this is some xml: &lt;xml&gt; &amp;amp;</string><key>b</key><array><integer>1234555</integer><undef /></array><key>d</key><array><string>\xee\x83\x82*\nUvH/?]q\'-iGh8dj%G8=P\x8b\x0f\xcbF\xeestring>\xec\x85Q\x00\rE\xb9Z\x9f\x0f\xa8\xafR\x06\xacM.B\xe8\x8d\xaf\xec\x8d\x98\xe7\xac\x9d\xe8\xb9\x89\xef\x9a\x88\xe2\xbd\xb6text]H5:/JdI[r*-A:</string></array></map></llsd>'
+        llsd.parse(bad_input)
         
     def test_fuzz_parsing(self):
         fuzz_parsing_base(self,
@@ -1497,7 +1501,7 @@ sample_llsd_object = {'a':{'a1':12, 'a2':123.45}, 'b':[1234555, None],
            
 def fuzz_parsing_base(self, fuzz_method_name, legit_exceptions):
     fuzzer = llsd_fuzz.LLSDFuzzer()
-    print "Seed is", fuzzer.seed
+    print "Seed is", repr(fuzzer.seed)
     fuzz_method = getattr(fuzzer, fuzz_method_name)
     for f in islice(fuzz_method(sample_llsd_object), 10000):
         try:
@@ -1511,7 +1515,7 @@ def fuzz_parsing_base(self, fuzz_method_name, legit_exceptions):
         
 def fuzz_roundtrip_base(self, formatter_method):
     fuzzer = llsd_fuzz.LLSDFuzzer()
-    print "Seed is", fuzzer.seed
+    print "Seed is", repr(fuzzer.seed)
     for f in islice(fuzzer.structure_fuzz(sample_llsd_object), 10000):
         try:
             text = formatter_method(f)
