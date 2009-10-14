@@ -166,7 +166,10 @@ def _map_to_python(node):
     "Convert map node to a python object."
     result = {}
     for index in range(len(node))[::2]:
-        result[node[index].text] = _to_python(node[index+1])
+        if node[index].text is None:
+            result[''] = _to_python(node[index+1])
+        else:
+            result[node[index].text] = _to_python(node[index+1])
     return result
 
 def _array_to_python(node):
@@ -1038,7 +1041,7 @@ def _format_binary_recurse(something):
         return 's' + struct.pack('!i', len(something)) + something
     elif isinstance(something, uri):
         return 'l' + struct.pack('!i', len(something)) + something
-    elif isinstance(something, datetime.datetime):
+    elif isinstance(something, (datetime.datetime, datetime.date)):
         seconds_since_epoch = time.mktime(something.timetuple())
         return 'd' + struct.pack('!d', seconds_since_epoch)
     elif isinstance(something, (list, tuple)):

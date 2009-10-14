@@ -27,12 +27,15 @@ THE SOFTWARE.
 $/LicenseInfo$
 """
 
+from itertools import islice
 from datetime import datetime, tzinfo, timedelta
 import re
 import unittest
 import uuid
+import struct
 
 from llbase import llsd
+from llbase import llsd_fuzz
 
 class Foo(object):
     pass
@@ -241,6 +244,15 @@ class LLSDNotationUnitTest(unittest.TestCase):
         # assert than an exception is raised
         self.assertRaises(TypeError, self.llsd.as_notation, python_native_obj)
         self.assertRaises(llsd.LLSDParseError, self.llsd.parse, '2')
+        
+    def test_fuzz_parsing(self):
+        fuzz_parsing_base(self,
+            'notation_fuzz',
+            (llsd.LLSDParseError, IndexError, ValueError, struct.error))
+    
+    def test_fuzz_roundtrip(self):
+        fuzz_roundtrip_base(self,
+            llsd.format_notation)
 
 
 class LLSDXMLUnitTest(unittest.TestCase):
@@ -535,7 +547,7 @@ class LLSDXMLUnitTest(unittest.TestCase):
 
 
     def strip(self, the_string):
-        return re.sub('\s', '', the_string)
+        return re.sub('\s', '', the_string)        
 
 class LLSDBinaryUnitTest(unittest.TestCase):
     mode = 'static'
@@ -1146,6 +1158,15 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 
     def strip(self, the_string):
         return re.sub('\s', '', the_string)
+        
+    def test_fuzz_parsing(self):
+        fuzz_parsing_base(self,
+            'xml_fuzz',
+            (llsd.LLSDParseError, IndexError, ValueError))
+    
+    def test_fuzz_roundtrip(self):
+        fuzz_roundtrip_base(self,
+            llsd.format_xml)        
 
 class LLSDBinaryUnitTest(unittest.TestCase):
     mode = 'static'
@@ -1445,6 +1466,8 @@ class LLSDBinaryUnitTest(unittest.TestCase):
             self.roundTrip(self.llsd.parse(multi_xml)))
 
 
+    
+
     def dtestBench(self):
         obj = {'a':{'a1':12, 'a2':123.45}, 'b':[1234555, None],
                'c':"this is some xml: <xml> &amp;",
@@ -1458,6 +1481,45 @@ class LLSDBinaryUnitTest(unittest.TestCase):
             x = llsd.format_xml(obj)
         delta = time.clock() - t
         print "Time:", delta
+    
+    def test_fuzz_parsing(self):
+        fuzz_parsing_base(self,
+            'binary_fuzz',
+            (llsd.LLSDParseError, IndexError, ValueError, struct.error))
+    
+    def test_fuzz_roundtrip(self):
+        fuzz_roundtrip_base(self,
+            llsd.format_binary)
+        
+sample_llsd_object = {'a':{'a1':12, 'a2':123.45}, 'b':[1234555, None],
+           'c':"this is some xml: <xml> &amp;",
+           'd':['a','small','little','text']}
+           
+def fuzz_parsing_base(self, fuzz_method_name, legit_exceptions):
+    fuzzer = llsd_fuzz.LLSDFuzzer()
+    print "Seed is", fuzzer.seed
+    fuzz_method = getattr(fuzzer, fuzz_method_name)
+    for f in islice(fuzz_method(sample_llsd_object), 10000):
+        try:
+            parsed = llsd.parse(f)
+        except legit_exceptions:
+            pass  # expected, since many of the inputs will be invalid
+        except Exception, e:
+            print "Raised exception", type(e)
+            print "Fuzzed value was", f
+            raise
+        
+def fuzz_roundtrip_base(self, formatter_method):
+    fuzzer = llsd_fuzz.LLSDFuzzer()
+    print "Seed is", fuzzer.seed
+    for f in islice(fuzzer.structure_fuzz(sample_llsd_object), 10000):
+        try:
+            text = formatter_method(f)
+            parsed = llsd.parse(text)
+            self.assertEquals(parsed, f)
+        except llsd.LLSDParseError:
+            print "Failed to parse", text
+            raise
 
 if __name__ == '__main__':
     unittest.main()
