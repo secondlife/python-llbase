@@ -34,6 +34,7 @@ http://wiki.secondlife.com/wiki/LLSD
 # $/LicenseInfo$
 
 import base64
+import binascii
 import datetime
 import re
 import struct
@@ -145,7 +146,11 @@ def _str_to_python(node):
     return node.text or ''
 
 def _bin_to_python(node):
-    return binary(base64.decodestring(node.text or ''))
+    try:
+        return binary(base64.decodestring(node.text or ''))
+    except binascii.Error, exc:
+        # convert exception class so it's more catchable
+        raise LLSDParseError("Base64 " + str(exc))
 
 def _date_to_python(node):
     "Convert date node to a python object."
@@ -515,7 +520,9 @@ def _hex_as_nybble(hex):
     elif (hex >= 'a') and (hex <='f'):
         return 10 + ord(hex) - ord('a')
     elif (hex >= 'A') and (hex <='F'):
-        return 10 + ord(hex) - ord('A');
+        return 10 + ord(hex) - ord('A')
+    else:
+        raise LLSDParseError('Invalid hex character: %s' % hex)
 
 class LLSDBinaryParser(object):
     """
@@ -638,7 +645,11 @@ class LLSDBinaryParser(object):
 
     def _parse_string(self):
         "Parse a string which has the leadings size indicator"
-        size = struct.unpack("!i", self._buffer[self._index:self._index+4])[0]
+        try:
+            size = struct.unpack("!i", self._buffer[self._index:self._index+4])[0]
+        except struct.error, exc:
+            # convert exception class for client convenience
+            raise LLSDParseError("struct " + str(exc))
         self._index += 4
         rv = self._buffer[self._index:self._index+size]
         self._index += size
@@ -787,7 +798,11 @@ class LLSDNotationParser(object):
             q = self._buffer[i+2]
             e = self._buffer.find(q, i+3)
             try:
-                return base64.decodestring(self._buffer[i+3:e])
+                try:
+                    return base64.decodestring(self._buffer[i+3:e])
+                except binascii.Error, exc:
+                    # convert exception class so it's more catchable
+                    raise LLSDParseError("Base64 " + str(exc))
             finally:
                 self._index = e + 1
         else:
@@ -1121,7 +1136,7 @@ def parse(something, mime_type = None):
         else:
             return parse_notation(something)
     except KeyError, e:
-        raise Exception('LLSD could not be parsed: %s' % (e,))
+        raise LLSDParseError('LLSD could not be parsed: %s' % (e,))
 
 class LLSD(object):
     "Simple wrapper class for a thing."

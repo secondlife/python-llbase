@@ -29,6 +29,7 @@ $/LicenseInfo$
 
 from itertools import islice
 from datetime import datetime, tzinfo, timedelta
+import pprint
 import re
 import unittest
 import uuid
@@ -41,7 +42,66 @@ class Foo(object):
     pass
 
 
-class LLSDNotationUnitTest(unittest.TestCase):
+def tuples2lists(s):
+    if isinstance(s, tuple):
+        s = list(s)
+    if isinstance(s, list):
+        for i,x in enumerate(s):
+            s[i] = tuples2lists(x)
+    if isinstance(s, dict):
+        for k,v in s.iteritems():
+            s[k] = tuples2lists(v)
+    return s
+
+sample_llsd_object = {'a':{'a1':12, 'a2':123.45}, 'b':[1234555, None],
+                      'c':"this is some xml: <xml> &amp;",
+                      'd':['a','small','little','text']}
+
+class TestBase(unittest.TestCase):
+    def assertEqualsPretty(self, a, b):
+        try:
+            self.assertEquals(a,b)
+        except AssertionError:
+            self.fail("\n%s\n !=\n%s" % (pprint.pformat(a), pprint.pformat(b)))
+    
+    def assertEqualsIgnoringTuples(self, a, b):
+        """ Like assertEquals, but ignores tuples converted to lists and vice-versa."""
+        try:
+            self.assertEqualsPretty(a,b)
+        except AssertionError:
+            # try again but after converting tuples to lists
+            a = tuples2lists(a)
+            b = tuples2lists(b)
+            self.assertEqualsPretty(a,b)
+
+    def fuzz_parsing_base(self, fuzz_method_name, legit_exceptions):
+        fuzzer = llsd_fuzz.LLSDFuzzer()
+        print "Seed is", repr(fuzzer.seed)
+        fuzz_method = getattr(fuzzer, fuzz_method_name)
+        for f in islice(fuzz_method(sample_llsd_object), 1000):
+            try:
+                #print "f", repr(f)
+                parsed = llsd.parse(f)
+            except legit_exceptions:
+                pass  # expected, since many of the inputs will be invalid
+            except Exception, e:
+                print "Raised exception", e.__class__
+                print "Fuzzed value was", f
+                raise
+
+    def fuzz_roundtrip_base(self, formatter_method):
+        fuzzer = llsd_fuzz.LLSDFuzzer()
+        print "Seed is", repr(fuzzer.seed)
+        for f in islice(fuzzer.structure_fuzz(sample_llsd_object), 1000):
+            try:
+                text = formatter_method(f)
+                parsed = llsd.parse(text)
+                self.assertEqualsIgnoringTuples(parsed, f)
+            except llsd.LLSDParseError:
+                print "Failed to parse", text
+                raise
+
+class LLSDNotationUnitTest(TestBase):
     mode = 'static'
     def setUp(self):
         self.llsd = llsd.LLSD()
@@ -246,16 +306,14 @@ class LLSDNotationUnitTest(unittest.TestCase):
         self.assertRaises(llsd.LLSDParseError, self.llsd.parse, '2')
         
     def test_fuzz_parsing(self):
-        fuzz_parsing_base(self,
-            'notation_fuzz',
-            (llsd.LLSDParseError, IndexError, ValueError, struct.error))
+        self.fuzz_parsing_base('notation_fuzz',
+            (llsd.LLSDParseError, IndexError, ValueError))
     
     def test_fuzz_roundtrip(self):
-        fuzz_roundtrip_base(self,
-            llsd.format_notation)
+        self.fuzz_roundtrip_base(llsd.format_notation)
 
 
-class LLSDXMLUnitTest(unittest.TestCase):
+class LLSDXMLUnitTest(TestBase):
     mode = 'static'
     def setUp(self):
         self.llsd = llsd.LLSD()
@@ -549,7 +607,7 @@ class LLSDXMLUnitTest(unittest.TestCase):
     def strip(self, the_string):
         return re.sub('\s', '', the_string)        
 
-class LLSDBinaryUnitTest(unittest.TestCase):
+class LLSDBinaryUnitTest(TestBase):
     mode = 'static'
     def setUp(self):
         self.llsd = llsd.LLSD()
@@ -861,7 +919,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         delta = time.clock() - t
         print "Time:", delta
 
-class LLSDPythonXMLUnitTest(unittest.TestCase):
+class LLSDPythonXMLUnitTest(TestBase):
     mode = 'static'
     def setUp(self):
         self.llsd = llsd.LLSD()
@@ -1160,19 +1218,29 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         return re.sub('\s', '', the_string)
 
     def test_segfault(self):
-        bad_input = '<?xml \xcb\x8c ?>'
-        llsd.parse(bad_input)
+        llsd.parse('<?xml \xee\xae\x94 ?>')
+        print "6"
+        llsd.parse('<?xml \xc4\x9d ?>')
+        print "5"
+        llsd.parse('<?xml \xc8\x84 ?>')
+        print "4"
+        llsd.parse('<?xml \xd9\xb5 ?>')
+        print "3"
+        llsd.parse('<?xml \xd9\xaa ?>')
+        print "2"
+        llsd.parse('<?xml \xc9\x88 ?>')
+        print "1"
+        llsd.parse('<?xml \xcb\x8c ?>')
+        print "0"
         
     def test_fuzz_parsing(self):
-        fuzz_parsing_base(self,
-            'xml_fuzz',
+        self.fuzz_parsing_base('xml_fuzz',
             (llsd.LLSDParseError, IndexError, ValueError))
     
     def test_fuzz_roundtrip(self):
-        fuzz_roundtrip_base(self,
-            llsd.format_xml)        
+        self.fuzz_roundtrip_base(llsd.format_xml)        
 
-class LLSDBinaryUnitTest(unittest.TestCase):
+class LLSDBinaryUnitTest(TestBase):
     mode = 'static'
     def setUp(self):
         self.llsd = llsd.LLSD()
@@ -1487,43 +1555,11 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         print "Time:", delta
     
     def test_fuzz_parsing(self):
-        fuzz_parsing_base(self,
-            'binary_fuzz',
-            (llsd.LLSDParseError, IndexError, ValueError, struct.error))
+        self.fuzz_parsing_base('binary_fuzz',
+            (llsd.LLSDParseError, IndexError, ValueError))
     
     def test_fuzz_roundtrip(self):
-        fuzz_roundtrip_base(self,
-            llsd.format_binary)
-        
-sample_llsd_object = {'a':{'a1':12, 'a2':123.45}, 'b':[1234555, None],
-           'c':"this is some xml: <xml> &amp;",
-           'd':['a','small','little','text']}
-           
-def fuzz_parsing_base(self, fuzz_method_name, legit_exceptions):
-    fuzzer = llsd_fuzz.LLSDFuzzer()
-    print "Seed is", repr(fuzzer.seed)
-    fuzz_method = getattr(fuzzer, fuzz_method_name)
-    for f in islice(fuzz_method(sample_llsd_object), 10000):
-        try:
-            parsed = llsd.parse(f)
-        except legit_exceptions:
-            pass  # expected, since many of the inputs will be invalid
-        except Exception, e:
-            print "Raised exception", type(e)
-            print "Fuzzed value was", f
-            raise
-        
-def fuzz_roundtrip_base(self, formatter_method):
-    fuzzer = llsd_fuzz.LLSDFuzzer()
-    print "Seed is", repr(fuzzer.seed)
-    for f in islice(fuzzer.structure_fuzz(sample_llsd_object), 10000):
-        try:
-            text = formatter_method(f)
-            parsed = llsd.parse(text)
-            self.assertEquals(parsed, f)
-        except llsd.LLSDParseError:
-            print "Failed to parse", text
-            raise
+        self.fuzz_roundtrip_base(llsd.format_binary)
 
 if __name__ == '__main__':
     unittest.main()
