@@ -246,6 +246,7 @@ class LLSDXMLFormatter(object):
     def xml_esc(self, v):
         "Escape string or unicode object v for xml output"
         if type(v) is unicode:
+            # TODO: remove invalid xml code points first
             v = v.encode('utf-8')
         return v.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
 
@@ -261,7 +262,7 @@ class LLSDXMLFormatter(object):
     def INTEGER(self, v):
         return self._elt('integer', v)
     def REAL(self, v):
-        return self._elt('real', v)
+        return self._elt('real', repr(v))
     def UUID(self, v):
         if v.int == 0:
             return self._elt('uuid')
@@ -282,7 +283,7 @@ class LLSDXMLFormatter(object):
     def MAP(self, v):
         return self._elt(
             'map',
-            ''.join(["%s%s" % (self._elt('key', key), self._generate(value))
+            ''.join(["%s%s" % (self._elt('key', self.xml_esc(key)), self._generate(value))
              for key, value in v.items()]))
 
     typeof = type
@@ -542,7 +543,10 @@ class LLSDBinaryParser(object):
         self._buffer = buffer
         self._index = 0
         self._keep_binary = not ignore_binary
-        return self._parse()
+        try:
+            return self._parse()
+        except struct.error, exc:
+            raise LLSDParseError(exc)
 
     def _parse(self):
         "The actual parser which is called recursively when necessary."

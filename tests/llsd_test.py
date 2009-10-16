@@ -86,7 +86,7 @@ class TestBase(unittest.TestCase):
                 pass  # expected, since many of the inputs will be invalid
             except Exception, e:
                 print "Raised exception", e.__class__
-                print "Fuzzed value was", f
+                print "Fuzzed value was", repr(f)
                 raise
 
     def fuzz_roundtrip_base(self, formatter_method):
@@ -96,13 +96,13 @@ class TestBase(unittest.TestCase):
             try:
                 try:
                     text = formatter_method(f)
-                except LLSDSerializationError:
+                except llsd.LLSDSerializationError:
                     # sometimes the fuzzer will generate invalid llsd
                     continue
                 parsed = llsd.parse(text)
                 self.assertEqualsIgnoringTuples(parsed, f)
             except llsd.LLSDParseError:
-                print "Failed to parse", text
+                print "Failed to parse", repr(text)
                 raise
 
 class LLSDNotationUnitTest(TestBase):
@@ -466,13 +466,13 @@ class LLSDXMLUnitTest(TestBase):
         pos_real_xml = "\
 <?xml version=\"1.0\" ?>\
 <llsd>\
-<real>2983287453.3</real>\
+<real>2983287453.3000002</real>\
 </llsd>"
 
         neg_real_xml = "\
 <?xml version=\"1.0\" ?>\
 <llsd>\
-<real>-2983287453.3</real>\
+<real>-2983287453.3000002</real>\
 </llsd>"
 
         blank_real_xml = "\
@@ -1076,13 +1076,13 @@ class LLSDPythonXMLUnitTest(TestBase):
         pos_real_xml = "\
 <?xml version=\"1.0\" ?>\
 <llsd>\
-<real>2983287453.3</real>\
+<real>2983287453.3000002</real>\
 </llsd>"
 
         neg_real_xml = "\
 <?xml version=\"1.0\" ?>\
 <llsd>\
-<real>-2983287453.3</real>\
+<real>-2983287453.3000002</real>\
 </llsd>"
 
         blank_real_xml = "\
@@ -1231,7 +1231,6 @@ class LLSDPythonXMLUnitTest(TestBase):
             '<?xml \xc9\x88 ?>',
             '<?xml \xcb\x8c ?>']):
             self.assertRaises(llsd.LLSDParseError, llsd.parse, badstring)
-            print i
 
     def test_fuzz_parsing(self):
         self.fuzz_parsing_base('xml_fuzz',
