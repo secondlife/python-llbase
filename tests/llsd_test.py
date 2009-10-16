@@ -1218,21 +1218,17 @@ class LLSDPythonXMLUnitTest(TestBase):
         return re.sub('\s', '', the_string)
 
     def test_segfault(self):
-        llsd.parse('<?xml \xee\xae\x94 ?>')
-        print "6"
-        llsd.parse('<?xml \xc4\x9d ?>')
-        print "5"
-        llsd.parse('<?xml \xc8\x84 ?>')
-        print "4"
-        llsd.parse('<?xml \xd9\xb5 ?>')
-        print "3"
-        llsd.parse('<?xml \xd9\xaa ?>')
-        print "2"
-        llsd.parse('<?xml \xc9\x88 ?>')
-        print "1"
-        llsd.parse('<?xml \xcb\x8c ?>')
-        print "0"
-        
+        for i, badstring in enumerate([
+            '<?xml \xee\xae\x94 ?>',
+            '<?xml \xc4\x9d ?>',
+            '<?xml \xc8\x84 ?>',
+            '<?xml \xd9\xb5 ?>',
+            '<?xml \xd9\xaa ?>',
+            '<?xml \xc9\x88 ?>',
+            '<?xml \xcb\x8c ?>']):
+            self.assertRaises(llsd.LLSDParseError, llsd.parse, badstring)
+            print i
+
     def test_fuzz_parsing(self):
         self.fuzz_parsing_base('xml_fuzz',
             (llsd.LLSDParseError, IndexError, ValueError))

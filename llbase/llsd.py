@@ -1092,6 +1092,12 @@ def parse_binary(something):
         just_binary = something
     return LLSDBinaryParser().parse(just_binary)
 
+
+declaration_regex = re.compile(r'^\s*(?:<\?[\x09\x0A\x0D\x20-\x7e]+\?>)|(?:<llsd>)')
+def validate_xml_declaration(something):
+    if not declaration_regex.match(something):
+        raise LLSDParseError("Invalid XML Declaration")
+
 def parse_xml(something):
     """
     @brief This is the basic public interface for parsing llsd+xml.
@@ -1099,6 +1105,8 @@ def parse_xml(something):
     @return Returns a python object.
     """
     try:
+        # validate xml declaration manually until http://bugs.python.org/issue7138 is fixed
+        validate_xml_declaration(something)
         return _to_python(fromstring(something)[0])
     except ElementTreeError, err:
         raise LLSDParseError(*err.args)
