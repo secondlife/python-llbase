@@ -1042,9 +1042,15 @@ def _format_binary_recurse(something):
         else:
             return '0'
     elif isinstance(something, (int, long)):
-        return 'i' + struct.pack('!i', something)
+        try:
+            return 'i' + struct.pack('!i', something)
+        except OverflowError, exc:
+            raise LLSDSerializationError(str(exc), something)
     elif isinstance(something, float):
-        return 'r' + struct.pack('!d', something)
+        try:
+            return 'r' + struct.pack('!d', something)
+        except SystemError, exc:
+            raise LLSDSerializationError(str(exc), something)
     elif isinstance(something, uuid.UUID):
         return 'u' + something.bytes
     elif isinstance(something, binary):

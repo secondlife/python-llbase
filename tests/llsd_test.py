@@ -94,7 +94,11 @@ class TestBase(unittest.TestCase):
         print "Seed is", repr(fuzzer.seed)
         for f in islice(fuzzer.structure_fuzz(sample_llsd_object), 1000):
             try:
-                text = formatter_method(f)
+                try:
+                    text = formatter_method(f)
+                except LLSDSerializationError:
+                    # sometimes the fuzzer will generate invalid llsd
+                    continue
                 parsed = llsd.parse(text)
                 self.assertEqualsIgnoringTuples(parsed, f)
             except llsd.LLSDParseError:

@@ -448,7 +448,10 @@ class LLSDFuzzer(object):
     def _serialized_fuzz(self, it, formatter):
         while True:
             struct = it.next()
-            text = formatter(struct)
+            try:
+                text = formatter(struct)
+            except llsd.LLSDSerializationError:
+                continue
             yield text
             dirtied = self._dirty(text)
             for i in xrange(int(round(self.r.expovariate(0.3)))):
