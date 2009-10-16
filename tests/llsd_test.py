@@ -28,7 +28,7 @@ $/LicenseInfo$
 """
 
 from itertools import islice
-from datetime import datetime, tzinfo, timedelta
+from datetime import datetime, tzinfo, timedelta, date
 import pprint
 import re
 import unittest
@@ -89,7 +89,7 @@ class TestBase(unittest.TestCase):
                 print "Fuzzed value was", repr(f)
                 raise
 
-    def fuzz_roundtrip_base(self, formatter_method):
+    def fuzz_roundtrip_base(self, formatter_method, recompare_func=None):
         fuzzer = llsd_fuzz.LLSDFuzzer()
         print "Seed is", repr(fuzzer.seed)
         for f in islice(fuzzer.structure_fuzz(sample_llsd_object), 1000):
@@ -100,7 +100,13 @@ class TestBase(unittest.TestCase):
                     # sometimes the fuzzer will generate invalid llsd
                     continue
                 parsed = llsd.parse(text)
-                self.assertEqualsIgnoringTuples(parsed, f)
+                try:
+                    self.assertEqualsIgnoringTuples(parsed, f)
+                except AssertionError:
+                    if recompare_func:
+                        recompare_func(parsed, f)
+                    else:
+                        raise
             except llsd.LLSDParseError:
                 print "Failed to parse", repr(text)
                 raise
@@ -594,7 +600,7 @@ class LLSDXMLUnitTest(TestBase):
 
         for py, xml in uri_tests.items():
             self.assert_xml_roundtrip(py, xml)
-        self.assertEqual(None, self.llsd.parse(blank_uri_xml))
+        self.assertEqual('', self.llsd.parse(blank_uri_xml))
 
     def testUndefined(self):
         undef_xml = "<?xml version=\"1.0\" ?><llsd><undef /></llsd>"
@@ -1237,7 +1243,41 @@ class LLSDPythonXMLUnitTest(TestBase):
             (llsd.LLSDParseError, IndexError, ValueError))
     
     def test_fuzz_roundtrip(self):
-        self.fuzz_roundtrip_base(llsd.format_xml)        
+        def isnan(x):
+            return x != x
+        def normalize(s):
+            """ Certain transformations of input data are permitted by
+            the spec; this function normalizes a python data structure
+            so it receives these transformations as well.
+            * codepoints disallowed in xml dropped from strings
+            * \r -> \n
+            * \n\n -> \n (not sure about this one)
+            * date objects -> datetime objects (parser only parses datetimes)
+            * nan converted to None (just because nan's are incomparable)
+            """
+            if isinstance(s, (str, unicode)):
+                s = llsd.remove_invalid_xml_codepoints(s)
+                s = s.replace('\r', '\n')
+                s = s.replace('\n\n', '\n')
+                return s
+            if isnan(s):
+                return None
+            if isinstance(s, date):
+                return datetime(s.year, s.month, s.day)
+            if isinstance(s, list):
+                for i,x in enumerate(s):
+                    s[i] = normalize(x)
+            if isinstance(s, dict):
+                new_s = {}
+                for k,v in s.iteritems():
+                    new_s[normalize(k)] = normalize(v)
+                s = new_s
+            return s
+
+        def recompare(a,b):
+            self.assertEqualsPretty(normalize(a),
+                                    normalize(b))
+        self.fuzz_roundtrip_base(llsd.format_xml, recompare)
 
 class LLSDBinaryUnitTest(TestBase):
     mode = 'static'

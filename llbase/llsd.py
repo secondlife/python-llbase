@@ -163,8 +163,6 @@ def _date_to_python(node):
 def _uri_to_python(node):
     "Convert uri node to a python object."
     val = node.text or ''
-    if not val:
-        return None
     return uri(val)
 
 def _map_to_python(node):
@@ -205,8 +203,14 @@ ALL_CHARS = "".join([chr(x) for x in range(256)])
 INVALID_XML_CODEPOINTS = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c'\
                          '\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18'\
                          '\x19\x1a\x1b\x1c\x1d\x1e\x1f'
+INVALID_XML_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f]')
 def remove_invalid_xml_codepoints(s):
-    return s.translate(ALL_CHARS, INVALID_XML_CODEPOINTS)
+    try:
+        return s.translate(ALL_CHARS, INVALID_XML_CODEPOINTS)
+    except TypeError:
+        # we get here if s is a unicode object (should be rare)
+        return INVALID_XML_RE.sub('', s)
+
 
 class LLSDXMLFormatter(object):
     """
@@ -601,7 +605,7 @@ class LLSDBinaryParser(object):
             seconds = struct.unpack("!d", self._buffer[idx:idx+8])[0]
             return datetime.datetime.fromtimestamp(seconds)
         elif cc == 'b':
-            binary = self._parse_string()
+            binary = self._parse_string_raw()
             if self._keep_binary:
                 return binary
             # *NOTE: maybe have a binary placeholder which has the
@@ -656,6 +660,12 @@ class LLSDBinaryParser(object):
         return rv
 
     def _parse_string(self):
+        try:
+            return self._parse_string_raw().decode('utf-8')
+        except UnicodeDecodeError, exc:
+            raise LLSDParseError(exc)
+
+    def _parse_string_raw(self):
         "Parse a string which has the leadings size indicator"
         try:
             size = struct.unpack("!i", self._buffer[self._index:self._index+4])[0]
@@ -716,7 +726,11 @@ class LLSDBinaryParser(object):
                 break
             else:
                 parts.append(cc)
-        return ''.join(parts)
+        try:
+            return ''.join(parts).decode('utf-8')
+        except UnicodeDecodeError, exc:
+            raise LLSDParseError(exc)
+
 
 class LLSDNotationParser(object):
     """
@@ -935,7 +949,10 @@ class LLSDNotationParser(object):
         else:
             raise LLSDParseError("invalid string token at index %d." % self._index)
 
-        return rv
+        try:
+            return rv.decode('utf-8')
+        except UnicodeDecodeError, exc:
+            raise LLSDParseError(exc)
 
 
     def _parse_string_delim(self, delim):
@@ -991,7 +1008,10 @@ class LLSDNotationParser(object):
                 break
             else:
                 parts.append(cc)
-        return ''.join(parts)
+        try:
+            return ''.join(parts).decode('utf-8')
+        except UnicodeDecodeError, exc:
+            raise LLSDParseError(exc)
 
     def _parse_string_raw(self):
         """
@@ -1023,8 +1043,11 @@ class LLSDNotationParser(object):
         self._index += 1
         if cc != delim:
             raise LLSDParseError("invalid string token at index %d." % self._index)
+        try:
+            return rv.decode('utf-8')
+        except UnicodeDecodeError, exc:
+            raise LLSDParseError(exc)
 
-        return rv
         
 def format_binary(something):
     """
