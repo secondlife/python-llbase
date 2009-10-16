@@ -200,6 +200,14 @@ def _to_python(node):
     "Convert node to a python object."
     return NODE_HANDLERS[node.tag](node)
 
+
+ALL_CHARS = "".join([chr(x) for x in range(256)])
+INVALID_XML_CODEPOINTS = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c'\
+                         '\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18'\
+                         '\x19\x1a\x1b\x1c\x1d\x1e\x1f'
+def remove_invalid_xml_codepoints(s):
+    return s.translate(ALL_CHARS, INVALID_XML_CODEPOINTS)
+
 class LLSDXMLFormatter(object):
     """
     @brief Class which implements LLSD XML serialization..
@@ -246,8 +254,8 @@ class LLSDXMLFormatter(object):
     def xml_esc(self, v):
         "Escape string or unicode object v for xml output"
         if type(v) is unicode:
-            # TODO: remove invalid xml code points first
             v = v.encode('utf-8')
+        v = remove_invalid_xml_codepoints(v)
         return v.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
 
     def LLSD(self, v):
