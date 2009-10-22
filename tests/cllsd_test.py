@@ -1,56 +1,49 @@
 #!/usr/bin/env python
-"""\
+"""
 @file cllsd_test.py
 @brief Types as well as parsing and formatting functions for handling LLSD.
-
-$LicenseInfo:firstyear=2008&license=mit$
-
-Copyright (c) 2008-2009, Linden Research, Inc.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-$/LicenseInfo$
 """
 
+# $LicenseInfo:firstyear=2008&license=mit$
+#
+# Copyright (c) 2008-2009, Linden Research, Inc.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+# $/LicenseInfo$
 
 from datetime import datetime
 import os.path
 import sys
 import time
+import unittest
 import uuid
 
 from llbase import llsd
-
-class myint(int):
-    pass
 
 values = (
     '&<>',
     u'\u81acj',
     llsd.uri('http://foo<'),
     uuid.UUID(int=0),
-    llsd.LLSD(['thing']),
-    1,
-    myint(31337),
+    ['thing', 123, 1.34],
     sys.maxint + 10,
     llsd.binary('foo'),
-    [],
-    {},
     {u'f&\u1212': 3},
     3.1,
     True,
@@ -58,35 +51,159 @@ values = (
     datetime.fromtimestamp(time.time()),
     )
 
-def valuator(values):
-    for v in values:
-        yield v
+class CLLSDTest(unittest.TestCase):
+    """
+    This class aggreates all the test cases for the C extension cllsd.
+    The performance comparision between c extension and pure python of
+    each value type is done in separate method.
+    """
+    def runValueTest(self, v, times, debug=False):
+        """
+        Uility method to run performance comparision on passed in value.
+        It will use passed-in value to construct a large llsd object.
+        """
+        # check whether it's windows platform first
+        if sys.platform.lower().startswith('win'):
+            print "C extension is not supported on Windows. Test abort."
+            return
+        
+        # *HACK: in order to import a private library module, we have
+        # to dip into the actual module level and import it
+        # there. Modify and restore
+        old_first = sys.path[0]
+        sys.path[0] = os.path.join(old_first, 'llbase')
+        import _cllsd as cllsd
+        sys.path[0] = old_first
+        
+        if debug:
+            print '%r => %r' % (v, cllsd.llsd_to_xml(v))
 
-def test():
-    # *HACK: in order to import a private library module, we have to dip
-    # into the actual module level and import it there. Modify and restore
-    old_first = sys.path[0]
-    sys.path[0] = os.path.join(old_first, 'llbase')
-    import _cllsd as cllsd
-    sys.path[0] = old_first
+        a = [[{'a': v}]] * times
 
-    longvalues = () # (values, list(values), iter(values), valuator(values))
+        s = time.time()
+        cresult = cllsd.llsd_to_xml(a)
+        chash = hash(cresult)
+        e = time.time()
+        t1 = e - s
+        if debug:
+            print "C running time:", t1
 
-    for v in values + longvalues:
-        print '%r => %r' % (v, cllsd.llsd_to_xml(v))
+        s = time.time()
+        presult = llsd.LLSDXMLFormatter()._format(a)
+        phash = hash(presult)
+        e = time.time()
+        t2 = e - s
+        if debug:
+            print "Pure python running time:", t2
+            print "\ncpresult:",cresult
+            print "presult:",presult
 
-    a = [[{'a':3}]] * 1000000
+        self.assertEquals(a, llsd.parse(cresult))
+        self.assertEquals(a, llsd.parse(presult))
 
-    s = time.time()
-    print hash(cllsd.llsd_to_xml(a))
-    e = time.time()
-    t1 = e - s
-    print t1
+        #self.assertEquals(chash, phash)
+        if debug:
+            print 'Speedup:', t2 / t1
+            
+    def testCLLSDPerformanceString(self):
+        """
+        Test performance for serialization of a large mixed array which
+        is consistent of map which has a string value.
+        """
+        self.runValueTest(values[0], 1000)
+    
+    def testCLLSDPerformanceUnicodeString(self):
+        """
+        Test performance for serialization of a large mixed array which
+        is consistent of map which has a Unicode string value.
+        """
+        self.runValueTest(values[1], 1000)
+    
+    def testCLLSDPerformanceURI(self):
+        """
+        Test performance for serialization of a large mixed array which
+        is consistent of map which has a URI value.
+        """
+        self.runValueTest(values[2], 1000)
 
-    s = time.time()
-    print hash(llsd.LLSDXMLFormatter()._format(a))
-    e = time.time()
-    t2 = e - s
-    print t2
+    def testCLLSDPerformceUUID(self):
+        """
+        Test performance for serialization of a large mixed array which
+        is consistent of map which has a UUID value.
+        """
+        self.runValueTest(values[3], 1000)
+        
+    def testCLLSDPerformanceArray(self):
+        """
+        Test performance for serialization of a large mixed array which
+        is consistent of map which has a Array value.
+        """
+        self.runValueTest(values[4], 1000)
+    
+    def testCLLSDPerformanceInteger(self):
+        """
+        Test performance for serialization of a large mixed array which
+        is consistent of map which has a Integer value.
+        """
+        self.runValueTest(values[5], 1000)
 
-    print 'Speedup:', t2 / t1
+    def testCLLSDPerformanceBinary(self):
+        """
+        Test performance for serialization of a large mixed array which
+        is consistent of map which has a Binary value.
+        """
+        self.runValueTest(values[6], 1000)
+
+    def testCLLSDPerformanceMap(self):
+        """
+        Test performance for serialization of a large mixed array which
+        is consistent of map which has a Map value.
+        """
+        self.runValueTest(values[7], 1000)
+
+    def testCLLSDPerformanceReal(self):
+        """
+        Test performance for serialization of a large mixed array which
+        is consistent of map which has a Real value.
+        """
+        self.runValueTest(values[8], 1000)
+
+    def testCLLSDPerformanceBoolean(self):
+        """
+        Test performance for serialization of a large mixed array which
+        is consistent of map which has a Boolean value.
+        """
+        self.runValueTest(values[9], 1000)
+
+    def testCLLSDPerformanceUndef(self):
+        """
+        Test performance for serialization of a large mixed array which
+        is consistent of map which has a undefined value.
+        """
+        self.runValueTest(values[10], 1000)
+
+    def testCLLSDPerformanceDate(self):
+        """
+        Test performance for serialization of a large mixed array which
+        is consistent of map which has a datetime value.
+        """
+        self.runValueTest(values[11], 1000)
+
+    def testCLLSDPerformanceComposited(self):
+        """
+        Test performance for serialization of a composited llsd object.
+        """
+        composited_object = [{'destination': 'http://secondlife.com'},
+        {'version': 1},
+        {'modification_date': datetime(2006, 2, 1, 14, 29, 53, 460000)},
+        {'first_name': 'Pat', 'last_name': 'Lin', 'granters': [uuid.UUID('a2e76fcd-9360-4f6d-a924-000000000003')],
+        'look_at': [-0.043753, -0.99904199999999999, 0.0],
+        'attachment_data': [{'attachment_point': 2, 'item_id': uuid.UUID('d6852c11-a74e-309a-0462-50533f1ef9b3'),
+        'asset_id': uuid.UUID('c69b29b1-8944-58ae-a7c5-2ca7b23e22fb')},
+        {'attachment_point': 10, 'item_id': uuid.UUID('ff852c22-a74e-309a-0462-50533f1ef900'),
+        'asset_id': uuid.UUID('5868dd20-c25a-47bd-8b4c-dedc99ef9479')}],
+        'session_id': uuid.UUID('2c585cec-038c-40b0-b42e-a25ebab4d132'),
+        'agent_id': uuid.UUID('3c115e51-04f4-523c-9fa6-98aff1034730'),
+        'circuit_code': 1075, 'position': [70.924700000000001, 254.37799999999999, 38.730400000000003]}]
+
+        self.runValueTest(composited_object, 1)
