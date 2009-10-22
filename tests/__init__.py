@@ -1,7 +1,8 @@
-#!/usr/bin/env python
 """
-@file lluuid_test.py
-@brief Test the uuid module
+@package tests
+@brief Base Linden Lab Pythoon modules
+@package tests.__init__
+@brief Initialization file for the tests module.
 """
 
 # $LicenseInfo:firstyear=2009&license=mit$
@@ -26,33 +27,3 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # $/LicenseInfo$
-
-import unittest
-import uuid
-
-from llbase import lluuid
-
-class LLUUIDTester(unittest.TestCase):
-    """
-    Aggreate all tests for lluuid
-    """
-    def testUUIDType(self):
-        """
-        Test whether the generated value is of type uuid.UUID
-
-        Maps to test scenario module:lluuid:row#4
-        """
-        self.assert_(isinstance(lluuid.generate(), uuid.UUID))
-
-    def testNotEqual(self):
-        """
-        Test whether two generated UUID is different.
-
-        Maps to test scenario module:lluuid:row#5
-        """
-        one = lluuid.generate()
-        two = lluuid.generate()
-        self.assertNotEqual(one, two)
-
-if __name__ == '__main__':
-    unittest.main()

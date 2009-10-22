@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<llsd>
+	<map>
+				<key>region_id</key>
+				<uuid>67153d5b-3659-afb4-8510-adda2c034649</uuid>
+				<key>scale</key>
+				<string>updateValue</string>
+				<key>id</key>
+				<integer>888</integer>
+	</map>
+</llsd>
