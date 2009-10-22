@@ -274,7 +274,8 @@ class LLSDXMLFormatter(object):
     def MAP(self, v):
         return self._elt(
             'map',
-            ''.join(["%s%s" % (self._elt('key', key), self._generate(value))
+            ''.join(["%s%s" % (self._elt('key', self.xml_esc(key)),
+                               self._generate(value))
              for key, value in v.items()]))
 
     typeof = type
@@ -539,7 +540,10 @@ class LLSDBinaryParser(object):
         cc = self._buffer[self._index]
         self._index += 1
         if cc == '{':
-            return self._parse_map()
+            try:
+                return self._parse_map()
+            except IndexError:
+                raise LLSDParseError("Found unterminated map ")
         elif cc == '[':
             return self._parse_array()
         elif cc == '!':
@@ -807,22 +811,23 @@ class LLSDNotationParser(object):
                     key = self._parse_string(cc)
                     found_key = True
                 elif cc.isspace() or cc == ',':
-                    cc = self._buffer[self._index]
-                    self._index += 1
+                    pass
                 else:
                     raise LLSDParseError("invalid map key at byte %d." % (
                                         self._index - 1,))
-            elif cc.isspace() or cc == ':':
-                cc = self._buffer[self._index]
-                self._index += 1
-                continue
-            else:
-                self._index += 1
+            elif cc.isspace():
+                pass
+            elif  cc == ':':
                 value = self._parse()
                 rv[key] = value
                 found_key = False
-                cc = self._buffer[self._index]
-                self._index += 1
+            else:
+                raise LLSDParseError(
+                    "missing separator around byte %d." % (self._index - 1,))
+            cc = self._buffer[self._index]
+            self._index += 1
+
+                
 
         return rv
 
