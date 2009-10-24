@@ -1210,7 +1210,7 @@ class LLSDPythonXMLUnitTest(TestBase):
 
         for py, xml in uri_tests.items():
             self.assert_xml_roundtrip(py, xml)
-        self.assertEqual(None, self.llsd.parse(blank_uri_xml))
+        self.assertEqual('', self.llsd.parse(blank_uri_xml))
 
     def testUndefined(self):
         undef_xml = "<?xml version=\"1.0\" ?><llsd><undef /></llsd>"
@@ -1241,7 +1241,8 @@ class LLSDPythonXMLUnitTest(TestBase):
     def test_fuzz_parsing(self):
         self.fuzz_parsing_base('xml_fuzz',
             (llsd.LLSDParseError, IndexError, ValueError))
-    
+
+    newline_re = re.compile(r'[\r\n]+')
     def test_fuzz_roundtrip(self):
         def isnan(x):
             return x != x
@@ -1249,29 +1250,29 @@ class LLSDPythonXMLUnitTest(TestBase):
             """ Certain transformations of input data are permitted by
             the spec; this function normalizes a python data structure
             so it receives these transformations as well.
-            * codepoints disallowed in xml dropped from strings
-            * \r -> \n
-            * \n\n -> \n (not sure about this one)
-            * date objects -> datetime objects (parser only parses datetimes)
+            * codepoints disallowed in xml dropped from strings and unicode objects
+            * any sequence of \n and \r compressed into a single \n
+            * date objects -> datetime objects (parser only produces datetimes)
             * nan converted to None (just because nan's are incomparable)
             """
             if isinstance(s, (str, unicode)):
-                s = llsd.remove_invalid_xml_codepoints(s)
+                s = llsd.remove_invalid_xml_bytes(s)
+                s = self.newline_re.sub('\n', s)
                 s = s.replace('\r', '\n')
                 s = s.replace('\n\n', '\n')
+                if isinstance(s, unicode):
+                    s = s.replace(u'\uffff', '')
+                    s = s.replace(u'\ufffe', '')
                 return s
             if isnan(s):
                 return None
             if isinstance(s, date):
                 return datetime(s.year, s.month, s.day)
             if isinstance(s, list):
-                for i,x in enumerate(s):
-                    s[i] = normalize(x)
+                s = [normalize(x) for x in s]
             if isinstance(s, dict):
-                new_s = {}
-                for k,v in s.iteritems():
-                    new_s[normalize(k)] = normalize(v)
-                s = new_s
+                s = dict([(normalize(k), normalize(v))
+                          for k,v in s.iteritems()])
             return s
 
         def recompare(a,b):
@@ -1538,7 +1539,7 @@ class LLSDBinaryUnitTest(TestBase):
             'http://sim956.agni.lindenlab.com:12035/runtime/agents',
             self.roundTrip(self.llsd.parse(valid_uri_xml)))
         self.assertEqual(
-            None,
+            '',
             self.roundTrip(self.llsd.parse(blank_uri_xml)))
 
     def testUndefined(self):

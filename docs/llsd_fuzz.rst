@@ -26,6 +26,7 @@ LLSDFuzzer objects are completely deterministic, so it is possible to reproduce 
 
     sample_obj = {'key':'value'}
     fuzzer = llsd_fuzz.LLSDFuzzer()
+	print "Seed is", repr(fuzzer.seed)
     for f in islice(fuzzer.xml_fuzz(obj), 1000):
         try:
             result = function_under_test(f)
@@ -34,7 +35,6 @@ LLSDFuzzer objects are completely deterministic, so it is possible to reproduce 
             pass  # expected, the function documents that it throws this exception
         except Exception, e:
             # unexexpected, we shouldn't have gotten here
-            print "Seed was", fuzzer.seed
             print "Fuzzed value that raised the exception was", f
             raise
                 

@@ -200,15 +200,19 @@ def _to_python(node):
 
 
 ALL_CHARS = "".join([chr(x) for x in range(256)])
-INVALID_XML_CODEPOINTS = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c'\
-                         '\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18'\
-                         '\x19\x1a\x1b\x1c\x1d\x1e\x1f'
+INVALID_XML_BYTES = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c'\
+                    '\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18'\
+                    '\x19\x1a\x1b\x1c\x1d\x1e\x1f'
 INVALID_XML_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f]')
-def remove_invalid_xml_codepoints(s):
+def remove_invalid_xml_bytes(s):
     try:
-        return s.translate(ALL_CHARS, INVALID_XML_CODEPOINTS)
+        # Dropping chars that cannot be parsed later on.  The
+        # translate() function was benchmarked to be the fastest way
+        # to do this.
+        return s.translate(ALL_CHARS, INVALID_XML_BYTES)
     except TypeError:
-        # we get here if s is a unicode object (should be rare)
+        # we get here if s is a unicode object (should be limited to
+        # unit tests)
         return INVALID_XML_RE.sub('', s)
 
 
@@ -258,8 +262,12 @@ class LLSDXMLFormatter(object):
     def xml_esc(self, v):
         "Escape string or unicode object v for xml output"
         if type(v) is unicode:
+            # we need to drop these invalid characters because they
+            # cannot be parsed (and encode() doesn't drop them for us)
+            v = v.replace(u'\uffff', '')
+            v = v.replace(u'\ufffe', '')
             v = v.encode('utf-8')
-        v = remove_invalid_xml_codepoints(v)
+        v = remove_invalid_xml_bytes(v)
         return v.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
 
     def LLSD(self, v):
