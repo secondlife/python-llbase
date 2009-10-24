@@ -957,11 +957,7 @@ class LLSDNotationParser(object):
         else:
             raise LLSDParseError("invalid string token at index %d." % self._index)
 
-        try:
-            return rv.decode('utf-8')
-        except UnicodeDecodeError, exc:
-            raise LLSDParseError(exc)
-
+        return rv
 
     def _parse_string_delim(self, delim):
         """

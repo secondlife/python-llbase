@@ -168,9 +168,9 @@ class LLSDNotationUnitTest(TestBase):
                        ("have a 'nice' day","'have a \\'nice\\' day'"),
                        ("have a 'nice' day",'"have a \'nice\' day"'),
                        ("have a 'nice' day",'s(17)"have a \'nice\' day"'),
-                       ("Kanji: '\xe5\xb0\x8f\xe5\xbf\x83\xe8\x80\x85'", 
+                       (u"Kanji: '\u5c0f\u5fc3\u8005'",
                        "'Kanji: \\'\xe5\xb0\x8f\xe5\xbf\x83\xe8\x80\x85\\''"),
-                       ("Kanji: '\xe5\xb0\x8f\xe5\xbf\x83\xe8\x80\x85'", 
+                       (u"Kanji: '\u5c0f\u5fc3\u8005'",
                        "\"Kanji: '\\xe5\\xb0\\x8f\\xe5\\xbf\\x83\\xe8\\x80\\x85'\"")
                  ]
         for py, notation in sample_data:
