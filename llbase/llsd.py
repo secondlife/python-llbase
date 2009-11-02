@@ -71,7 +71,7 @@ class uri(str):
     pass
 
 _int_regex = re.compile(r"[-+]?\d+")
-_real_regex = re.compile(r"[-+]?(\d+(\.\d*)?|\d*\.\d+)([eE][-+]?\d+)?")
+_real_regex = re.compile(r"[-+]?(?:(\d+(\.\d*)?|\d*\.\d+)([eE][-+]?\d+)?)|[-+]?inf|[-+]?nan")
 _alpha_regex = re.compile(r"[a-zA-Z]+")
 _date_regex = re.compile(r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T"
                         r"(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})"
@@ -481,7 +481,7 @@ class LLSDNotationFormatter(object):
     def INTEGER(self, v):
         return "i%s" % v
     def REAL(self, v):
-        return "r%s" % v
+        return "r%r" % v
     def UUID(self, v):
         return "u%s" % v
     def BINARY(self, v):
@@ -813,8 +813,6 @@ class LLSDNotationParser(object):
             delim = self._buffer[self._index]
             self._index += 1
             val = uri(self._parse_string(delim))
-            if len(val) == 0:
-                return None
             return val
         elif cc == ('d'):
             # 'd' = date in seconds since epoch

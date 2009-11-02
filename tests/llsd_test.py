@@ -41,17 +41,11 @@ from llbase import llsd_fuzz
 class Foo(object):
     pass
 
-
-def tuples2lists(s):
-    if isinstance(s, tuple):
-        s = list(s)
-    if isinstance(s, list):
-        for i,x in enumerate(s):
-            s[i] = tuples2lists(x)
-    if isinstance(s, dict):
-        for k,v in s.iteritems():
-            s[k] = tuples2lists(v)
-    return s
+try:
+    from math import isnan
+except ImportError:
+    def isnan(x):
+        return x != x
 
 sample_llsd_object = {'a':{'a1':12, 'a2':123.45}, 'b':[1234555, None],
                       'c':"this is some xml: <xml> &amp;",
@@ -64,16 +58,6 @@ class TestBase(unittest.TestCase):
         except AssertionError:
             self.fail("\n%s\n !=\n%s" % (pprint.pformat(a), pprint.pformat(b)))
     
-    def assertEqualsIgnoringTuples(self, a, b):
-        """ Like assertEquals, but ignores tuples converted to lists and vice-versa."""
-        try:
-            self.assertEqualsPretty(a,b)
-        except AssertionError:
-            # try again but after converting tuples to lists
-            a = tuples2lists(a)
-            b = tuples2lists(b)
-            self.assertEqualsPretty(a,b)
-
     def fuzz_parsing_base(self, fuzz_method_name, legit_exceptions):
         fuzzer = llsd_fuzz.LLSDFuzzer()
         print "Seed is", repr(fuzzer.seed)
@@ -89,7 +73,7 @@ class TestBase(unittest.TestCase):
                 print "Fuzzed value was", repr(f)
                 raise
 
-    def fuzz_roundtrip_base(self, formatter_method, recompare_func=None):
+    def fuzz_roundtrip_base(self, formatter_method, normalize=None):
         fuzzer = llsd_fuzz.LLSDFuzzer()
         print "Seed is", repr(fuzzer.seed)
         for f in islice(fuzzer.structure_fuzz(sample_llsd_object), 1000):
@@ -101,10 +85,10 @@ class TestBase(unittest.TestCase):
                     continue
                 parsed = llsd.parse(text)
                 try:
-                    self.assertEqualsIgnoringTuples(parsed, f)
+                    self.assertEqualsPretty(parsed, f)
                 except AssertionError:
-                    if recompare_func:
-                        recompare_func(parsed, f)
+                    if normalize:
+                        self.assertEqualsPretty(normalize(parsed), normalize(f))
                     else:
                         raise
             except llsd.LLSDParseError:
@@ -195,8 +179,8 @@ class LLSDNotationUnitTest(TestBase):
         self.assertEqual(0, self.llsd.parse(blank_int_notation))
 
     def testReal(self):
-        pos_real_notation = "r2983287453.3"
-        neg_real_notation = "r-2983287453.3"
+        pos_real_notation = "r2983287453.3000002"
+        neg_real_notation = "r-2983287453.3000002"
         blank_real_notation = "r0"
 
         python_pos_real = 2983287453.3
@@ -301,7 +285,7 @@ class LLSDNotationUnitTest(TestBase):
             if notation[1] != '"':
                 is_alternate_notation = True
             self.assert_notation_roundtrip(py, notation, is_alternate_notation)
-        self.assertEqual(None, self.llsd.parse(blank_uri_notation))
+        self.assertEqual('', self.llsd.parse(blank_uri_notation))
 
     def testUndefined(self):
         undef_notation = "!"
@@ -320,7 +304,32 @@ class LLSDNotationUnitTest(TestBase):
             (llsd.LLSDParseError, IndexError, ValueError))
     
     def test_fuzz_roundtrip(self):
-        self.fuzz_roundtrip_base(llsd.format_notation)
+        def normalize(s):
+            """ Certain transformations of input data are permitted by
+            the spec; this function normalizes a python data structure
+            so it receives these transformations as well.
+            * date objects -> datetime objects (parser only produces datetimes)
+            * nan converted to None (just because nan's are incomparable)
+            """
+            if isinstance(s, (str, unicode)):
+                #s = llsd.remove_invalid_xml_bytes(s)
+                #s = self.newline_re.sub('\n', s)
+                #if isinstance(s, unicode):
+                #    s = s.replace(u'\uffff', '')
+                #    s = s.replace(u'\ufffe', '')
+                return s
+            if isnan(s):
+                return None
+            if isinstance(s, date):
+                return datetime(s.year, s.month, s.day)
+            if isinstance(s, list):
+                s = [normalize(x) for x in s]
+            if isinstance(s, dict):
+                s = dict([(normalize(k), normalize(v))
+                          for k,v in s.iteritems()])
+            return s
+
+        self.fuzz_roundtrip_base(llsd.format_notation, normalize)
 
 
 class LLSDXMLUnitTest(TestBase):
@@ -1244,8 +1253,6 @@ class LLSDPythonXMLUnitTest(TestBase):
 
     newline_re = re.compile(r'[\r\n]+')
     def test_fuzz_roundtrip(self):
-        def isnan(x):
-            return x != x
         def normalize(s):
             """ Certain transformations of input data are permitted by
             the spec; this function normalizes a python data structure
@@ -1275,10 +1282,7 @@ class LLSDPythonXMLUnitTest(TestBase):
                           for k,v in s.iteritems()])
             return s
 
-        def recompare(a,b):
-            self.assertEqualsPretty(normalize(a),
-                                    normalize(b))
-        self.fuzz_roundtrip_base(llsd.format_xml, recompare)
+        self.fuzz_roundtrip_base(llsd.format_xml, normalize)
 
 class LLSDBinaryUnitTest(TestBase):
     mode = 'static'
@@ -1599,7 +1603,34 @@ class LLSDBinaryUnitTest(TestBase):
             (llsd.LLSDParseError, IndexError, ValueError))
     
     def test_fuzz_roundtrip(self):
-        self.fuzz_roundtrip_base(llsd.format_binary)
+        def normalize(s):
+            """ Certain transformations of input data are permitted by
+            the spec; this function normalizes a python data structure
+            so it receives these transformations as well.
+            * date objects -> datetime objects (parser only produces datetimes)
+            * fractional seconds dropped from datetime objects
+            * integral values larger than a signed 32-bit int become wrapped
+            * integral values larger than an unsigned 32-bit int become 0
+            * nan converted to None (just because nan's are incomparable)
+            """
+            if isnan(s):
+                return None
+            if isinstance(s, (int, long)):
+                if (s > (2<<30) - 1 or
+                    s < -(2<<30)):
+                    return struct.unpack('!i', struct.pack('!i', s))[0]
+            if isinstance(s, date):
+                return datetime(s.year, s.month, s.day)
+            if isinstance(s, datetime):
+                return datetime(s.year, s.month, s.day, s.hour, s.minute, s.second)
+            if isinstance(s, (list, tuple)):
+                s = [normalize(x) for x in s]
+            if isinstance(s, dict):
+                s = dict([(normalize(k), normalize(v))
+                          for k,v in s.iteritems()])
+            return s
+
+        self.fuzz_roundtrip_base(llsd.format_binary, normalize)
 
 if __name__ == '__main__':
     unittest.main()
