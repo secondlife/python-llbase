@@ -11,7 +11,7 @@ Package: python-llbase
 Architecture: any
 Section: python
 Priority: optional
-Depends: ${python:Depends}, ${shlibs:Depends}, python-elementtree,
+Depends: ${python:Depends}, ${shlibs:Depends}, python-elementtree, python-uuid
 Recommends: python-celementtree
 Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
