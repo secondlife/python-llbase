@@ -339,20 +339,12 @@ class LLIDLSelectorTests(unittest.TestCase):
         self.assert_(v.incompatible(False))
         self.assert_(v.incompatible(0))
         self.assert_(v.incompatible(3))
-
-        # WTF? Phoenix 2009-10-20
-        self.assert_(v.match(16))
+        self.assert_(v.match(1983))
         self.assert_(v.incompatible(0.0))
-
-        # WTF? Phoenix 2009-10-20
-        self.assert_(v.match(16.0))
-
-        # WTF? Phoenix 2009-10-20
-        self.assert_(v.match(16.2))
+        self.assert_(v.match(1983.0))
+        self.assert_(v.match(1983.2))
         self.assert_(v.incompatible(""))
-
-        # WTF? Phoenix 2009-10-20
-        self.assert_(v.match("16"))
+        self.assert_(v.match("1983"))
         self.assert_(v.incompatible(_dateToday()))
         self.assert_(v.incompatible(_uuid()))
         self.assert_(v.incompatible(_uri()))
@@ -392,9 +384,8 @@ class LLIDLSelectorTests(unittest.TestCase):
         self.assert_(v.incompatible(0.0))
         self.assert_(v.incompatible(16.0))
         self.assert_(v.incompatible(""))
-
-        # WTF? Phoenix 2009-10-20
-        self.assert_(v.match("bob"))
+        self.assert_(v.match("secondLife"))
+        self.assert_(v.incompatible("1983"))
         self.assert_(v.incompatible(_dateToday()))
         self.assert_(v.incompatible(_uuid()))
         self.assert_(v.incompatible(_uri()))
