@@ -135,6 +135,9 @@ class Value(object):
     
     def _set_suite(self, suite):
         pass
+        
+    def _variants_referenced(self):
+        return set() # faster than frozenset, really!
 
     def _compare(self, actual):
         """Compare an LLSD value to the value spec.; return a Result"""
@@ -444,6 +447,12 @@ class _ArrayMatcher(Value):
     def _set_suite(self, suite):
         for v in self._values:
             v._set_suite(suite)
+
+    def _variants_referenced(self):
+        s = set()
+        for v in self._values:
+            s |= v._variants_referenced()
+        return s
             
     def _compare(self, actual):
         if actual is None:
@@ -477,6 +486,13 @@ class _MapMatcher(Value):
         for v in self._members.itervalues():
             v._set_suite(suite)
 
+    def _variants_referenced(self):
+        s = set()
+        for v in self._members.itervalues():
+            s |= v._variants_referenced()
+        return s
+            
+
     def _compare(self, actual):
         if actual is None:
             actual = {}
@@ -502,6 +518,9 @@ class _DictMatcher(Value):
     
     def _set_suite(self, suite):
         self._value._set_suite(suite)
+    
+    def _variants_referenced(self):
+        return self._value._variants_referenced()
         
     def _compare(self, actual):
         if actual is None:
@@ -522,6 +541,9 @@ class _VariantMatcher(Value):
         
     def _set_suite(self, suite):
         self._suite = suite
+    
+    def _variants_referenced(self):
+        return set([self._name])
     
     def _compare(self, actual):
         if self._suite is None:
@@ -580,7 +602,15 @@ class Suite(object):
     
     def _get_variant_options(self, name):
         return self._variants.get(name, [])
-        
+    
+    def _missing_variants(self):
+        refs = set()
+        for v in self._requests.itervalues():
+            refs |= v._variants_referenced()
+        for w in self._responses.itervalues():
+            refs |= w._variants_referenced()
+        return refs - set(self._variants.iterkeys())
+            
     def match_request(self, name, value, raises=None):
         """Compare an LLSD value to a resource's request description"""
         return self._get_request(name).match(value, raises=raises)
@@ -846,6 +876,9 @@ class _Parser(object):
                 self._parse_rest_of_variant(suite)
             else:
                 break
+        missing = suite._missing_variants()
+        if missing:
+            self.error('missing definitions of variants: ' + ', '.join(missing))
         return suite
 
              

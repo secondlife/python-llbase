@@ -1218,7 +1218,7 @@ foo/bar
 -> { name : string }
 <- { id : uuid, data : { recordName : string, res : &resource } }
 """
-        self.checkBadParseSuite(s, '', 4, 52)
+        self.checkBadParseSuite(s, 'missing', 5, 1)
 
 
 class LLIDLValidTests(unittest.TestCase):
