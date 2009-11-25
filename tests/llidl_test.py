@@ -979,8 +979,7 @@ class LLIDLParseSuiteTests(unittest.TestCase):
         """
         s = """
             %% secondlife/updateAllRecords
-            > { day : binary }
-            < undef
+            >> { day : binary }
             """
         self.assert_(llidl.parse_suite(s) != None)
 

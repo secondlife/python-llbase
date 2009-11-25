@@ -690,6 +690,7 @@ class _Parser(object):
             'true':     _TrueMatcher(),
             'false':    _FalseMatcher()
         }
+    _undefMatcher = _typemap['undef']
 
     def _parse_rest_of_array(self):
         self.parse_s()
@@ -772,18 +773,53 @@ class _Parser(object):
             
         return None
 
-    def _parse_rest_of_resource(self, suite):
-        self.parse_s()
-        name = self.required(self.parseName(), 'expected resource name')
-        self.parse_s()
-        self.required(self.parse_literal('->'), 'expected request arrow')
+    def _parse_rest_of_post_resource(self):
         self.parse_s()
         req = self.required(self.parse_value(), 'expected request value')
         self.parse_s()
         self.required(self.parse_literal('<-'), 'expected result arrow')
         self.parse_s()
         res = self.required(self.parse_value(), 'expected result value')
+        return (req, res)
+
+    def _parse_rest_of_body_resource(self):
+        self.parse_s()
+        return self.required(self.parse_value(), 'expected body value')
+
+    def _parse_rest_of_get_resource(self):
+        body = self._parse_rest_of_body_resource()
+        return (self._undefMatcher, body)
+
+    def _parse_rest_of_put_resource(self):
+        body = self._parse_rest_of_body_resource()
+        return (body, self._undefMatcher)
+
+    def _parse_rest_of_getput_resource(self):
+        body = self._parse_rest_of_body_resource()
+        return (body, body)
+
+    def _parse_rest_of_getputdel_resource(self):
+        body = self._parse_rest_of_body_resource()
+        return (body, body)
+
+    def _parse_rest_of_resource(self, suite):
+        self.parse_s()
+        name = self.required(self.parseName(), 'expected resource name')
+        self.parse_s()
+        if self.parse_literal('->'):
+            (req, res) = self._parse_rest_of_post_resource()
+        elif self.parse_literal('<<'):
+            (req, res) = self._parse_rest_of_get_resource()
+        elif self.parse_literal('>>'):
+            (req, res) = self._parse_rest_of_put_resource()
+        elif self.parse_literal('<>'):
+            (req, res) = self._parse_rest_of_getput_resource()
+        elif self.parse_literal('<x>'):
+            (req, res) = self._parse_rest_of_getputdel_resource()
+        else:
+            self.error('unknown resource type, expected ->, <<, >>, <> or <*>')
         suite._add_resource(name, req, res)
+        
 
     def _parse_rest_of_variant(self, suite):
         name = self.required(self.parseName(), 'expected variant name')
