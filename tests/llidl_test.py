@@ -1203,7 +1203,7 @@ foo/bar
 -> { name : string }
 <- { id : uuid, data : { recordName : string, stream : binary } }
 """
-        self.checkBadParseSuite(s, '', 9, 1)
+        self.checkBadParseSuite(s, '', 10, 11)
 
     def testParseSuiteFailureMissVariantDefinitions(self):
         """

@@ -559,6 +559,9 @@ class Suite(object):
         self._requests[name] = request
         self._responses[name] = response
     
+    def _has_resource(self, name):
+        return name in self._requests
+        
     def _get_request(self, name):
         try:
             return self._requests[name]
@@ -730,6 +733,8 @@ class _Parser(object):
             k = self.parseName()
             if not k:
                 break
+            if k in members:
+                self.error('duplicate key in map')
             self.parse_s()
             self.required(self.parse_literal(':'), 'expected colon')
             self.parse_s()
@@ -805,6 +810,8 @@ class _Parser(object):
     def _parse_rest_of_resource(self, suite):
         self.parse_s()
         name = self.required(self.parseName(), 'expected resource name')
+        if suite._has_resource(name):
+            self.error('duplicate resource name')
         self.parse_s()
         if self.parse_literal('->'):
             (req, res) = self._parse_rest_of_post_resource()
