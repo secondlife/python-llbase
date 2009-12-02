@@ -710,10 +710,15 @@ class _Parser(object):
     def parseNumber(self):
         return self.parse_re(self._number_re)
     
-    _name_re = re.compile(r'[a-zA-Z_][a-zA-Z0-9_/]*')
+    _name_re = re.compile(r'[a-zA-Z_](?:[a-zA-Z0-9_/]|-(?!>))*')
+        # Hyphen's are not legal inside names, but by including them here
+        # a very common error is caught and attributed to the name, rather than
+        # the next token. Note that "foo->" must be preserved as a legal parse.
     def parseName(self):
-        return self.parse_re(self._name_re)
-
+        n = self.parse_re(self._name_re)
+        if n and '-' in n:
+            self.error("malformed name: hyphen (-) not allowed")
+        return n 
     
     _typemap = { 
             'undef':    _UndefMatcher(),

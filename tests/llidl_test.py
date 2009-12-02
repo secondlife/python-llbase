@@ -1089,7 +1089,7 @@ class LLIDLParseSuiteTests(unittest.TestCase):
 -> { name : string }
 <- { id : uuid, data : { recordName : string, stream : binary } }
 """
-        self.checkBadParseSuite(s, 'expected resource name', 2, 11)
+        self.checkBadParseSuite(s, 'malformed name', 2, 15)
 
     def testParseSuiteFailureNoPrefix(self):
         """
