@@ -2187,10 +2187,9 @@ class LLSDFuzzTest(unittest.TestCase):
             self.fail("\n%s\n !=\n%s" % (pprint.pformat(a), pprint.pformat(b)))
     
     def fuzz_parsing_base(self, fuzz_method_name, legit_exceptions):
-        fuzzer = llsd_fuzz.LLSDFuzzer()
-        print "Seed is", repr(fuzzer.seed)
+        fuzzer = llsd_fuzz.LLSDFuzzer(seed=1234)
         fuzz_method = getattr(fuzzer, fuzz_method_name)
-        for f in islice(fuzz_method(self.python_object), 1000):
+        for f in islice(fuzz_method(self.python_object), 5000):
             try:
                 parsed = llsd.parse(f)
             except legit_exceptions:
@@ -2201,9 +2200,8 @@ class LLSDFuzzTest(unittest.TestCase):
                 raise
 
     def fuzz_roundtrip_base(self, formatter_method, normalize=None):
-        fuzzer = llsd_fuzz.LLSDFuzzer()
-        print "Seed is", repr(fuzzer.seed)
-        for f in islice(fuzzer.structure_fuzz(self.python_object), 1000):
+        fuzzer = llsd_fuzz.LLSDFuzzer(seed=1234)
+        for f in islice(fuzzer.structure_fuzz(self.python_object), 5000):
             try:
                 try:
                     text = formatter_method(f)
