@@ -34,6 +34,7 @@ http://wiki.secondlife.com/wiki/LLSD
 # $/LicenseInfo$
 
 import base64
+import binascii
 import datetime
 import re
 import struct
@@ -70,7 +71,7 @@ class uri(str):
     pass
 
 _int_regex = re.compile(r"[-+]?\d+")
-_real_regex = re.compile(r"[-+]?(\d+(\.\d*)?|\d*\.\d+)([eE][-+]?\d+)?")
+_real_regex = re.compile(r"[-+]?(?:(\d+(\.\d*)?|\d*\.\d+)([eE][-+]?\d+)?)|[-+]?inf|[-+]?nan")
 _alpha_regex = re.compile(r"[a-zA-Z]+")
 _date_regex = re.compile(r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T"
                         r"(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})"
@@ -145,7 +146,11 @@ def _str_to_python(node):
     return node.text or ''
 
 def _bin_to_python(node):
-    return binary(base64.decodestring(node.text or ''))
+    try:
+        return binary(base64.decodestring(node.text or ''))
+    except binascii.Error, exc:
+        # convert exception class so it's more catchable
+        raise LLSDParseError("Base64 " + str(exc))
 
 def _date_to_python(node):
     "Convert date node to a python object."
@@ -158,15 +163,16 @@ def _date_to_python(node):
 def _uri_to_python(node):
     "Convert uri node to a python object."
     val = node.text or ''
-    if not val:
-        return None
     return uri(val)
 
 def _map_to_python(node):
     "Convert map node to a python object."
     result = {}
     for index in range(len(node))[::2]:
-        result[node[index].text] = _to_python(node[index+1])
+        if node[index].text is None:
+            result[''] = _to_python(node[index+1])
+        else:
+            result[node[index].text] = _to_python(node[index+1])
     return result
 
 def _array_to_python(node):
@@ -191,6 +197,24 @@ NODE_HANDLERS = dict(
 def _to_python(node):
     "Convert node to a python object."
     return NODE_HANDLERS[node.tag](node)
+
+
+ALL_CHARS = "".join([chr(x) for x in range(256)])
+INVALID_XML_BYTES = '\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c'\
+                    '\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18'\
+                    '\x19\x1a\x1b\x1c\x1d\x1e\x1f'
+INVALID_XML_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f]')
+def remove_invalid_xml_bytes(s):
+    try:
+        # Dropping chars that cannot be parsed later on.  The
+        # translate() function was benchmarked to be the fastest way
+        # to do this.
+        return s.translate(ALL_CHARS, INVALID_XML_BYTES)
+    except TypeError:
+        # we get here if s is a unicode object (should be limited to
+        # unit tests)
+        return INVALID_XML_RE.sub('', s)
+
 
 class LLSDXMLFormatter(object):
     """
@@ -238,7 +262,12 @@ class LLSDXMLFormatter(object):
     def xml_esc(self, v):
         "Escape string or unicode object v for xml output"
         if type(v) is unicode:
+            # we need to drop these invalid characters because they
+            # cannot be parsed (and encode() doesn't drop them for us)
+            v = v.replace(u'\uffff', '')
+            v = v.replace(u'\ufffe', '')
             v = v.encode('utf-8')
+        v = remove_invalid_xml_bytes(v)
         return v.replace('&','&amp;').replace('<','&lt;').replace('>','&gt;')
 
     def LLSD(self, v):
@@ -253,7 +282,7 @@ class LLSDXMLFormatter(object):
     def INTEGER(self, v):
         return self._elt('integer', v)
     def REAL(self, v):
-        return self._elt('real', v)
+        return self._elt('real', repr(v))
     def UUID(self, v):
         if v.int == 0:
             return self._elt('uuid')
@@ -453,7 +482,7 @@ class LLSDNotationFormatter(object):
     def INTEGER(self, v):
         return "i%s" % v
     def REAL(self, v):
-        return "r%s" % v
+        return "r%r" % v
     def UUID(self, v):
         return "u%s" % v
     def BINARY(self, v):
@@ -513,7 +542,9 @@ def _hex_as_nybble(hex):
     elif (hex >= 'a') and (hex <='f'):
         return 10 + ord(hex) - ord('a')
     elif (hex >= 'A') and (hex <='F'):
-        return 10 + ord(hex) - ord('A');
+        return 10 + ord(hex) - ord('A')
+    else:
+        raise LLSDParseError('Invalid hex character: %s' % hex)
 
 class LLSDBinaryParser(object):
     """
@@ -533,7 +564,10 @@ class LLSDBinaryParser(object):
         self._buffer = buffer
         self._index = 0
         self._keep_binary = not ignore_binary
-        return self._parse()
+        try:
+            return self._parse()
+        except struct.error, exc:
+            raise LLSDParseError(exc)
 
     def _parse(self):
         "The actual parser which is called recursively when necessary."
@@ -583,7 +617,7 @@ class LLSDBinaryParser(object):
             seconds = struct.unpack("!d", self._buffer[idx:idx+8])[0]
             return datetime.datetime.fromtimestamp(seconds)
         elif cc == 'b':
-            binary = self._parse_string()
+            binary = self._parse_string_raw()
             if self._keep_binary:
                 return binary
             # *NOTE: maybe have a binary placeholder which has the
@@ -638,8 +672,18 @@ class LLSDBinaryParser(object):
         return rv
 
     def _parse_string(self):
+        try:
+            return self._parse_string_raw().decode('utf-8')
+        except UnicodeDecodeError, exc:
+            raise LLSDParseError(exc)
+
+    def _parse_string_raw(self):
         "Parse a string which has the leadings size indicator"
-        size = struct.unpack("!i", self._buffer[self._index:self._index+4])[0]
+        try:
+            size = struct.unpack("!i", self._buffer[self._index:self._index+4])[0]
+        except struct.error, exc:
+            # convert exception class for client convenience
+            raise LLSDParseError("struct " + str(exc))
         self._index += 4
         rv = self._buffer[self._index:self._index+size]
         self._index += size
@@ -694,7 +738,11 @@ class LLSDBinaryParser(object):
                 break
             else:
                 parts.append(cc)
-        return ''.join(parts)
+        try:
+            return ''.join(parts).decode('utf-8')
+        except UnicodeDecodeError, exc:
+            raise LLSDParseError(exc)
+
 
 class LLSDNotationParser(object):
     """
@@ -769,8 +817,6 @@ class LLSDNotationParser(object):
             delim = self._buffer[self._index]
             self._index += 1
             val = uri(self._parse_string(delim))
-            if len(val) == 0:
-                return None
             return val
         elif cc == ('d'):
             # 'd' = date in seconds since epoch
@@ -788,7 +834,11 @@ class LLSDNotationParser(object):
             q = self._buffer[i+2]
             e = self._buffer.find(q, i+3)
             try:
-                return base64.decodestring(self._buffer[i+3:e])
+                try:
+                    return base64.decodestring(self._buffer[i+3:e])
+                except binascii.Error, exc:
+                    # convert exception class so it's more catchable
+                    raise LLSDParseError("Base64 " + str(exc))
             finally:
                 self._index = e + 1
         else:
@@ -912,7 +962,6 @@ class LLSDNotationParser(object):
 
         return rv
 
-
     def _parse_string_delim(self, delim):
         """
         Parse a delimited string
@@ -966,7 +1015,10 @@ class LLSDNotationParser(object):
                 break
             else:
                 parts.append(cc)
-        return ''.join(parts)
+        try:
+            return ''.join(parts).decode('utf-8')
+        except UnicodeDecodeError, exc:
+            raise LLSDParseError(exc)
 
     def _parse_string_raw(self):
         """
@@ -998,8 +1050,11 @@ class LLSDNotationParser(object):
         self._index += 1
         if cc != delim:
             raise LLSDParseError("invalid string token at index %d." % self._index)
+        try:
+            return rv.decode('utf-8')
+        except UnicodeDecodeError, exc:
+            raise LLSDParseError(exc)
 
-        return rv
         
 def format_binary(something):
     """
@@ -1029,9 +1084,15 @@ def _format_binary_recurse(something):
         else:
             return '0'
     elif isinstance(something, (int, long)):
-        return 'i' + struct.pack('!i', something)
+        try:
+            return 'i' + struct.pack('!i', something)
+        except OverflowError, exc:
+            raise LLSDSerializationError(str(exc), something)
     elif isinstance(something, float):
-        return 'r' + struct.pack('!d', something)
+        try:
+            return 'r' + struct.pack('!d', something)
+        except SystemError, exc:
+            raise LLSDSerializationError(str(exc), something)
     elif isinstance(something, uuid.UUID):
         return 'u' + something.bytes
     elif isinstance(something, binary):
@@ -1043,7 +1104,7 @@ def _format_binary_recurse(something):
         return 's' + struct.pack('!i', len(something)) + something
     elif isinstance(something, uri):
         return 'l' + struct.pack('!i', len(something)) + something
-    elif isinstance(something, datetime.datetime):
+    elif isinstance(something, (datetime.datetime, datetime.date)):
         seconds_since_epoch = time.mktime(something.timetuple())
         return 'd' + struct.pack('!d', seconds_since_epoch)
     elif isinstance(something, (list, tuple)):
@@ -1079,6 +1140,12 @@ def parse_binary(something):
         just_binary = something
     return LLSDBinaryParser().parse(just_binary)
 
+
+declaration_regex = re.compile(r'^\s*(?:<\?[\x09\x0A\x0D\x20-\x7e]+\?>)|(?:<llsd>)')
+def validate_xml_declaration(something):
+    if not declaration_regex.match(something):
+        raise LLSDParseError("Invalid XML Declaration")
+
 def parse_xml(something):
     """
     @brief This is the basic public interface for parsing llsd+xml.
@@ -1086,6 +1153,8 @@ def parse_xml(something):
     @return Returns a python object.
     """
     try:
+        # validate xml declaration manually until http://bugs.python.org/issue7138 is fixed
+        validate_xml_declaration(something)
         return _to_python(fromstring(something)[0])
     except ElementTreeError, err:
         raise LLSDParseError(*err.args)
@@ -1123,7 +1192,7 @@ def parse(something, mime_type = None):
         else:
             return parse_notation(something)
     except KeyError, e:
-        raise Exception('LLSD could not be parsed: %s' % (e,))
+        raise LLSDParseError('LLSD could not be parsed: %s' % (e,))
 
 class LLSD(object):
     "Simple wrapper class for a thing."

@@ -28,23 +28,82 @@
 # $/LicenseInfo$
 
 import base64
-from datetime import datetime
+from datetime import datetime, date
+from itertools import islice
+import pprint
 import re
 import string
 import time
 import unittest
 import uuid
+import struct
 
 from llbase import llsd
+from llbase import llsd_fuzz
 
 class Foo(object):
     """
     Simple Mock Class used for testing.
     """
     pass
+    
+try:
+    from math import isnan
+except ImportError:
+    def isnan(x):
+        return x != x
 
 
-class LLSDNotationUnitTest(unittest.TestCase):
+sample_llsd_object = {'a':{'a1':12, 'a2':123.45}, 'b':[1234555, None],
+                      'c':"this is some xml: <xml> &amp;",
+                      'd':['a','small','little','text']}
+
+class TestBase(unittest.TestCase):
+    def assertEqualsPretty(self, a, b):
+        try:
+            self.assertEquals(a,b)
+        except AssertionError:
+            self.fail("\n%s\n !=\n%s" % (pprint.pformat(a), pprint.pformat(b)))
+    
+    def fuzz_parsing_base(self, fuzz_method_name, legit_exceptions):
+        fuzzer = llsd_fuzz.LLSDFuzzer()
+        print "Seed is", repr(fuzzer.seed)
+        fuzz_method = getattr(fuzzer, fuzz_method_name)
+        for f in islice(fuzz_method(sample_llsd_object), 1000):
+            try:
+                #print "f", repr(f)
+                parsed = llsd.parse(f)
+            except legit_exceptions:
+                pass  # expected, since many of the inputs will be invalid
+            except Exception, e:
+                print "Raised exception", e.__class__
+                print "Fuzzed value was", repr(f)
+                raise
+
+    def fuzz_roundtrip_base(self, formatter_method, normalize=None):
+        fuzzer = llsd_fuzz.LLSDFuzzer()
+        print "Seed is", repr(fuzzer.seed)
+        for f in islice(fuzzer.structure_fuzz(sample_llsd_object), 1000):
+            try:
+                try:
+                    text = formatter_method(f)
+                except llsd.LLSDSerializationError:
+                    # sometimes the fuzzer will generate invalid llsd
+                    continue
+                parsed = llsd.parse(text)
+                try:
+                    self.assertEqualsPretty(parsed, f)
+                except AssertionError:
+                    if normalize:
+                        self.assertEqualsPretty(normalize(parsed), normalize(f))
+                    else:
+                        raise
+            except llsd.LLSDParseError:
+                print "Failed to parse", repr(text)
+                raise
+
+
+class LLSDNotationUnitTest(TestBase):
     """
     This class aggregates all the tests for parse_notation(something),
     LLSD.as_notation(something) and format_notation (i.e. same as
@@ -157,8 +216,8 @@ class LLSDNotationUnitTest(unittest.TestCase):
         Test the input type: real.
         Maps to test scenarios module:llsd:test#18-20
         """
-        pos_real_notation = "r2983287453.3"
-        neg_real_notation = "r-2983287453.3"
+        pos_real_notation = "r2983287453.3000002"
+        neg_real_notation = "r-2983287453.3000002"
         blank_real_notation = "r0"
 
         python_pos_real = 2983287453.3
@@ -199,9 +258,9 @@ class LLSDNotationUnitTest(unittest.TestCase):
             ("have a 'nice' day", "'have a \\'nice\\' day'"),
             ("have a 'nice' day", '"have a \'nice\' day"'),
             ("have a 'nice' day", 's(17)"have a \'nice\' day"'),
-            ("Kanji: '\xe5\xb0\x8f\xe5\xbf\x83\xe8\x80\x85'",
+            (u"Kanji: '\u5c0f\u5fc3\u8005'",
              "'Kanji: \\'\xe5\xb0\x8f\xe5\xbf\x83\xe8\x80\x85\\''"),
-            ("Kanji: '\xe5\xb0\x8f\xe5\xbf\x83\xe8\x80\x85'",
+            (u"Kanji: '\u5c0f\u5fc3\u8005'",
              "\"Kanji: '\\xe5\\xb0\\x8f\\xE5\\xbf\\x83\\xe8\\x80\\x85'\""),
              ('\a\b\f\n\r\t\v', '"\\a\\b\\f\\n\\r\\t\\v"')
         ]
@@ -227,9 +286,7 @@ class LLSDNotationUnitTest(unittest.TestCase):
             if notation[1] != '"':
                 is_alternate_notation = True
             self.assertNotationRoundtrip(py, notation, is_alternate_notation)
-
-        # test black uri notation, the result should be None
-        self.assertEqual(None, self.llsd.parse(blank_uri_notation))
+        self.assertEqual('', self.llsd.parse(blank_uri_notation))
 
     def testDate(self):
         """
@@ -486,8 +543,42 @@ class LLSDNotationUnitTest(unittest.TestCase):
             self.fail("LLSDParseError should be raised.")
         except llsd.LLSDParseError:
             pass
+            
+            
+    def test_fuzz_parsing(self):
+        self.fuzz_parsing_base('notation_fuzz',
+            (llsd.LLSDParseError, IndexError, ValueError))
+    
+    def test_fuzz_roundtrip(self):
+        def normalize(s):
+            """ Certain transformations of input data are permitted by
+            the spec; this function normalizes a python data structure
+            so it receives these transformations as well.
+            * date objects -> datetime objects (parser only produces datetimes)
+            * nan converted to None (just because nan's are incomparable)
+            """
+            if isinstance(s, (str, unicode)):
+                #s = llsd.remove_invalid_xml_bytes(s)
+                #s = self.newline_re.sub('\n', s)
+                #if isinstance(s, unicode):
+                #    s = s.replace(u'\uffff', '')
+                #    s = s.replace(u'\ufffe', '')
+                return s
+            if isnan(s):
+                return None
+            if isinstance(s, date):
+                return datetime(s.year, s.month, s.day)
+            if isinstance(s, list):
+                s = [normalize(x) for x in s]
+            if isinstance(s, dict):
+                s = dict([(normalize(k), normalize(v))
+                          for k,v in s.iteritems()])
+            return s
+ 
+        self.fuzz_roundtrip_base(llsd.format_notation, normalize)
 
-class LLSDXMLUnitTest(unittest.TestCase):
+
+class LLSDXMLUnitTest(TestBase):
     """
     This class aggregates all the tests for parse_xml(something), LLSD.as_xml(something)
     and format_xml (i.e. same as LLSD.as_xml(something).
@@ -610,13 +701,13 @@ class LLSDXMLUnitTest(unittest.TestCase):
         pos_real_xml = "\
 <?xml version=\"1.0\" ?>\
 <llsd>\
-<real>2983287453.3</real>\
+<real>2983287453.3000002</real>\
 </llsd>"
 
         neg_real_xml = "\
 <?xml version=\"1.0\" ?>\
 <llsd>\
-<real>-2983287453.3</real>\
+<real>-2983287453.3000002</real>\
 </llsd>"
 
         blank_real_xml = "\
@@ -700,7 +791,7 @@ class LLSDXMLUnitTest(unittest.TestCase):
 
         for py, xml in uri_tests.items():
             self.assertXMLRoundtrip(py, xml)
-        self.assertEqual(None, self.llsd.parse(blank_uri_xml))
+        self.assertEqual('', self.llsd.parse(blank_uri_xml))
 
     def testDate(self):
         """
@@ -1052,7 +1143,7 @@ class LLSDXMLUnitTest(unittest.TestCase):
         """
         return re.sub('\s', '', the_string)
 
-class LLSDBinaryUnitTest(unittest.TestCase):
+class LLSDBinaryUnitTest(TestBase):
     """
     This class aggregates all the tests for parse_binary and LLSD.as_binary
     which is the same as module function format_binary. The tests use roundtrip
@@ -1361,7 +1452,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
             'http://sim956.agni.lindenlab.com:12035/runtime/agents',
             self.roundTrip(self.llsd.parse(valid_uri_xml)))
         self.assertEqual(
-            None,
+            '',
             self.roundTrip(self.llsd.parse(blank_uri_xml)))
 
     def testUndefined(self):
@@ -1480,9 +1571,44 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         delimited_string = """<?llsd/binary?>\n'\\t\\a\\b\\f\\n\\r\\t\\v\\x0f\\p'"""
 
         self.assertEquals('\t\x07\x08\x0c\n\r\t\x0b\x0fp', llsd.parse(delimited_string))
+        
+    def test_fuzz_parsing(self):
+        self.fuzz_parsing_base('binary_fuzz',
+            (llsd.LLSDParseError, IndexError, ValueError))
+    
+    def test_fuzz_roundtrip(self):
+        def normalize(s):
+            """ Certain transformations of input data are permitted by
+            the spec; this function normalizes a python data structure
+            so it receives these transformations as well.
+            * date objects -> datetime objects (parser only produces datetimes)
+            * fractional seconds dropped from datetime objects
+            * integral values larger than a signed 32-bit int become wrapped
+            * integral values larger than an unsigned 32-bit int become 0
+            * nan converted to None (just because nan's are incomparable)
+            """
+            if isnan(s):
+                return None
+            if isinstance(s, (int, long)):
+                if (s > (2<<30) - 1 or
+                    s < -(2<<30)):
+                    return struct.unpack('!i', struct.pack('!i', s))[0]
+            if isinstance(s, date):
+                return datetime(s.year, s.month, s.day)
+            if isinstance(s, datetime):
+                return datetime(s.year, s.month, s.day, s.hour, s.minute, s.second)
+            if isinstance(s, (list, tuple)):
+                s = [normalize(x) for x in s]
+            if isinstance(s, dict):
+                s = dict([(normalize(k), normalize(v))
+                          for k,v in s.iteritems()])
+            return s
+
+        self.fuzz_roundtrip_base(llsd.format_binary, normalize)
+
     
 
-class LLSDPythonXMLUnitTest(unittest.TestCase):
+class LLSDPythonXMLUnitTest(TestBase):
     """
     This class aggregates all the tests for parse_xml(something), LLSD.as_xml(something)
     and format_xml (i.e. same as LLSD.as_xml(something).
@@ -1622,13 +1748,13 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         pos_real_xml = "\
 <?xml version=\"1.0\" ?>\
 <llsd>\
-<real>2983287453.3</real>\
+<real>2983287453.3000002</real>\
 </llsd>"
 
         neg_real_xml = "\
 <?xml version=\"1.0\" ?>\
 <llsd>\
-<real>-2983287453.3</real>\
+<real>-2983287453.3000002</real>\
 </llsd>"
 
         blank_real_xml = "\
@@ -1712,7 +1838,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 
         for py, xml in uri_tests.items():
             self.assertXMLRoundtrip(py, xml)
-        self.assertEqual(None, self.llsd.parse(blank_uri_xml))
+        self.assertEqual('', self.llsd.parse(blank_uri_xml))
 
     def testDate(self):
         """
@@ -2063,6 +2189,53 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         the given string.
         """
         return re.sub('\s', '', the_string)
+        
+    def test_segfault(self):
+        for i, badstring in enumerate([
+            '<?xml \xee\xae\x94 ?>',
+            '<?xml \xc4\x9d ?>',
+            '<?xml \xc8\x84 ?>',
+            '<?xml \xd9\xb5 ?>',
+            '<?xml \xd9\xaa ?>',
+            '<?xml \xc9\x88 ?>',
+            '<?xml \xcb\x8c ?>']):
+            self.assertRaises(llsd.LLSDParseError, llsd.parse, badstring)
+
+    def test_fuzz_parsing(self):
+        self.fuzz_parsing_base('xml_fuzz',
+            (llsd.LLSDParseError, IndexError, ValueError))
+
+    newline_re = re.compile(r'[\r\n]+')
+    def test_fuzz_roundtrip(self):
+        def normalize(s):
+            """ Certain transformations of input data are permitted by
+            the spec; this function normalizes a python data structure
+            so it receives these transformations as well.
+            * codepoints disallowed in xml dropped from strings and unicode objects
+            * any sequence of \n and \r compressed into a single \n
+            * date objects -> datetime objects (parser only produces datetimes)
+            * nan converted to None (just because nan's are incomparable)
+            """
+            if isinstance(s, (str, unicode)):
+                s = llsd.remove_invalid_xml_bytes(s)
+                s = self.newline_re.sub('\n', s)
+                s = s.replace('\r', '\n')
+                s = s.replace('\n\n', '\n')
+                if isinstance(s, unicode):
+                    s = s.replace(u'\uffff', '')
+                    s = s.replace(u'\ufffe', '')
+                return s
+            if isnan(s):
+                return None
+            if isinstance(s, date):
+                return datetime(s.year, s.month, s.day)
+            if isinstance(s, list):
+                s = [normalize(x) for x in s]
+            if isinstance(s, dict):
+                s = dict([(normalize(k), normalize(v))
+                          for k,v in s.iteritems()])
+            return s
+
 
 class LLSDStressTest(unittest.TestCase):
     """
