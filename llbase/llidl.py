@@ -105,8 +105,11 @@ class Value(object):
     
     @verbatim
     Methods:
-        match(actual)   -- True if the value matches exactly
-        valid(actual)   -- True if the value matches, or has additional data
+        match(actual)   -- True if the value matches structurally and all 
+                            conversions are valid (non-defaulted)
+        valid(actual)   -- True if the value matches structurally though
+                            defaulted or additional data is acceptable,
+                            all conversions must still be valid (non-defaulted)
         
         The above two tests take an optional keyword argument 'raises'
         which determines the exception behavior: If it is None (the default),
@@ -121,15 +124,11 @@ class Value(object):
         as the only argument to constructing or calling.
         
         has_additional(actual)  -- True if the value has additional data
+        has_defaulted(actual) -- True if the value has defaulted data
         incompatible(actual) -- True if the value is incompatible
         
-        The above two tests are primarily for unit testing and do not support
+        The above three tests are primarily for unit testing and do not support
         the raises feature.
-        
-        Note:
-        Exactly one of match(), has_additional(), or incompatible() is True
-        for any given value.
-        valid() is True if match() or has_additional() is True.
     @endverbatim
     """
     
@@ -154,7 +153,7 @@ class Value(object):
     
     def match(self, actual, raises=None):
         """Return True if the value matches exactly"""
-        return (self._compare(actual) >= DEFAULTED
+        return (self._compare(actual) >= CONVERTED
              or self._failure(raises, "did not match"))
     
     def valid(self, actual, raises=None):
@@ -164,7 +163,13 @@ class Value(object):
 
     def has_additional(self, actual):
         """Return True if the value has additional data"""
-        return MIXED <= self._compare(actual) <= ADDITIONAL
+        r = self._compare(actual)
+        return r == ADDITIONAL or r == MIXED
+
+    def has_defaulted(self, actual):
+        """Return True if the value has defaulted (missing) data"""
+        r = self._compare(actual)
+        return r == DEFAULTED or r == MIXED
     
     def incompatible(self, actual):
         """Return True if the value is incompatible"""
