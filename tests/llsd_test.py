@@ -48,7 +48,12 @@ class Foo(object):
     pass
     
 try:
-    from math import isnan
+    from math import isnan as _isnan
+    def isnan(x):
+        if isinstance(x, float):
+            return _isnan(x)
+        else:
+            return False
 except ImportError:
     def isnan(x):
         return x != x
