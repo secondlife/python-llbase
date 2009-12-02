@@ -563,17 +563,12 @@ class LLSDNotationUnitTest(TestBase):
             * nan converted to None (just because nan's are incomparable)
             """
             if isinstance(s, (str, unicode)):
-                #s = llsd.remove_invalid_xml_bytes(s)
-                #s = self.newline_re.sub('\n', s)
-                #if isinstance(s, unicode):
-                #    s = s.replace(u'\uffff', '')
-                #    s = s.replace(u'\ufffe', '')
                 return s
             if isnan(s):
                 return None
             if isinstance(s, date):
                 return datetime(s.year, s.month, s.day)
-            if isinstance(s, list):
+            if isinstance(s, (list, tuple)):
                 s = [normalize(x) for x in s]
             if isinstance(s, dict):
                 s = dict([(normalize(k), normalize(v))
@@ -2234,7 +2229,7 @@ class LLSDPythonXMLUnitTest(TestBase):
                 return None
             if isinstance(s, date):
                 return datetime(s.year, s.month, s.day)
-            if isinstance(s, list):
+            if isinstance(s, (list, tuple)):
                 s = [normalize(x) for x in s]
             if isinstance(s, dict):
                 s = dict([(normalize(k), normalize(v))
