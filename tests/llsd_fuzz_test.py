@@ -248,17 +248,23 @@ class Fuzz(Base):
 
     def _string_fuzz_tester(self, func_name):
         seed = self.lf.seed
+        quantity = 500
         func = getattr(self.lf, func_name)
-        fuzzed = list(islice(func(self.base_obj), 500))
-        self.assert_(len(fuzzed) == 500)
+        fuzzed = list(islice(func(self.base_obj), quantity))
+        self.assert_(len(fuzzed) == quantity)
+        empties = 0
         for f in fuzzed:
             self.assert_(isinstance(f, str))
-            self.assert_(len(f) > 0, type(f))
+            if len(f) == 0:
+                empties += 1
+        # no more than 1% should be zero-length
+        self.assert_(empties < quantity/100.0,
+                     "%s zero-length strings, using seed %r" % (empties, self.lf.seed))
     
         # determinism
         self.lf = llsd_fuzz.LLSDFuzzer(seed)
         func = getattr(self.lf, func_name)
-        fuzzed2 = list(islice(func(self.base_obj), 500))
+        fuzzed2 = list(islice(func(self.base_obj), quantity))
         if not fuzzed == fuzzed2:
             for i,v in enumerate(fuzzed):
                 self.assertEquals(v, fuzzed2[i])
