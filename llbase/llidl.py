@@ -105,8 +105,11 @@ class Value(object):
     
     @verbatim
     Methods:
-        match(actual)   -- True if the value matches exactly
-        valid(actual)   -- True if the value matches, or has additional data
+        match(actual)   -- True if the value matches structurally and all 
+                            conversions are valid (non-defaulted)
+        valid(actual)   -- True if the value matches structurally though
+                            defaulted or additional data is acceptable,
+                            all conversions must still be valid (non-defaulted)
         
         The above two tests take an optional keyword argument 'raises'
         which determines the exception behavior: If it is None (the default),
@@ -121,20 +124,19 @@ class Value(object):
         as the only argument to constructing or calling.
         
         has_additional(actual)  -- True if the value has additional data
+        has_defaulted(actual) -- True if the value has defaulted data
         incompatible(actual) -- True if the value is incompatible
         
-        The above two tests are primarily for unit testing and do not support
+        The above three tests are primarily for unit testing and do not support
         the raises feature.
-        
-        Note:
-        Exactly one of match(), has_additional(), or incompatible() is True
-        for any given value.
-        valid() is True if match() or has_additional() is True.
     @endverbatim
     """
     
     def _set_suite(self, suite):
         pass
+        
+    def _variants_referenced(self):
+        return set() # faster than frozenset, really!
 
     def _compare(self, actual):
         """Compare an LLSD value to the value spec.; return a Result"""
@@ -151,7 +153,7 @@ class Value(object):
     
     def match(self, actual, raises=None):
         """Return True if the value matches exactly"""
-        return (self._compare(actual) >= DEFAULTED
+        return (self._compare(actual) >= CONVERTED
              or self._failure(raises, "did not match"))
     
     def valid(self, actual, raises=None):
@@ -161,7 +163,13 @@ class Value(object):
 
     def has_additional(self, actual):
         """Return True if the value has additional data"""
-        return MIXED <= self._compare(actual) <= ADDITIONAL
+        r = self._compare(actual)
+        return r == ADDITIONAL or r == MIXED
+
+    def has_defaulted(self, actual):
+        """Return True if the value has defaulted (missing) data"""
+        r = self._compare(actual)
+        return r == DEFAULTED or r == MIXED
     
     def incompatible(self, actual):
         """Return True if the value is incompatible"""
@@ -444,6 +452,12 @@ class _ArrayMatcher(Value):
     def _set_suite(self, suite):
         for v in self._values:
             v._set_suite(suite)
+
+    def _variants_referenced(self):
+        s = set()
+        for v in self._values:
+            s |= v._variants_referenced()
+        return s
             
     def _compare(self, actual):
         if actual is None:
@@ -477,6 +491,13 @@ class _MapMatcher(Value):
         for v in self._members.itervalues():
             v._set_suite(suite)
 
+    def _variants_referenced(self):
+        s = set()
+        for v in self._members.itervalues():
+            s |= v._variants_referenced()
+        return s
+            
+
     def _compare(self, actual):
         if actual is None:
             actual = {}
@@ -502,6 +523,9 @@ class _DictMatcher(Value):
     
     def _set_suite(self, suite):
         self._value._set_suite(suite)
+    
+    def _variants_referenced(self):
+        return self._value._variants_referenced()
         
     def _compare(self, actual):
         if actual is None:
@@ -522,6 +546,9 @@ class _VariantMatcher(Value):
         
     def _set_suite(self, suite):
         self._suite = suite
+    
+    def _variants_referenced(self):
+        return set([self._name])
     
     def _compare(self, actual):
         if self._suite is None:
@@ -559,6 +586,9 @@ class Suite(object):
         self._requests[name] = request
         self._responses[name] = response
     
+    def _has_resource(self, name):
+        return name in self._requests
+        
     def _get_request(self, name):
         try:
             return self._requests[name]
@@ -577,7 +607,15 @@ class Suite(object):
     
     def _get_variant_options(self, name):
         return self._variants.get(name, [])
-        
+    
+    def _missing_variants(self):
+        refs = set()
+        for v in self._requests.itervalues():
+            refs |= v._variants_referenced()
+        for w in self._responses.itervalues():
+            refs |= w._variants_referenced()
+        return refs - set(self._variants.iterkeys())
+            
     def match_request(self, name, value, raises=None):
         """Compare an LLSD value to a resource's request description"""
         return self._get_request(name).match(value, raises=raises)
@@ -672,10 +710,15 @@ class _Parser(object):
     def parseNumber(self):
         return self.parse_re(self._number_re)
     
-    _name_re = re.compile(r'[a-zA-Z_][a-zA-Z0-9_/]*')
+    _name_re = re.compile(r'[a-zA-Z_](?:[a-zA-Z0-9_/]|-(?!>))*')
+        # Hyphen's are not legal inside names, but by including them here
+        # a very common error is caught and attributed to the name, rather than
+        # the next token. Note that "foo->" must be preserved as a legal parse.
     def parseName(self):
-        return self.parse_re(self._name_re)
-
+        n = self.parse_re(self._name_re)
+        if n and '-' in n:
+            self.error("malformed name: hyphen (-) not allowed")
+        return n 
     
     _typemap = { 
             'undef':    _UndefMatcher(),
@@ -690,6 +733,7 @@ class _Parser(object):
             'true':     _TrueMatcher(),
             'false':    _FalseMatcher()
         }
+    _undefMatcher = _typemap['undef']
 
     def _parse_rest_of_array(self):
         self.parse_s()
@@ -729,6 +773,8 @@ class _Parser(object):
             k = self.parseName()
             if not k:
                 break
+            if k in members:
+                self.error('duplicate key in map')
             self.parse_s()
             self.required(self.parse_literal(':'), 'expected colon')
             self.parse_s()
@@ -772,18 +818,55 @@ class _Parser(object):
             
         return None
 
-    def _parse_rest_of_resource(self, suite):
-        self.parse_s()
-        name = self.required(self.parseName(), 'expected resource name')
-        self.parse_s()
-        self.required(self.parse_literal('->'), 'expected request arrow')
+    def _parse_rest_of_post_resource(self):
         self.parse_s()
         req = self.required(self.parse_value(), 'expected request value')
         self.parse_s()
         self.required(self.parse_literal('<-'), 'expected result arrow')
         self.parse_s()
         res = self.required(self.parse_value(), 'expected result value')
+        return (req, res)
+
+    def _parse_rest_of_body_resource(self):
+        self.parse_s()
+        return self.required(self.parse_value(), 'expected body value')
+
+    def _parse_rest_of_get_resource(self):
+        body = self._parse_rest_of_body_resource()
+        return (self._undefMatcher, body)
+
+    def _parse_rest_of_put_resource(self):
+        body = self._parse_rest_of_body_resource()
+        return (body, self._undefMatcher)
+
+    def _parse_rest_of_getput_resource(self):
+        body = self._parse_rest_of_body_resource()
+        return (body, body)
+
+    def _parse_rest_of_getputdel_resource(self):
+        body = self._parse_rest_of_body_resource()
+        return (body, body)
+
+    def _parse_rest_of_resource(self, suite):
+        self.parse_s()
+        name = self.required(self.parseName(), 'expected resource name')
+        if suite._has_resource(name):
+            self.error('duplicate resource name')
+        self.parse_s()
+        if self.parse_literal('->'):
+            (req, res) = self._parse_rest_of_post_resource()
+        elif self.parse_literal('<<'):
+            (req, res) = self._parse_rest_of_get_resource()
+        elif self.parse_literal('>>'):
+            (req, res) = self._parse_rest_of_put_resource()
+        elif self.parse_literal('<>'):
+            (req, res) = self._parse_rest_of_getput_resource()
+        elif self.parse_literal('<x>'):
+            (req, res) = self._parse_rest_of_getputdel_resource()
+        else:
+            self.error('unknown resource type, expected ->, <<, >>, <> or <*>')
         suite._add_resource(name, req, res)
+        
 
     def _parse_rest_of_variant(self, suite):
         name = self.required(self.parseName(), 'expected variant name')
@@ -803,6 +886,9 @@ class _Parser(object):
                 self._parse_rest_of_variant(suite)
             else:
                 break
+        missing = suite._missing_variants()
+        if missing:
+            self.error('missing definitions of variants: ' + ', '.join(missing))
         return suite
 
              

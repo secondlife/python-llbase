@@ -105,7 +105,7 @@ class LLIDLTypeTests(unittest.TestCase):
         Maps to test scenarios module:llidl:row#19-32
         """
         v = llidl.parse_value("bool")
-        self.assert_(v.match(None))
+        self.assert_(v.has_defaulted(None))
         self.assert_(v.match(True))
         self.assert_(v.match(False))
         self.assert_(v.match(0))
@@ -129,7 +129,7 @@ class LLIDLTypeTests(unittest.TestCase):
         Maps to test scenarios module:llidl:row#34-47
         """
         v = llidl.parse_value("int")
-        self.assert_(v.match(None))
+        self.assert_(v.has_defaulted(None))
         self.assert_(v.match(True))
         self.assert_(v.match(False))
         self.assert_(v.match(0))
@@ -138,7 +138,7 @@ class LLIDLTypeTests(unittest.TestCase):
         self.assert_(v.match(10.0))
         self.assert_(v.incompatible(3.14))
         self.assert_(v.incompatible(6.02e23))
-        self.assert_(v.match(""))
+        self.assert_(v.has_defaulted(""))
         self.assert_(v.match("0"))
         self.assert_(v.match("1"))
         self.assert_(v.match("0.0"))
@@ -158,7 +158,7 @@ class LLIDLTypeTests(unittest.TestCase):
         Maps to test scenarios module:llidl:row#49-62
         """
         v = llidl.parse_value("real")
-        self.assert_(v.match(None))
+        self.assert_(v.has_defaulted(None))
         self.assert_(v.match(True))
         self.assert_(v.match(False))
         self.assert_(v.match(0))
@@ -167,7 +167,7 @@ class LLIDLTypeTests(unittest.TestCase):
         self.assert_(v.match(10.0))
         self.assert_(v.match(3.14))
         self.assert_(v.match(6.02e23))
-        self.assert_(v.match(""))
+        self.assert_(v.has_defaulted(""))
         self.assert_(v.match("0"))
         self.assert_(v.match("1"))
         self.assert_(v.match("0.0"))
@@ -187,7 +187,7 @@ class LLIDLTypeTests(unittest.TestCase):
         Maps to test scenarios module:llidl:row#64-76
         """
         v = llidl.parse_value("string")
-        self.assert_(v.match(None))
+        self.assert_(v.has_defaulted(None))
         self.assert_(v.match(True))
         self.assert_(v.match(False))
         self.assert_(v.match(3))
@@ -206,11 +206,11 @@ class LLIDLTypeTests(unittest.TestCase):
         Maps to test scenarios module:llidl:row#78-90
         """
         v = llidl.parse_value("date")
-        self.assert_(v.match(None))
+        self.assert_(v.has_defaulted(None))
         self.assert_(v.incompatible(True))
         self.assert_(v.incompatible(3))
         self.assert_(v.incompatible(3.14))
-        self.assert_(v.match(""))
+        self.assert_(v.has_defaulted(""))
         self.assert_(v.match("2009-02-06T22:17:38Z"))
         # self.assert_(v.match("2009-02-06T22:17:38.0025Z"))
         self.assert_(v.incompatible("bob"))
@@ -226,11 +226,11 @@ class LLIDLTypeTests(unittest.TestCase):
         Maps to test scenarios module:llidl:row#92-104
         """
         v = llidl.parse_value("uuid")
-        self.assert_(v.match(None))
+        self.assert_(v.has_defaulted(None))
         self.assert_(v.incompatible(True))
         self.assert_(v.incompatible(3))
         self.assert_(v.incompatible(3.14))
-        self.assert_(v.match(""))
+        self.assert_(v.has_defaulted(""))
         self.assert_(v.match("6cb93268-5148-423f-8618-eaa0884f5b6c"))
         self.assert_(v.incompatible("bob"))
         self.assert_(v.incompatible(_dateToday()))
@@ -245,11 +245,11 @@ class LLIDLTypeTests(unittest.TestCase):
         Maps to test scenarios module:llidl:row#106-118
         """
         v = llidl.parse_value("uri")
-        self.assert_(v.match(None))
+        self.assert_(v.has_defaulted(None))
         self.assert_(v.incompatible(True))
         self.assert_(v.incompatible(3))
         self.assert_(v.incompatible(3.14))
-        self.assert_(v.match(""))
+        self.assert_(v.has_defaulted(""))
         self.assert_(v.match("http://example.com/"))
         self.assert_(v.incompatible(_dateToday()))
         self.assert_(v.incompatible(_uuid()))
@@ -263,7 +263,7 @@ class LLIDLTypeTests(unittest.TestCase):
         Maps to test scenarios module:llidl:row#120-132
         """
         v = llidl.parse_value("binary")
-        self.assert_(v.match(None))
+        self.assert_(v.has_defaulted(None))
         self.assert_(v.incompatible(True))
         self.assert_(v.incompatible(3))
         self.assert_(v.incompatible(3.14))
@@ -310,7 +310,7 @@ class LLIDLSelectorTests(unittest.TestCase):
         Maps to test scenario module:llidl:row#156-168
         """
         v = llidl.parse_value("false")
-        self.assert_(v.match(None))
+        self.assert_(v.has_defaulted(None))
         self.assert_(v.incompatible(True))
         self.assert_(v.match(False))
         self.assert_(v.match(0))
@@ -339,20 +339,12 @@ class LLIDLSelectorTests(unittest.TestCase):
         self.assert_(v.incompatible(False))
         self.assert_(v.incompatible(0))
         self.assert_(v.incompatible(3))
-
-        # WTF? Phoenix 2009-10-20
-        self.assert_(v.match(16))
+        self.assert_(v.match(1983))
         self.assert_(v.incompatible(0.0))
-
-        # WTF? Phoenix 2009-10-20
-        self.assert_(v.match(16.0))
-
-        # WTF? Phoenix 2009-10-20
-        self.assert_(v.match(16.2))
+        self.assert_(v.match(1983.0))
+        self.assert_(v.match(1983.2))
         self.assert_(v.incompatible(""))
-
-        # WTF? Phoenix 2009-10-20
-        self.assert_(v.match("16"))
+        self.assert_(v.match("1983"))
         self.assert_(v.incompatible(_dateToday()))
         self.assert_(v.incompatible(_uuid()))
         self.assert_(v.incompatible(_uri()))
@@ -363,14 +355,14 @@ class LLIDLSelectorTests(unittest.TestCase):
         Tests the parse and match for a integer selector with value 0.
         """
         v = llidl.parse_value("0")
-        self.assert_(v.match(None))
+        self.assert_(v.has_defaulted(None))
         self.assert_(v.incompatible(True))
         self.assert_(v.match(False))
         self.assert_(v.match(0))
         self.assert_(v.incompatible(3))
         self.assert_(v.match(0.0))
         self.assert_(v.incompatible(16.0))
-        self.assert_(v.match(""))
+        self.assert_(v.has_defaulted(""))
         self.assert_(v.match("0"))
         self.assert_(v.incompatible(_dateToday()))
         self.assert_(v.incompatible(_uuid()))
@@ -392,9 +384,8 @@ class LLIDLSelectorTests(unittest.TestCase):
         self.assert_(v.incompatible(0.0))
         self.assert_(v.incompatible(16.0))
         self.assert_(v.incompatible(""))
-
-        # WTF? Phoenix 2009-10-20
-        self.assert_(v.match("bob"))
+        self.assert_(v.match("secondLife"))
+        self.assert_(v.incompatible("1983"))
         self.assert_(v.incompatible(_dateToday()))
         self.assert_(v.incompatible(_uuid()))
         self.assert_(v.incompatible(_uri()))
@@ -459,13 +450,13 @@ class LLIDLArrayTests(unittest.TestCase):
         v = llidl.parse_value("[real, real, real]")
 
         #  1 element array
-        self.assert_(v.incompatible([1.23]))
+        self.assert_(not v.match([1.23]))
 
         # 2 elements array
-        self.assert_(v.incompatible([1.23, 789.0]))
+        self.assert_(not v.match([1.23, 789.0]))
 
         # 4 elements array ( > 3)
-        self.assert_(v.incompatible([1.23, 2.3, 4.56, 5.67]))
+        self.assert_(not v.match([1.23, 2.3, 4.56, 5.67]))
 
     def testFixedLengthSameValueSameLength(self):
         """
@@ -515,9 +506,9 @@ class LLIDLArrayTests(unittest.TestCase):
         """
         v = llidl.parse_value("[int, string]")
 
-        self.assert_(v.incompatible([123]))
+        self.assert_(not v.match([123]))
         self.assert_(v.incompatible(['str1']))
-        self.assert_(v.incompatible([123, 'str1', 'str2']))
+        self.assert_(not v.match([123, 'str1', 'str2']))
         self.assert_(v.incompatible(['str1', 123, 345]))
 
     def testFixedLengthDifferentValuesSameLength(self):
@@ -623,9 +614,9 @@ class LLIDLArrayTests(unittest.TestCase):
         """
         v = llidl.parse_value("[string, int,...]")
 
-        self.assert_(v.incompatible(['str']))
-        self.assert_(v.incompatible([12345]))
-        self.assert_(v.incompatible(['str', 123, 'str2']))
+        self.assert_(not v.match(['str']))
+        self.assert_(not v.match([12345]))
+        self.assert_(not v.match(['str', 123, 'str2']))
         self.assert_(v.incompatible(['foo', 'bar']))
 
         self.assert_(v.match(['foo', 123]))
@@ -679,11 +670,11 @@ class LLIDLMapTests(unittest.TestCase):
         self.assert_(v.incompatible([]))
 
         # empty map
-        self.assert_(v.match({}))
+        self.assert_(v.has_defaulted({}))
 
         # one entry map
-        self.assert_(v.match({'name': 'ant'}))
-        self.assert_(v.match({'phone': 42312334}))
+        self.assert_(v.has_defaulted({'name': 'ant'}))
+        self.assert_(v.has_defaulted({'phone': 42312334}))
         self.assert_(v.incompatible({'phone' : 'error'}))
 
         # two entries map
@@ -721,7 +712,7 @@ class LLIDLMapTests(unittest.TestCase):
         # two entires map
         self.assert_(v.match({'id1': 1234, 'id2': 100}))
         self.assert_(v.incompatible({'id1': 1234, 'phone' : 'error'}))
-        self.assert_(v.match({'id1': None, 'id2': 100}))
+        self.assert_(v.has_defaulted({'id1': None, 'id2': 100}))
 
         # many entires map
         self.assert_(v.match({'id1': 1234, 'id2': 100, 'id3' : 101, 'id4' : 102}))
@@ -979,8 +970,7 @@ class LLIDLParseSuiteTests(unittest.TestCase):
         """
         s = """
             %% secondlife/updateAllRecords
-            > { day : binary }
-            < undef
+            >> { day : binary }
             """
         self.assert_(llidl.parse_suite(s) != None)
 
@@ -1066,7 +1056,7 @@ class LLIDLParseSuiteTests(unittest.TestCase):
             self.fail('Incorrectly parsed "%s" as valid' % s)
         except llidl.ParseError, e:
             if msg and msg not in str(e):
-                self.fail('Mising "%s" in "%s"' % (msg, str(e)))
+                self.fail('Missing "%s" in "%s"' % (msg, str(e)))
             if line:
                 self.assertEqual(e.line, line)
             if char:
@@ -1099,7 +1089,7 @@ class LLIDLParseSuiteTests(unittest.TestCase):
 -> { name : string }
 <- { id : uuid, data : { recordName : string, stream : binary } }
 """
-        self.checkBadParseSuite(s, 'expected resource name', 2, 11)
+        self.checkBadParseSuite(s, 'malformed name', 2, 15)
 
     def testParseSuiteFailureNoPrefix(self):
         """
@@ -1204,7 +1194,7 @@ foo/bar
 -> { name : string }
 <- { id : uuid, data : { recordName : string, stream : binary } }
 """
-        self.checkBadParseSuite(s, '', 9, 1)
+        self.checkBadParseSuite(s, '', 10, 11)
 
     def testParseSuiteFailureMissVariantDefinitions(self):
         """
@@ -1219,7 +1209,7 @@ foo/bar
 -> { name : string }
 <- { id : uuid, data : { recordName : string, res : &resource } }
 """
-        self.checkBadParseSuite(s, '', 4, 52)
+        self.checkBadParseSuite(s, 'missing', 5, 1)
 
 
 class LLIDLValidTests(unittest.TestCase):
@@ -1251,7 +1241,7 @@ class LLIDLValidTests(unittest.TestCase):
 
          Maps to test scenario module:llidl:row#347
         """
-        self.assert_(not self._suite.valid_request('foo/bar', {'id2' : 123}))
+        self.assert_(self._suite.valid_request('foo/bar', {'id2' : 123}))
 
     def testValidRequest3(self):
         """
@@ -1306,7 +1296,7 @@ class LLIDLValidTests(unittest.TestCase):
         Maps to test scenario module:llidl:row#354
         """
         self.assert_(not self._suite.valid_response('foo/bar',
-        {'name':'Jack', 'rating':1.82, 'updateDate':datetime.datetime.today()}))
+        {'name':'Jack', 'rating':1.82, 'updateTime':False}))
 
     def testValidResponse3(self):
         """
@@ -1357,7 +1347,7 @@ class LLIDLValidTests(unittest.TestCase):
         Maps to test scenario module:llidl:row#360
         """
         try:
-            self._suite.valid_request('foo/bar', {'ids' : 123}, raises=MatchError)
+            self._suite.valid_request('foo/bar', {'id' : [123]}, raises=MatchError)
             self.fail("MatchError should be raised to indicate this.")
         except MatchError:
             pass
@@ -1398,7 +1388,7 @@ class LLIDLValidTests(unittest.TestCase):
         """
         try:
             self._suite.valid_response('foo/bar', {'name': 123, 'rating':1.82,
-            'updateDate':datetime.datetime.today()},raises=MatchError)
+            'updateTime':False},raises=MatchError)
             self.fail("MatchError should be raised to indicate this.")
         except MatchError:
             pass
@@ -1736,11 +1726,11 @@ class LLIDLParsingTests(unittest.TestCase):
         self.assert_(v.match([1]));
         self.assert_(v.has_additional([1,2]));
         v = llidl.parse_value('[int,int]')
-        self.assert_(v.match([1]));
+        self.assert_(v.has_defaulted([1]));
         self.assert_(v.match([1,2]));
         self.assert_(v.has_additional([1,2,3]));
         v = llidl.parse_value('[int,int,]')
-        self.assert_(v.match([1]));
+        self.assert_(v.has_defaulted([1]));
         self.assert_(v.match([1,2]));
         self.assert_(v.has_additional([1,2,3]));
 
@@ -1772,11 +1762,11 @@ class LLIDLParsingTests(unittest.TestCase):
         self.assert_(v.match({'a':1}));
         self.assert_(v.has_additional({'a':1,'b':2}));
         v = llidl.parse_value('{a:int,b:int}')
-        self.assert_(v.match({'a':1}));
+        self.assert_(v.has_defaulted({'a':1}));
         self.assert_(v.match({'a':1,'b':2}));
         self.assert_(v.has_additional({'a':1,'b':2,'c':3}));
         v = llidl.parse_value('{a:int,b:int,}')
-        self.assert_(v.match({'a':1}));
+        self.assert_(v.has_defaulted({'a':1}));
         self.assert_(v.match({'a':1,'b':2}));
         self.assert_(v.has_additional({'a':1,'b':2,'c':3}));
 
@@ -1844,7 +1834,7 @@ class LLIDLSuiteTests(unittest.TestCase):
             suite.match_response('region/hub', { 'loc': [128,128,24] }))
 
         self.assert_(
-            suite.match_request('event_record', { 'log': 'Beep-Beep-Beep' }))
+            suite.valid_request('event_record', { 'log': 'Beep-Beep-Beep' }))
         self.assert_(
             suite.match_response('event_record', 12345))
         
