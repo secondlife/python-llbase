@@ -26,7 +26,7 @@ import copy
 import string
 import uuid
 import unittest
-from llbase import llsd_fuzz
+from llbase.test import llsd_fuzz
 from datetime import datetime, date
 from itertools import islice, izip, count
 

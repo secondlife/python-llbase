@@ -39,7 +39,7 @@ import uuid
 import struct
 
 from llbase import llsd
-from llbase import llsd_fuzz
+from llbase.test import llsd_fuzz
 
 class Foo(object):
     """
@@ -1964,7 +1964,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
     def testFormatPrettyXML(self):
         """
         Test the format_pretty_xml function, characters like \n,\t should be generated within
-        the output to beautify the output xml"
+        the output to beautify the output xml.
 
         This maps to test scenarios module:llsd:test#75
         """

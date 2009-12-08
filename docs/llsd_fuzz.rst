@@ -7,7 +7,7 @@ A fuzz tester cannot test every possible error condition or flaw, but it is rela
 
 Use it by calling one of the generator methods -- :meth:`LLSDFuzzer.structure_fuzz`, :meth:`LLSDFuzzer.xml_fuzz`, :meth:`LLSDFuzzer.binary_fuzz`, or :meth:`LLSDFuzzer.notation_fuzz` -- with a Python data structure that represents a legitimate input to the system under test.  The method will then yield an infinite sequence of variations.  Here's what that looks like::
 
-    >>> from llbase import llsd_fuzz
+    >>> from llbase.test import llsd_fuzz
     >>> from itertools import islice
     >>> lf = llsd_fuzz.LLSDFuzzer(10)
     >>> gen = lf.structure_fuzz({'a':'b'})
@@ -39,5 +39,5 @@ LLSDFuzzer objects are completely deterministic, so it is possible to reproduce 
             raise
                 
 
-.. automodule:: llbase.llsd_fuzz
+.. automodule:: llbase.test.llsd_fuzz
 	:members:
