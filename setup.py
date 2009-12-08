@@ -39,7 +39,7 @@ setup(
     description='Base Linden Lab Pythoon modules',
     platforms=["any"],
     package_dir={PACKAGE_NAME:LLBASE_SOURCE},
-    packages=[PACKAGE_NAME],
+    packages=[PACKAGE_NAME, PACKAGE_NAME + ".test"],
     license='MIT',
     classifiers=filter(None, CLASSIFIERS.split("\n")),
     #requires=['eventlet', 'elementtree'],
