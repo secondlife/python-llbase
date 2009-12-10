@@ -149,6 +149,25 @@ static int esc_extend(Buffer *buf, const char *str, Py_ssize_t len)
 			excess -= 1;
 			// none of these chars are valid in xml, just skip over them
 			break;
+		case '\xef':
+			// we need to drop u'\uffff' and u'\uffee', which are encoded as
+			// '\xef\xbf\xbf' and '\xef\xbf\xbe', because they are not
+			// valid utf-8 (but encode() doesn't drop them for some reason)
+			if (i < (len - 2) && str[i+1] == '\xbf') {
+				switch(str[i+2]) {
+				case '\xbf':
+				case '\xbe':
+					i += 2;
+					excess -= 3;
+					break;
+				default:
+					buf_char_append(buf, str[i]);
+					break;
+				}
+			} else {
+				buf_char_append(buf, str[i]);
+			}
+			break; 
 		default:
 			buf_char_append(buf, str[i]); 
 			break;
