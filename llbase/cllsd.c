@@ -318,9 +318,16 @@ static inline int is_module_type(PyObject *obj, const char *modulename,
 
 static int binary_to_xml(Buffer *buf, PyObject *obj)
 {
+	Py_ssize_t len;
+
 	PyObject *mod;
 	PyObject *base64 = NULL;
 	int ret = 0;
+
+	len = PyString_GET_SIZE(obj);
+	if(0 == len) {
+		return buf_extend(buf, "<binary/>", 9);
+	}
 
 	mod = PyImport_ImportModule("binascii");
 	if (mod == NULL)
