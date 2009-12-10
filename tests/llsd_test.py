@@ -2175,6 +2175,7 @@ class LLSDStressTest(unittest.TestCase):
         print "average time:", delta / self.number, "secs"
 
 
+FUZZ_ITERATIONS = 5000
 class LLSDFuzzTest(unittest.TestCase):
     """
     This class aggregates all the fuzz tests for llsd.
@@ -2189,7 +2190,7 @@ class LLSDFuzzTest(unittest.TestCase):
     def fuzz_parsing_base(self, fuzz_method_name, legit_exceptions):
         fuzzer = llsd_fuzz.LLSDFuzzer(seed=1234)
         fuzz_method = getattr(fuzzer, fuzz_method_name)
-        for f in islice(fuzz_method(self.python_object), 5000):
+        for f in islice(fuzz_method(self.python_object), FUZZ_ITERATIONS):
             try:
                 parsed = llsd.parse(f)
             except legit_exceptions:
@@ -2201,7 +2202,7 @@ class LLSDFuzzTest(unittest.TestCase):
 
     def fuzz_roundtrip_base(self, formatter_method, normalize=None):
         fuzzer = llsd_fuzz.LLSDFuzzer(seed=1234)
-        for f in islice(fuzzer.structure_fuzz(self.python_object), 5000):
+        for f in islice(fuzzer.structure_fuzz(self.python_object), FUZZ_ITERATIONS):
             try:
                 try:
                     text = formatter_method(f)
