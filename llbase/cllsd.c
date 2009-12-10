@@ -117,6 +117,38 @@ static int esc_extend(Buffer *buf, const char *str, Py_ssize_t len)
 				return 0;
 			buf_append(buf, "&gt;", 4);
 			break;
+		case '\x00':
+		case '\x01':
+		case '\x02':
+		case '\x03':
+		case '\x04':
+		case '\x05':
+		case '\x06':
+		case '\x07':
+		case '\x08':
+		case '\x0b':
+		case '\x0c':
+		case '\x0e':
+		case '\x0f':
+		case '\x10':
+		case '\x11':
+		case '\x12':
+		case '\x13':
+		case '\x14':
+		case '\x15':
+		case '\x16':
+		case '\x17':
+		case '\x18':
+		case '\x19':
+		case '\x1a':
+		case '\x1b':
+		case '\x1c':
+		case '\x1d':
+		case '\x1e':
+		case '\x1f':
+			excess -= 1;
+			// none of these chars are valid in xml, just skip over them
+			break;
 		default:
 			buf_char_append(buf, str[i]); 
 			break;
