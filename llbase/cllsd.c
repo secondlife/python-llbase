@@ -191,20 +191,29 @@ bail:
 
 static int float_to_xml(Buffer *buf, PyObject *obj)
 {
-	double val = PyFloat_AS_DOUBLE(obj);
+	double val;
+	PyObject *reprobj;
+	Py_ssize_t len;
 
+	val = PyFloat_AS_DOUBLE(obj);
 	if (val == 0.0)
 		return buf_extend(buf, "<real/>", 7);
 
 	if (!buf_ensure(buf, 120))
 		return 0;
-		
-	buf_append(buf, "<real>", 6);
-	PyFloat_AsString(buf->ptr + buf->off,
-			 (PyFloatObject *) obj);
-	buf->off += strlen(buf->ptr + buf->off);
-	buf_append(buf, "</real>", 7);
 
+	reprobj = PyObject_Repr(obj);
+	if (!reprobj)
+		return 0;
+
+	len = PyString_GET_SIZE(reprobj);
+	if (len) {
+		buf_extend(buf, "<real>", 6);
+		buf_extend(buf, PyString_AS_STRING(reprobj), len);
+		buf_extend(buf, "</real>", 7);
+	}
+	else
+		return buf_extend(buf, "<real/>", 7);
 	return 1;
 }
 
