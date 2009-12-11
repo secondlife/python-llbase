@@ -1,9 +1,6 @@
 #!/usr/bin/env python
-"""
-@file llsd_test.py
-@brief Types as well as parsing and formatting functions for handling LLSD.
-"""
-
+# file: llsd_test.py
+#
 # $LicenseInfo:firstyear=2006&license=mit$
 #
 # Copyright (c) 2006-2009, Linden Research, Inc.
@@ -26,6 +23,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # $/LicenseInfo$
+
+"""
+Types as well as parsing and formatting functions for handling LLSD.
+"""
 
 import base64
 from datetime import datetime, date

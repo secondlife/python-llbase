@@ -1,10 +1,3 @@
-"""
-@package llbase
-@brief Base Linden Lab Pythoon modules
-@package llbase.__init__
-@brief Initialization file for the llbase module.
-"""
-
 # $LicenseInfo:firstyear=2009&license=mit$
 #
 # Copyright (c) 2009, Linden Research, Inc.
@@ -27,3 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # $/LicenseInfo$
+
+"""
+Base Linden Lab Python modules
+"""

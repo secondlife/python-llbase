@@ -1,9 +1,6 @@
 #!/usr/bin/env python
-"""
-@file llidl_speed_test.py
-@brief Performance tests for llidl
-"""
-
+# file: llidl_speed_test.py
+#
 # $LicenseInfo:firstyear=2009&license=mit$
 #
 # Copyright (c) 2009, Linden Research, Inc.
@@ -26,6 +23,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # $/LicenseInfo$
+
+"""
+Performance tests for llidl
+"""
 
 import random
 import string

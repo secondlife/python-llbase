@@ -1,9 +1,6 @@
 #!/usr/bin/env python
-"""
-@file cllsd_test.py
-@brief Types as well as parsing and formatting functions for handling LLSD.
-"""
-
+# file: cllsd_test.py
+#
 # $LicenseInfo:firstyear=2008&license=mit$
 #
 # Copyright (c) 2008-2009, Linden Research, Inc.
@@ -26,6 +23,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # $/LicenseInfo$
+
+"""
+Types as well as parsing and formatting functions for handling LLSD.
+"""
 
 from datetime import datetime
 import os.path
