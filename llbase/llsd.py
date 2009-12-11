@@ -848,6 +848,8 @@ class LLSDNotationParser(object):
         if self._buffer[i:i+2] == '64':
             q = self._buffer[i+2]
             e = self._buffer.find(q, i+3)
+            if e == -1:
+                raise LLSDParseError('Unterminated binary at byte %d' % i,)
             try:
                 try:
                     return base64.decodestring(self._buffer[i+3:e])
