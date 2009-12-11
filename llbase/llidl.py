@@ -1,12 +1,5 @@
-"""
-@file llidl.py
-@package llbase.llidl
-@brief LLIDL parser and value checker.
-
-LLIDL is an interface description language for REST like protocols based on
-the LLSD type system.
-"""
-
+# file: llidl.py
+#
 # $LicenseInfo:firstyear=2009&license=mit$
 #
 # Copyright (c) 2009, Linden Research, Inc.
@@ -30,6 +23,13 @@ the LLSD type system.
 # THE SOFTWARE.
 # $/LicenseInfo$
 
+"""
+LLIDL parser and value checker.
+
+LLIDL is an interface description language for REST like protocols based on
+the LLSD type system.
+"""
+
 import datetime
 import re
 from types import *
@@ -40,9 +40,8 @@ import lluuid
 
 class _Result(object):
     """
-    @brief The result of a llsd/llidl spciciation comparison
+    The result of a llsd/llidl spciciation comparison
 
-    @verbatim
     When comparing a particular llsd value to an llidl specification, there
     are several possible outcomes:
         MATCHED: the structure is as expected, the values all the right type
@@ -57,7 +56,6 @@ class _Result(object):
         MIXED: some were defaulted , some were newer
         INCOMPATIBLE: there were values that just didn't match and can't
             be converted        
-    @endverbatim
     """
     def __init__(self, value, name):
         self._value = value
@@ -101,35 +99,36 @@ class MatchError(Exception):
     
 class Value(object):
     """
-    @brief A single value specification from a LLIDL suite
+    A single value specification from a LLIDL suite
     
-    @verbatim
-    Methods:
-        match(actual)   -- True if the value matches structurally and all 
-                            conversions are valid (non-defaulted)
-        valid(actual)   -- True if the value matches structurally though
-                            defaulted or additional data is acceptable,
-                            all conversions must still be valid (non-defaulted)
+    Tests:
+
+    * match(actual) -- True if the value matches structurally and all 
+      conversions are valid (non-defaulted)
+    * valid(actual) -- True if the value matches structurally though
+      defaulted or additional data is acceptable,
+      all conversions must still be valid (non-defaulted)
         
-        The above two tests take an optional keyword argument 'raises'
-        which determines the exception behavior: If it is None (the default),
-        then the test result is simply returned. Otherwise a exception is
-        raised if the test fails. Which exception is determined by the value
-        of raises:
-            True        -- raises a MatchError
-            a class     -- raises a new instance of the class
-            an instance -- raises that instance
-            a callable  -- raises the result of calling it
-        In the case of both a class or a callable, the error string is supplied
-        as the only argument to constructing or calling.
+    The above two tests take an optional keyword argument 'raises'
+    which determines the exception behavior: If it is None (the default),
+    then the test result is simply returned. Otherwise a exception is
+    raised if the test fails. Which exception is determined by the value
+    of raises
+
+    * True        -- raises a MatchError
+    * a class     -- raises a new instance of the class
+    * an instance -- raises that instance
+    * a callable  -- raises the result of calling it
+
+    In the case of both a class or a callable, the error string is supplied
+    as the only argument to constructing or calling.
         
-        has_additional(actual)  -- True if the value has additional data
-        has_defaulted(actual) -- True if the value has defaulted data
-        incompatible(actual) -- True if the value is incompatible
+    * has_additional(actual)  -- True if the value has additional data
+    * has_defaulted(actual) -- True if the value has defaulted data
+    * incompatible(actual) -- True if the value is incompatible
         
-        The above three tests are primarily for unit testing and do not support
-        the raises feature.
-    @endverbatim
+    The above three tests are primarily for unit testing and do not support
+    the raises feature.
     """
     
     def _set_suite(self, suite):
@@ -561,18 +560,10 @@ class _VariantMatcher(Value):
 
 class Suite(object):
     """
-    @brief A full suite of LLIDL resource descriptions
+    A full suite of LLIDL resource descriptions
     
-    @verbatim
-    Methods:
-        match_request(api_name, value, raises=None)
-        match_response(api_name, value, raises=None)
-        valid_request(api_name, value, raises=None)
-        valid_response(api_name, value, raises=None)
-        
-        See Value.match() and Value.valid() for meanings of match and valid
-        tests, and the operation of the optional raises keyword argument.
-    @endverbatim
+    See Value.match() and Value.valid() for meanings of match and valid
+    tests, and the operation of the optional raises keyword argument.
     """
     
     def __init__(self):
@@ -636,13 +627,12 @@ class Suite(object):
     
 class ParseError(Exception):
     """
-    @brief An error encountered when parsing an LLIDL text.
+    An error encountered when parsing an LLIDL text.
 
-    @verbatim
-    Properties:
-        line - the line the error occurred on
-        char - the character number on the line
-    @endverbatim
+    Properties
+
+    * line - the line the error occurred on
+    * char - the character number on the line
     """
     
     def __init__(self, msg, line, char):

@@ -21,11 +21,7 @@ test:
 	$(PYTHON) setup.py test
 
 doc:
-	doxygen docs/Doxyfile
-	mv build/html  ./llbase-doc
-	tar cvzf llbase-doc.tar.gz llbase-doc
-	rm -rf llbase-doc
-	mv llbase-doc.tar.gz build
+	make -C docs html
 
 install:
 	$(PYTHON) setup.py install --root $(DESTDIR) $(COMPILE)
@@ -41,5 +37,6 @@ clean:
 	fakeroot $(CURDIR)/debian/rules clean
 	rm -rf build/ dist/ MANIFEST
 	find . -name '*.pyc' -delete
+	make -C docs clean
 
 .PHONY: all, source, test, doc, install, rpm, deb, clean

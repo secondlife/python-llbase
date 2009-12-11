@@ -1,15 +1,5 @@
-"""
-@file llsd.py
-@package llbase.llsd
-@brief Types as well as parsing and formatting functions for handling LLSD.
-
-This is the llsd module -- parsers and formatters between the
-supported subset of mime types and python objects. Documentation
-available on the Second Life wiki:
-
-http://wiki.secondlife.com/wiki/LLSD
-"""
-
+# file llsd.py
+#
 # $LicenseInfo:firstyear=2006&license=mit$
 #
 # Copyright (c) 2006-2009, Linden Research, Inc.
@@ -33,6 +23,17 @@ http://wiki.secondlife.com/wiki/LLSD
 # THE SOFTWARE.
 # $/LicenseInfo$
 
+"""
+Types as well as parsing and formatting functions for handling LLSD.
+
+This is the llsd module -- parsers and formatters between the
+supported subset of mime types and python objects. Documentation
+available on the Second Life wiki:
+
+http://wiki.secondlife.com/wiki/LLSD
+"""
+
+
 import base64
 import binascii
 import datetime
@@ -54,20 +55,20 @@ BINARY_MIME_TYPE = 'application/llsd+binary'
 NOTATION_MIME_TYPE = 'application/llsd+notation'
 
 class LLSDParseError(Exception):
-    "@brief Exception raised when the parser fails."
+    "Exception raised when the parser fails."
     pass
 
 class LLSDSerializationError(TypeError):
-    "@brief Exception raised when serialization fails."
+    "Exception raised when serialization fails."
     pass
 
 
 class binary(str):
-    "@brief Simple wrapper for llsd.binary data."
+    "Simple wrapper for llsd.binary data."
     pass
 
 class uri(str):
-    "@brief Simple wrapper for llsd.uri data."
+    "Simple wrapper for llsd.uri data."
     pass
 
 _int_regex = re.compile(r"[-+]?\d+")
@@ -80,8 +81,8 @@ _date_regex = re.compile(r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T"
 
 def _format_datestr(v):
     """
-    @brief Formats a datetime or date object into the string format
-    shared by xml and notation serializations.
+    Formats a datetime or date object into the string format shared by
+    xml and notation serializations.
     """
     if hasattr(v, 'microsecond'):
         return v.isoformat() + 'Z'
@@ -218,8 +219,9 @@ def remove_invalid_xml_bytes(s):
 
 class LLSDXMLFormatter(object):
     """
-    @brief Class which implements LLSD XML serialization..
-    @see http://wiki.secondlife.com/wiki/LLSD#XML_Serialization
+    Class which implements LLSD XML serialization..
+
+    http://wiki.secondlife.com/wiki/LLSD#XML_Serialization
 
     This class wraps both a pure python and c-extension for formatting
     a limited subset of python objects as application/llsd+xml. You do
@@ -323,9 +325,10 @@ class LLSDXMLFormatter(object):
 
     def format(self, something):
         """
-        @brief Format a python object as application/llsd+xml
-        @param something A python object (typically a dict) to be serialized.
-        @return Returns an XML formatted string.
+        Format a python object as application/llsd+xml
+
+        :param something: A python object (typically a dict) to be serialized.
+        :returns: Returns an XML formatted string.
         """
         if cllsd:
             return cllsd.llsd_to_xml(something)
@@ -334,10 +337,12 @@ class LLSDXMLFormatter(object):
 _g_xml_formatter = None
 def format_xml(something):
     """
-    @brief Format a python object as application/llsd+xml
-    @param something a python object (typically a dict) to be serialized.
-    @return Returns an XML formatted string.
-    @see http://wiki.secondlife.com/wiki/LLSD#XML_Serialization
+    Format a python object as application/llsd+xml
+
+    :param something: a python object (typically a dict) to be serialized.
+    :returns: Returns an XML formatted string.
+
+    Ssee http://wiki.secondlife.com/wiki/LLSD#XML_Serialization
 
     This function wraps both a pure python and c-extension for formatting
     a limited subset of python objects as application/llsd+xml.
@@ -349,8 +354,9 @@ def format_xml(something):
 
 class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
     """
-    @brief Class which implements 'pretty' LLSD XML serialization..
-    @see http://wiki.secondlife.com/wiki/LLSD#XML_Serialization
+    Class which implements 'pretty' LLSD XML serialization..
+
+    See http://wiki.secondlife.com/wiki/LLSD#XML_Serialization
 
     The output conforms to the LLSD DTD, unlike the output from the
     standard python xml.dom DOM::toprettyxml() method which does not
@@ -417,9 +423,10 @@ class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
 
     def format(self, something):
         """
-        @brief Format a python object as application/llsd+xml
-        @param something a python object (typically a dict) to be serialized.
-        @return Returns an XML formatted string.
+        Format a python object as application/llsd+xml
+
+        :param something: a python object (typically a dict) to be serialized.
+        :returns: Returns an XML formatted string.
         """
         data = []
         data.append('<?xml version="1.0" ?>\n<llsd>')
@@ -429,10 +436,12 @@ class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
 
 def format_pretty_xml(something):
     """
-    @brief Serialize a python object as 'pretty' application/llsd+xml.
-    @param something a python object (typically a dict) to be serialized.
-    @return Returns an XML formatted string.
-    @see http://wiki.secondlife.com/wiki/LLSD#XML_Serialization
+    Serialize a python object as 'pretty' application/llsd+xml.
+
+    :param something: a python object (typically a dict) to be serialized.
+    :returns: Returns an XML formatted string.
+
+    See http://wiki.secondlife.com/wiki/LLSD#XML_Serialization
 
     The output conforms to the LLSD DTD, unlike the output from the
     standard python xml.dom DOM::toprettyxml() method which does not
@@ -445,8 +454,9 @@ def format_pretty_xml(something):
 
 class LLSDNotationFormatter(object):
     """
-    @brief Serialize a python object as application/llsd+notation 
-    @see http://wiki.secondlife.com/wiki/LLSD#Notation_Serialization
+    Serialize a python object as application/llsd+notation 
+
+    See http://wiki.secondlife.com/wiki/LLSD#Notation_Serialization
     """
     def __init__(self):
         "Construct a notation serializer."
@@ -520,18 +530,21 @@ class LLSDNotationFormatter(object):
 
     def format(self, something):
         """
-        @brief Format a python object as application/llsd+notation
-        @param something a python object (typically a dict) to be serialized.
-        @return Returns a LLSD notation formatted string.
+        Format a python object as application/llsd+notation
+
+        :param something: a python object (typically a dict) to be serialized.
+        :returns: Returns a LLSD notation formatted string.
         """
         return self._generate(something)
 
 def format_notation(something):
     """
-    @brief Format a python object as application/llsd+notation
-    @param something a python object (typically a dict) to be serialized.
-    @return Returns a LLSD notation formatted string.
-    @see http://wiki.secondlife.com/wiki/LLSD#Notation_Serialization
+    Format a python object as application/llsd+notation
+
+    :param something: a python object (typically a dict) to be serialized.
+    :returns: Returns a LLSD notation formatted string.
+
+    See http://wiki.secondlife.com/wiki/LLSD#Notation_Serialization
     """
     return LLSDNotationFormatter().format(something)
 
@@ -548,18 +561,20 @@ def _hex_as_nybble(hex):
 
 class LLSDBinaryParser(object):
     """
-    @brief Parse application/llsd+binary to a python object.
-    @see http://wiki.secondlife.com/wiki/LLSD#Binary_Serialization
+    Parse application/llsd+binary to a python object.
+
+    See http://wiki.secondlife.com/wiki/LLSD#Binary_Serialization
     """
     def __init__(self):
         pass
 
     def parse(self, buffer, ignore_binary = False):
         """
-        @brief This is the basic public interface for parsing.
-        @param buffer the binary data to parse in an indexable sequence.
-        @param ignore_binary parser throws away data in llsd binary nodes.
-        @return returns a python object.
+        This is the basic public interface for parsing.
+
+        :param buffer: the binary data to parse in an indexable sequence.
+        :param ignore_binary: parser throws away data in llsd binary nodes.
+        :returns: returns a python object.
         """
         self._buffer = buffer
         self._index = 0
@@ -746,22 +761,21 @@ class LLSDBinaryParser(object):
 
 class LLSDNotationParser(object):
     """
-    @brief Parse LLSD notation.
-    @see http://wiki.secondlife.com/wiki/LLSD#Notation_Serialization
+    Parse LLSD notation.
 
-    @verbatim
-    map: { string:object, string:object }
-    array: [ object, object, object ]
-    undef: !
-    boolean: true | false | 1 | 0 | T | F | t | f | TRUE | FALSE
-    integer: i####
-    real: r####
-    uuid: u####
-    string: "g\'day" | 'have a "nice" day' | s(size)"raw data"
-    uri: l"escaped"
-    date: d"YYYY-MM-DDTHH:MM:SS.FFZ"
-    binary: b##"ff3120ab1" | b(size)"raw data"
-    @endverbatim
+    See http://wiki.secondlife.com/wiki/LLSD#Notation_Serialization
+
+    * map: { string:object, string:object }
+    * array: [ object, object, object ]
+    * undef: !
+    * boolean: true | false | 1 | 0 | T | F | t | f | TRUE | FALSE
+    * integer: i####
+    * real: r####
+    * uuid: u####
+    * string: "g\'day" | 'have a "nice" day' | s(size)"raw data"
+    * uri: l"escaped"
+    * date: d"YYYY-MM-DDTHH:MM:SS.FFZ"
+    * binary: b##"ff3120ab1" | b(size)"raw data"
     """
     def __init__(self):
         "Construct a notation parser"
@@ -769,10 +783,11 @@ class LLSDNotationParser(object):
 
     def parse(self, buffer, ignore_binary = False):
         """
-        @brief This is the basic public interface for parsing.
-        @param buffer the notation string to parse.
-        @param ignore_binary parser throws away data in llsd binary nodes.
-        @return returns a python object.
+        This is the basic public interface for parsing.
+        
+        :param buffer: the notation string to parse.
+        :param ignore_binary: parser throws away data in llsd binary nodes.
+        :returns: returns a python object.
         """
         if buffer == "":
             return False
@@ -1058,9 +1073,12 @@ class LLSDNotationParser(object):
         
 def format_binary(something):
     """
-    @brief Format application/llsd+binary to a python object.
-    @return Returns a LLSD binary formatted string.
-    @see http://wiki.secondlife.com/wiki/LLSD#Binary_Serialization
+    Format application/llsd+binary to a python object.
+ 
+    See http://wiki.secondlife.com/wiki/LLSD#Binary_Serialization
+
+   :param something: a python object (typically a dict) to be serialized.
+   :returns: Returns a LLSD binary formatted string.
     """
     return '<?llsd/binary?>\n' + _format_binary_recurse(something)
 
@@ -1130,9 +1148,10 @@ def _format_binary_recurse(something):
 
 def parse_binary(something):
     """
-    @brief This is the basic public interface for parsing llsd+binary.
-    @param something The data to parse in an indexable sequence.
-    @return Returns a python object.
+    This is the basic public interface for parsing llsd+binary.
+
+    :param something: The data to parse in an indexable sequence.
+    :returns: Returns a python object.
     """
     if something.startswith('<?llsd/binary?>'):
         just_binary = something.split('\n', 1)[1]
@@ -1148,9 +1167,10 @@ def validate_xml_declaration(something):
 
 def parse_xml(something):
     """
-    @brief This is the basic public interface for parsing llsd+xml.
-    @param something The data to parse.
-    @return Returns a python object.
+    This is the basic public interface for parsing llsd+xml.
+
+    :param something: The data to parse.
+    :returns: Returns a python object.
     """
     try:
         # validate xml declaration manually until http://bugs.python.org/issue7138 is fixed
@@ -1161,18 +1181,20 @@ def parse_xml(something):
 
 def parse_notation(something):
     """
-    @brief This is the basic public interface for parsing llsd+notation.
-    @param something The data to parse.
-    @return Returns a python object.
+    This is the basic public interface for parsing llsd+notation.
+
+    :param something: The data to parse.
+    :returns: Returns a python object.
     """
     return LLSDNotationParser().parse(something)
 
 def parse(something, mime_type = None):
     """
-    @brief This is the basic public interface for parsing llsd.
-    @param something The data to parse.
-    @param mime_type The mime_type of the data if it is known.
-    @return Returns a python object.
+    This is the basic public interface for parsing llsd.
+
+    :param something: The data to parse.
+    :param mime_type: The mime_type of the data if it is known.
+    :returns: Returns a python object.
     """
     if mime_type in (XML_MIME_TYPE, 'application/llsd'):
         return parse_xml(something)

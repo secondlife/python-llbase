@@ -1,9 +1,5 @@
-"""
-@file lluuid.py
-@package llbase.lluuid
-@brief System uuid wrapper for our usage
-"""
-
+# file lluuid.py
+#
 # $LicenseInfo:firstyear=2004&license=mit$
 #
 # Copyright (c) 2004-2009, Linden Research, Inc.
@@ -27,6 +23,9 @@
 # THE SOFTWARE.
 # $/LicenseInfo$
 
+"""
+System uuid wrapper for our usage
+"""
 
 import uuid
 try:
@@ -44,13 +43,12 @@ def generate():
 
 def is_str_uuid(id_str):
     """
-
     Check if a passed in string can be interpreted as a UUID. Returns
     True on success and False otherwise. This function essentially
     strips the hypens so both 589EF487-197B-4822-911A-811BB011716A and
     589EF487197B4822911A811BB011716A. will be treated as valid uuids.
 
-    @param uuid_str The string to test
+    :param uuid_str: The string to test
     """
     try:
         the_id = uuid.UUID(id_str)

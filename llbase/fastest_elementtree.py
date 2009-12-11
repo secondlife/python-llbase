@@ -1,24 +1,5 @@
-"""
-@file fastest_elementtree.py
-@package llbase.fastest_elementtree
-@brief Concealing some gnarly import logic in here. This should export
-the interface of elementtree.
-
-The parsing exception raised by the underlying library depends on the
-ElementTree implementation we're using, so we provide an alias here.
-
-Generally, you can use this module as a drop in replacement for how
-you would use ElementTree or cElementTree.
-
-<pre>
-from fastest_elementtree import fromstring
-fromstring(...)
-</pre>
-
-Use ElementTreeError as the exception type for catching parsing
-errors.
-"""
-
+# file: fastest_elementtree.py
+#
 # $LicenseInfo:firstyear=2008&license=mit$
 #
 # Copyright (c) 2008-2009, Linden Research, Inc.
@@ -41,6 +22,25 @@ errors.
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 # $/LicenseInfo$
+
+"""
+Concealing some gnarly import logic in here. This should export
+the interface of elementtree.
+
+The parsing exception raised by the underlying library depends on the
+ElementTree implementation we're using, so we provide an alias here.
+
+Generally, you can use this module as a drop in replacement for how
+you would use ElementTree or cElementTree.
+
+<pre>
+from fastest_elementtree import fromstring
+fromstring(...)
+</pre>
+
+Use ElementTreeError as the exception type for catching parsing
+errors.
+"""
 
 ##
 # Using cElementTree might cause some unforeseen problems, so here's a
