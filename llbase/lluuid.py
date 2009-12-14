@@ -36,6 +36,13 @@ except ImportError:
     # Python 2.5 and earlier
     from md5 import new as md5
 
+# Regular expression string to slap into your code when you need to
+# find a regular expression somewhere.
+REGEX_STR = r'([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})'
+
+# Either make one yourself or use this one when you need a null uuid.
+NULL = uuid.UUID(int=0)
+
 def generate():
     """
     Return an md5 hash of a newly generated random uuid. This matches
