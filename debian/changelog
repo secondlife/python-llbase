@@ -1,3 +1,15 @@
+llbase (0.2.0) unstable; urgency=low
+
+  * New llbase.test.llsd_fuzz module
+  * New llbase.lluuid NULL id and REGEX_STR constants
+  * LLIDL improvements and bug fixes
+  * LLSD bug fixes
+  * Improved documentation
+  * Documentation ported to sphinx
+  * Added debian packaging dependency on python-uuid
+
+ -- Phoenix Linden <phoenix@lindenlab.com>  Wed,  16 Dec 2009 11:30:25 -0700
+
 llbase (0.1.0) unstable; urgency=low
 
   * Initial release.

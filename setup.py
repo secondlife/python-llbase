@@ -9,7 +9,7 @@ import test
 
 
 PACKAGE_NAME = 'llbase'
-LLBASE_VERSION = '0.1.0'
+LLBASE_VERSION = '0.2.0'
 LLBASE_SOURCE = 'llbase'
 CLASSIFIERS = """\
 Development Status :: 4 - Beta
