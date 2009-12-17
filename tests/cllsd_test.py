@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # file: cllsd_test.py
 #
 # $LicenseInfo:firstyear=2008&license=mit$
@@ -68,13 +67,7 @@ class CLLSDTest(unittest.TestCase):
             print "C extension is not supported on Windows. Test abort."
             return
         
-        # *HACK: in order to import a private library module, we have
-        # to dip into the actual module level and import it
-        # there. Modify and restore
-        old_first = sys.path[0]
-        sys.path[0] = os.path.join(old_first, 'llbase')
         import _cllsd as cllsd
-        sys.path[0] = old_first
         
         if debug:
             print '%r => %r' % (v, cllsd.llsd_to_xml(v))
@@ -101,11 +94,12 @@ class CLLSDTest(unittest.TestCase):
 
         self.assertEquals(a, llsd.parse(cresult))
         self.assertEquals(a, llsd.parse(presult))
-
         #self.assertEquals(chash, phash)
+
         if debug:
             print 'Speedup:', t2 / t1
-            
+
+
     def testCLLSDPerformanceString(self):
         """
         Test performance for serialization of a large mixed array which

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # file: lluuid_test.py
 #
 # $LicenseInfo:firstyear=2009&license=mit$

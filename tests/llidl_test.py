@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # file: llidl_test.py
 #
 # $LicenseInfo:firstyear=2009&license=mit$
@@ -392,7 +391,7 @@ class LLIDLSelectorTests(unittest.TestCase):
         self.assert_(v.incompatible(_uri()))
         self.assert_(v.incompatible(_binary()))
 
-    def x_test_string_empty(self):
+    def x_t_est_string_empty(self):
         # currently the draft doesn't support this test
         v = llidl.parse_value('""')
         self.assert_(v.match(None))
@@ -1927,6 +1926,7 @@ class LLIDLExceptionTests(unittest.TestCase):
                 "Resource name 'some_api' not found in suite.")
             
 class LLIDLReportingTests(unittest.TestCase):
+    __test__ = False
     def x_test_detail(self):
         """not yet implemented"""
         v = llidl.parse_value("{ size: int }")

@@ -4,6 +4,9 @@
 PYTHON=`which python`
 VERSION=0.2.0
 DESTDIR=/
+LIBPATH:=$(shell pwd)/build/lib.linux-x86_64-2.4
+CLLSDPATH:=$(shell pwd)/build/lib.linux-x86_64-2.4/llbase
+PYTHONPATH:=$(LIBPATH):$(CLLSDPATH)
 
 all:
 	@echo "make source - Create source package"
@@ -18,7 +21,8 @@ source:
 	$(PYTHON) setup.py sdist $(COMPILE)
 
 test:
-	$(PYTHON) setup.py test
+	$(PYTHON) setup.py build
+	PYTHONPATH=$(PYTHONPATH); nosetests
 
 doc:
 	make -C docs html

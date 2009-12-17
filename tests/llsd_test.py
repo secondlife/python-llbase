@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # file: llsd_test.py
 #
 # $LicenseInfo:firstyear=2006&license=mit$

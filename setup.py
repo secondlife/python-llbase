@@ -44,5 +44,4 @@ setup(
     classifiers=filter(None, CLASSIFIERS.split("\n")),
     #requires=['eventlet', 'elementtree'],
     ext_modules=ext_modules,
-    cmdclass = {'test':test.TestCommand},
     )

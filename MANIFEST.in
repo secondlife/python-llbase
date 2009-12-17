@@ -5,4 +5,3 @@ include INSTALL
 include Makefile
 include MANIFEST.in
 include setup.py setup.cfg
-include test.py
