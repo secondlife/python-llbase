@@ -14,7 +14,7 @@ LLBASE_SOURCE = 'llbase'
 CLASSIFIERS = """\
 Development Status :: 4 - Beta
 Intended Audience :: Developers
-License :: OSI Approved :: MIT
+License :: OSI Approved :: MIT License
 Programming Language :: Python
 Programming Language :: C
 Topic :: Software Development
@@ -33,10 +33,10 @@ if PLATFORM_IS_WINDOWS:
 setup(
     name=PACKAGE_NAME,
     version=LLBASE_VERSION,
-    author='Phoenix',
-    author_email='phoenix@secondlife.com',
-    url='http://bitbucket.org/phoenix_linden/llbase/',
-    description='Base Linden Lab Pythoon modules',
+    author='Phoenix Linden',
+    author_email='enus@secondlife.com',
+    url='http://bitbucket.org/lindenlab/llbase/',
+    description='Base Linden Lab Python modules',
     platforms=["any"],
     package_dir={PACKAGE_NAME:LLBASE_SOURCE},
     packages=[PACKAGE_NAME, PACKAGE_NAME + ".test"],
