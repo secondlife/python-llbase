@@ -1,0 +1,6 @@
+# This file is used by Linden Lab's internal build process
+# it is not directly relevant to any external build process
+
+build_Darwin = false
+
+#eof
