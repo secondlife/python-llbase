@@ -291,7 +291,7 @@ class LLSDXMLFormatter(object):
         else:
             return self._elt('uuid', v)
     def BINARY(self, v):
-        return self._elt('binary', base64.encodestring(v))
+        return self._elt('binary', base64.b64encode(v))
     def STRING(self, v):
         return self._elt('string', self.xml_esc(v))
     def URI(self, v):
@@ -496,7 +496,7 @@ class LLSDNotationFormatter(object):
     def UUID(self, v):
         return "u%s" % v
     def BINARY(self, v):
-        return 'b64"' + base64.encodestring(v) + '"'
+        return 'b64"' + base64.b64encode(v) + '"'
     def STRING(self, v):
         if isinstance(v, unicode):
             v = v.encode('utf-8')
