@@ -2316,5 +2316,27 @@ class LLSDFuzzTest(unittest.TestCase):
             return s
         self.fuzz_roundtrip_base(llsd.format_xml, normalize)
         
+class Regression(unittest.TestCase):
+    '''
+    Regression tests.
+    '''
+
+    def test_no_newline_in_base64_notation(self):
+        n = llsd.format_notation(llsd.binary('\0'*100))
+        self.assertEqual(n.replace('\n', ''), n)
+
+    def test_no_newline_in_base64_xml(self):
+        n = llsd.format_xml(llsd.binary('\0'*100))
+        self.assertEqual(n.replace('\n', ''), n)
+
+    def test_no_newline_in_base64_xml_sans_cllsd(self):
+        try:
+            real_cllsd = llsd.cllsd
+            llsd.cllsd = None
+            n = llsd.format_xml(llsd.binary('\0'*100))
+        finally:
+            llsd.cllsd = real_cllsd
+        self.assertEqual(n.replace('\n', ''), n)
+
 if __name__ == '__main__':
     unittest.main()
