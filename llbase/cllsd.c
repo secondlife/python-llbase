@@ -385,17 +385,22 @@ static int binary_to_xml(Buffer *buf, PyObject *obj)
 	int ret = 0;
 
 	len = PyString_GET_SIZE(obj);
-	if(0 == len) {
+	if (len == 0)
 		return buf_extend(buf, "<binary/>", 9);
-	}
 
 	mod = PyImport_ImportModule("binascii");
 	if (mod == NULL)
 		goto bail;
 	
 	base64 = PyObject_CallMethod(mod, "b2a_base64", "O", obj);
-	if (base64)
-		ret = obj_to_xml(buf, "binary", base64);
+	if (base64) {
+		/* Trim off the trailing newline. */
+		len = PyString_Size(base64);
+		if (len > 0)
+			_PyString_Resize(&base64, len-1);
+		if (base64)
+			ret = obj_to_xml(buf, "binary", base64);
+	}
 
 bail:
 	Py_XDECREF(base64);
