@@ -22,7 +22,7 @@ source:
 
 test:
 	$(PYTHON) setup.py build
-	PYTHONPATH=$(PYTHONPATH); nosetests
+	PYTHONPATH=$(PYTHONPATH) nosetests
 
 doc:
 	make -C docs html
