@@ -38,7 +38,7 @@ except ImportError:
 
 # Regular expression string to slap into your code when you need to
 # find a regular expression somewhere.
-REGEX_STR = r'([a-fA-F0-9]{8}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{12})'
+REGEX_STR = r'\b(?:[a-fA-F0-9]{8}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{4}-?[a-fA-F0-9]{12})\b'
 
 # Either make one yourself or use this one when you need a null uuid.
 NULL = uuid.UUID(int=0)
