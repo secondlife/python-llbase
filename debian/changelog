@@ -1,4 +1,4 @@
-llbase (0.2.0) unstable; urgency=low
+llbase (0.2) unstable; urgency=low
 
   * New llbase.test.llsd_fuzz module
   * New llbase.lluuid NULL id and REGEX_STR constants
