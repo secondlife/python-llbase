@@ -1,7 +1,12 @@
 #!/usr/bin/make -f
 # -*- makefile -*-
 
-PYTHON=`which python`
+PYTHON_VERSIONS := $(shell pyversions -vr)
+INSTALL_TARGETS := $(addprefix install-version-,$(PYTHON_VERSIONS))
+SOURCE_TARGETS := $(addprefix source-version-,$(PYTHON_VERSIONS))
+BUILD_TARGETS := $(addprefix build-version-,$(PYTHON_VERSIONS))
+TEST_TARGETS := $(addprefix test-version-,$(PYTHON_VERSIONS))
+RPM_TARGETS := $(addprefix rpm-version-,$(PYTHON_VERSIONS))
 VERSION=0.2.0
 DESTDIR=/
 NOSETESTS=`which nosetests`
@@ -15,27 +20,38 @@ all:
 	@echo "make deb - Generate a deb package"
 	@echo "make clean - Get rid of scratch and byte files"
 
-source:
-	$(PYTHON) setup.py sdist $(COMPILE)
+source: $(SOURCE_TARGETS)
 
-test:
-	$(PYTHON) setup.py build
-	for entry in build/lib.*/llbase; \
+$(SOURCE_TARGETS): source-version-%:
+	python$* setup.py sdist $(COMPILE)
+
+test: $(TEST_TARGETS)
+
+$(TEST_TARGETS): test-version-%: build-version-%
+	for entry in build/lib.*-$*/llbase; \
 	do \
 	  lib=$$(dirname $$entry); \
 	  ver=$$(echo $$lib | sed 's/.*-//'); \
 	  echo PYTHONPATH=$$entry:$$lib python$$ver $(NOSETESTS); \
-	  PYTHONPATH=$$entry:$$lib python$$ver $(NOSETESTS); \
-	done
+	  PYTHONPATH=$$entry:$$lib python$$ver $(NOSETESTS) || rc=$$?; \
+	done; \
+	exit $$?
+
+$(BUILD_TARGETS): build-version-%:
+	python$* setup.py build
 
 doc:
 	make -C docs html
 
-install:
-	$(PYTHON) setup.py install --root $(DESTDIR) $(COMPILE)
+install: $(INSTALL_TARGETS)
 
-rpm:
-	$(PYTHON) setup.py bdist_rpm --post-install=rpm/postinstall --pre-uninstall=rpm/preuninstall
+$(INSTALL_TARGETS): install-version-%:
+	python$* setup.py install --root $(DESTDIR) $(COMPILE)
+
+rpm: $(RPM_TARGETS)
+
+$(RPM_TARGETS): rpm-version-%:
+	python$* setup.py bdist_rpm --post-install=rpm/postinstall --pre-uninstall=rpm/preuninstall
 
 deb:
 	fakeroot $(CURDIR)/debian/rules binary
@@ -47,4 +63,9 @@ clean:
 	find . -name '*.pyc' -delete
 	make -C docs clean
 
-.PHONY: all, source, test, doc, install, rpm, deb, clean
+.PHONY: all source test doc install rpm deb clean\
+   $(INSTALL_TARGETS)\
+   $(SOURCE_TARGETS)\
+   $(BUILD_TARGETS)\
+   $(TEST_TARGETS)\
+   $(RPM_TARGETS)
