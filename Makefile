@@ -4,9 +4,7 @@
 PYTHON=`which python`
 VERSION=0.2.0
 DESTDIR=/
-LIBPATH:=$(shell pwd)/build/lib.linux-x86_64-2.4
-CLLSDPATH:=$(shell pwd)/build/lib.linux-x86_64-2.4/llbase
-PYTHONPATH:=$(LIBPATH):$(CLLSDPATH)
+NOSETESTS=`which nosetests`
 
 all:
 	@echo "make source - Create source package"
@@ -22,7 +20,13 @@ source:
 
 test:
 	$(PYTHON) setup.py build
-	PYTHONPATH=$(PYTHONPATH) nosetests
+	for entry in build/lib.*/llbase; \
+	do \
+	  lib=$$(dirname $$entry); \
+	  ver=$$(echo $$lib | sed 's/.*-//'); \
+	  echo PYTHONPATH=$$entry:$$lib python$$ver $(NOSETESTS); \
+	  PYTHONPATH=$$entry:$$lib python$$ver $(NOSETESTS); \
+	done
 
 doc:
 	make -C docs html
