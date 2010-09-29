@@ -35,7 +35,9 @@ $(TEST_TARGETS): test-version-%: build-version-%
 	  echo PYTHONPATH=$$entry:$$lib python$$ver $(NOSETESTS); \
 	  PYTHONPATH=$$entry:$$lib python$$ver $(NOSETESTS) || rc=$$?; \
 	done; \
-	exit $$?
+	exit $$rc
+
+build: $(BUILD_TARGETS)
 
 $(BUILD_TARGETS): build-version-%:
 	python$* setup.py build
@@ -45,8 +47,8 @@ doc:
 
 install: $(INSTALL_TARGETS)
 
-$(INSTALL_TARGETS): install-version-%:
-	python$* setup.py install --root $(DESTDIR) $(COMPILE)
+$(INSTALL_TARGETS): install-version-%: build-version-%
+	python$* setup.py install --root $(DESTDIR) $(COMPILE) --no-compile
 
 rpm: $(RPM_TARGETS)
 

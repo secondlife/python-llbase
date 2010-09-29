@@ -15,18 +15,14 @@ configure-stamp:
 build: configure build-stamp
 build-stamp: 
 	dh_testdir
-	for python in $(PYVERS); do \
-		$$python setup.py build ; \
-	done
+	$(MAKE) build
 	touch build-stamp
 
 clean: configure
 	dh_testdir
 	dh_testroot 
 	rm -fr *-stamp build
-	for python in $(PYVERS); do \
-		$$python setup.py clean ; \
-	done
+	$(MAKE) clean
 	dh_clean
 
 install-arch: build
@@ -35,20 +31,14 @@ install-arch: build
 	dh_clean -k
 	dh_installdirs
 	# llbase
-	for python in $(PYVERS); do \
-            $$python setup.py install \
-		--root=$(CURDIR)/debian/python-llbase --no-compile; \
-	done
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/python-llbase
 
 install-indep: build
 	dh_testdir
 	dh_testroot
 	dh_clean -k
 	dh_installdirs
-	for python in $(PYVERS); do \
-            $$python setup.py install \
-		--root=$(CURDIR)/debian/python-llbase --no-compile; \
-	done
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/python-llbase
 
 # Build architecture-independent files here.
 binary-indep: build install-indep
