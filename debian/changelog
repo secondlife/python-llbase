@@ -1,3 +1,9 @@
+llbase (0.3) unstable; urgency=low
+
+  * Change Build Procedure to support both etch and lenny
+
+ -- Christian Goetze <cg@lindenlab.com>  Fri,  8 Oct 2010 08:18:04 -0700
+
 llbase (0.2) unstable; urgency=low
 
   * New llbase.test.llsd_fuzz module
