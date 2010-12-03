@@ -84,10 +84,10 @@ def _format_datestr(v):
     Formats a datetime or date object into the string format shared by
     xml and notation serializations.
     """
-    if hasattr(v, 'microsecond'):
-        return v.isoformat() + 'Z'
-    else:
-        return v.strftime('%Y-%m-%dT%H:%M:%SZ')
+    if not isinstance(v, datetime.datetime):
+        v = datetime.datetime.combine(v, datetime.time(0))
+    
+    return v.isoformat() + 'Z'
 
 def _parse_datestr(datestr):
     """
