@@ -551,6 +551,21 @@ class LLSDXMLUnitTest(unittest.TestCase):
         if not sys.platform.lower().startswith('win'):
             self.assert_(llsd.cllsd is not None)
 
+    def testStrConversion(self):
+        """
+        Test the __str__() conversion on the LLSD class
+        """
+        some_xml ="\
+<?xml version=\"1.0\" ?>\
+<llsd>\
+<integer>1234</integer>\
+</llsd>"
+
+        c = llsd.LLSD(llsd.parse_xml(some_xml))
+        out_xml = str(c)
+
+        self.assertEqual(some_xml, out_xml)
+
     def testInteger(self):
         """
         Test the parse and serializatioin of input type : integer

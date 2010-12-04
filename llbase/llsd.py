@@ -1227,7 +1227,7 @@ class LLSD(object):
         self.thing = thing
 
     def __str__(self):
-        return self.toXML(self.thing)
+        return self.as_xml(self.thing)
 
     parse = staticmethod(parse)
     as_xml = staticmethod(format_xml)
