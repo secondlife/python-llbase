@@ -84,6 +84,9 @@ def _format_datestr(v):
     Formats a datetime or date object into the string format shared by
     xml and notation serializations.
     """
+    if not isinstance(v, datetime.date) and not isinstance(v, datetime.datetime):
+        raise LLSDParseError("invalid date string %s passed to date formatter" % s)
+    
     if not isinstance(v, datetime.datetime):
         v = datetime.datetime.combine(v, datetime.time(0))
     

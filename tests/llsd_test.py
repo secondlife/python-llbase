@@ -252,6 +252,7 @@ class LLSDNotationUnitTest(unittest.TestCase):
         valid_date_notation_no_float = 'd"2006-02-01T14:29:53Z"'
         valid_date_notation_zero_seconds = 'd"2006-02-01T14:29:00Z"'
         valid_date_notation_filled = 'd"2006-02-01T14:29:05Z"'
+        valid_date_19th_century = 'd"1833-02-01T00:00:00Z"'
 
         blank_date_notation = 'd""'
 
@@ -259,6 +260,7 @@ class LLSDNotationUnitTest(unittest.TestCase):
         python_valid_date_no_float = datetime(2006, 2, 1, 14, 29, 53)
         python_valid_date_zero_seconds = datetime(2006, 2, 1, 14, 29, 0)
         python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 05)
+        python_valid_date_19th_century = datetime(1833,2,1)
 
         python_blank_date = datetime(1970, 1, 1)
 
@@ -273,6 +275,8 @@ class LLSDNotationUnitTest(unittest.TestCase):
 
         self.assertNotationRoundtrip(python_valid_date_filled,
                                        valid_date_notation_filled)
+        self.assertNotationRoundtrip(python_valid_date_19th_century,
+                                        valid_date_19th_century)
 
         self.assertEqual(python_blank_date, self.llsd.parse(blank_date_notation))
 
@@ -743,17 +747,26 @@ class LLSDXMLUnitTest(unittest.TestCase):
 <date />\
 </llsd>"
 
+        before_19th_century_date = "\
+<?xml version=\"1.0\" ?>\
+<llsd>\
+<date>1853-02-01T00:00:00Z</date>\
+</llsd>"
 
         python_valid_date = datetime(2006, 2, 1, 14, 29, 53, 460000)
         python_valid_date_no_fractional = datetime(2006, 2, 1, 14, 29, 53)
         python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 05)
+        python_19th_century_date = datetime(1853, 2, 1)
         python_blank_date = datetime(1970, 1, 1)
+        
         self.assertXMLRoundtrip(python_valid_date,
                                   valid_date_xml)
         self.assertXMLRoundtrip(python_valid_date_no_fractional,
                                   valid_date_xml_no_fractional)
         self.assertXMLRoundtrip(python_valid_date_filled,
                                   valid_date_xml_filled)
+        self.assertXMLRoundtrip(python_19th_century_date,
+                                  before_19th_century_date)
         self.assertEqual(python_blank_date, self.llsd.parse(blank_date_xml))
 
     def testArray(self):
@@ -1756,17 +1769,25 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 <date />\
 </llsd>"
 
+        before_19th_century_date = "\
+<?xml version=\"1.0\" ?>\
+<llsd>\
+<date>1853-02-01T00:00:00Z</date>\
+</llsd>"
 
         python_valid_date = datetime(2006, 2, 1, 14, 29, 53, 460000)
         python_valid_date_no_fractional = datetime(2006, 2, 1, 14, 29, 53)
         python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 05)
         python_blank_date = datetime(1970, 1, 1)
+        python_19th_century_date = datetime(1853, 2, 1)
         self.assertXMLRoundtrip(python_valid_date,
                                   valid_date_xml)
         self.assertXMLRoundtrip(python_valid_date_no_fractional,
                                   valid_date_xml_no_fractional)
         self.assertXMLRoundtrip(python_valid_date_filled,
                                   valid_date_xml_filled)
+        self.assertXMLRoundtrip(python_19th_century_date,
+                                before_19th_century_date)
         self.assertEqual(python_blank_date, self.llsd.parse(blank_date_xml))
 
     def testArray(self):
