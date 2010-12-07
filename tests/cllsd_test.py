@@ -27,7 +27,7 @@
 Types as well as parsing and formatting functions for handling LLSD.
 """
 
-from datetime import datetime
+from datetime import datetime, date
 import os.path
 import sys
 import time
@@ -49,6 +49,7 @@ values = (
     True,
     None,
     datetime.fromtimestamp(time.time()),
+    date(1066,1,1),
     )
 
 class CLLSDTest(unittest.TestCase):
@@ -183,6 +184,12 @@ class CLLSDTest(unittest.TestCase):
         is consistent of map which has a datetime value.
         """
         self.runValueTest(values[11], 1000)
+
+    def testCLLSDFormatDate(self):
+        """
+        Test serialization of a date before the year 1900
+        """
+        self.runValueTest(values[12], 20) 
 
     def testCLLSDPerformanceComposited(self):
         """
