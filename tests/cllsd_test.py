@@ -189,7 +189,18 @@ class CLLSDTest(unittest.TestCase):
         """
         Test serialization of a date before the year 1900
         """
-        self.runValueTest(values[12], 20) 
+        # check whether it's windows platform first
+        if sys.platform.lower().startswith('win'):
+            print "C extension is not supported on Windows. Test abort."
+            return
+        
+        import _cllsd as cllsd
+       
+        a = [[{'a': values[12]}]]
+        b = [[{'a': datetime(1066, 1, 1, 0, 0)}]]
+
+        cresult = cllsd.llsd_to_xml(a)
+        self.assertEquals(b, llsd.parse(cresult))
 
     def testCLLSDPerformanceComposited(self):
         """

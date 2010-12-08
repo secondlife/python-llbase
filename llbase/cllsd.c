@@ -33,6 +33,7 @@
 #include <Python.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
 typedef int Py_ssize_t;
@@ -280,19 +281,7 @@ static int datetime_to_xml(Buffer *buf, PyObject *obj)
 	// Try to get out the microsecond value from obj. If that succeeds
 	// then we need to use isoformat to get fractional
 	// seconds. 2009-02-02 Phoenix
-	has_ms = PyObject_HasAttrString(obj, "microsecond");
-	if(has_ms)
-	{
-		isoobj = PyObject_CallMethod(obj, "isoformat", "()");
-	}
-	else
-	{
-		isoobj = PyObject_CallMethod(
-			obj,
-			"strftime",
-			"s",
-			"%Y-%m-%dT%H:%M:%S");
-	}
+	isoobj = PyObject_CallMethod(obj, "isoformat", "()");
 	if (isoobj == NULL)
 		goto bail;
 
@@ -304,18 +293,26 @@ static int datetime_to_xml(Buffer *buf, PyObject *obj)
 	// string you can get from 'YYYY-MM-DDTHH:MM:SS' which is exactly
 	// 19 bytes. If we used isoformat above then this string is
 	// probably longer.
-	len = PyString_GET_SIZE(strobj);
-	str = PyString_AS_STRING(strobj);
-	if (len < 19)
-	{
-		ret = buf_extend(buf, "<date/>", 7);
-		goto bail;
-	}
+	has_ms = PyObject_HasAttrString(obj, "microsecond");
+    len = PyString_GET_SIZE(strobj);
+    str = PyString_AS_STRING(strobj);
+    if (has_ms && (len < 19))
+    {
+        ret = buf_extend(buf, "<date/>", 7);
+        goto bail;
+    }
 
-	buf_extend(buf, "<date>", 6);
-	buf_extend(buf, str, len);
-	buf_extend(buf, "Z</date>", 8);
-	ret = 1;
+    buf_extend(buf, "<date>", 6);
+    buf_extend(buf, str, len);
+    if (has_ms)
+    {
+        buf_extend(buf, "Z</date>", 8);
+    }
+    else
+    {
+        buf_extend(buf, "T00:00:00Z</date>", 17);
+    }
+    ret = 1;
 
 bail:
 	Py_XDECREF(isoobj);
