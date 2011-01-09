@@ -5,8 +5,6 @@ import sys
 
 from distutils.core import setup, Extension
 
-import test
-
 
 PACKAGE_NAME = 'llbase'
 LLBASE_VERSION = '0.2.0'
