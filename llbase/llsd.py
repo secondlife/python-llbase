@@ -36,6 +36,7 @@ http://wiki.secondlife.com/wiki/LLSD
 
 import base64
 import binascii
+import calendar
 import datetime
 import re
 import struct
@@ -633,7 +634,7 @@ class LLSDBinaryParser(object):
             idx = self._index
             self._index += 8
             seconds = struct.unpack("!d", self._buffer[idx:idx+8])[0]
-            return datetime.datetime.fromtimestamp(seconds)
+            return datetime.datetime.utcfromtimestamp(seconds)
         elif cc == 'b':
             b = binary(self._parse_string_raw())
             if self._keep_binary:
@@ -1127,8 +1128,12 @@ def _format_binary_recurse(something):
         return 's' + struct.pack('!i', len(something)) + something
     elif isinstance(something, uri):
         return 'l' + struct.pack('!i', len(something)) + something
-    elif isinstance(something, (datetime.datetime, datetime.date)):
-        seconds_since_epoch = time.mktime(something.timetuple())
+    elif isinstance(something, datetime.datetime):
+        seconds_since_epoch = calendar.timegm(something.utctimetuple()) \
+                              + something.microsecond / 1e6
+        return 'd' + struct.pack('!d', seconds_since_epoch)
+    elif isinstance(something, datetime.date):
+        seconds_since_epoch = calendar.timegm(something.timetuple())
         return 'd' + struct.pack('!d', seconds_since_epoch)
     elif isinstance(something, (list, tuple)):
         return _format_list(something)
