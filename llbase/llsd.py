@@ -635,9 +635,9 @@ class LLSDBinaryParser(object):
             seconds = struct.unpack("!d", self._buffer[idx:idx+8])[0]
             return datetime.datetime.fromtimestamp(seconds)
         elif cc == 'b':
-            binary = self._parse_string_raw()
+            b = binary(self._parse_string_raw())
             if self._keep_binary:
-                return binary
+                return b
             # *NOTE: maybe have a binary placeholder which has the
             # length.
             return None
@@ -855,7 +855,7 @@ class LLSDNotationParser(object):
                 raise LLSDParseError('Unterminated binary at byte %d' % i,)
             try:
                 try:
-                    return base64.decodestring(self._buffer[i+3:e])
+                    return binary(base64.decodestring(self._buffer[i+3:e]))
                 except binascii.Error, exc:
                     # convert exception class so it's more catchable
                     raise LLSDParseError("Base64 " + str(exc))
