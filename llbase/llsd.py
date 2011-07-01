@@ -801,10 +801,46 @@ class LLSDNotationParser(object):
         self._index = 0
         return self._parse()
 
+    def _error(self, message):
+        raise LLSDParseError("%s at index %d" % (message, self._index))
+
+    def _peek(self):
+        if self._index >= len(self._buffer):
+            return None
+        else:
+            return self._buffer[self._index:self._index + 1]
+            self._error("unexpected end of data")
+        chars = self._buffer[self._index:self._index + num]
+        self._index += num
+        return chars
+
+    def _getc(self, num=1):
+        if self._index + num - 1 >= len(self._buffer):
+            self._error("unexpected end of data")
+        chars = self._buffer[self._index:self._index + num]
+        self._index += num
+        return chars
+
+    def _get_until(self, delim):
+        start = self._index
+        end = self._buffer.find(delim, start)
+        if end == -1:
+            return None
+        else:
+            self._index = end + 1
+            return self._buffer[start:end]
+
+    def _get_re(self, regex):
+        match = re.match(regex, self._buffer[self._index:])
+        if not match:
+            return None
+        else:
+            self._index += match.end()
+            return match.group(0)
+
     def _parse(self):
         "The notation parser workhorse."
-        cc = self._buffer[self._index]
-        self._index += 1
+        cc = self._getc()
         if cc == '{':
             return self._parse_map()
         elif cc == '[':
@@ -816,10 +852,10 @@ class LLSDNotationParser(object):
         elif cc == '1':
             return True
         elif cc in ('F', 'f'):
-            self._skip_alpha()
+            self._get_re(_alpha_regex)
             return False
         elif cc in ('T', 't'):
-            self._skip_alpha()
+            self._get_re(_alpha_regex)
             return True
         elif cc == 'i':
             # 'i' = integer
@@ -834,8 +870,7 @@ class LLSDNotationParser(object):
             return self._parse_string(cc)
         elif cc == 'l':
             # 'l' = uri
-            delim = self._buffer[self._index]
-            self._index += 1
+            delim = self._getc()
             val = uri(self._parse_string(delim))
             return val
         elif cc == ('d'):
@@ -844,27 +879,22 @@ class LLSDNotationParser(object):
         elif cc == 'b':
             return self._parse_binary()
         else:
-            raise LLSDParseError("invalid token at index %d: %d" % (
-                self._index - 1, ord(cc)))
+            self._error("invalid token %d" % ord(cc))
 
     def _parse_binary(self):
         "parse a single binary object."
-        i = self._index
-        if self._buffer[i:i+2] == '64':
-            q = self._buffer[i+2]
-            e = self._buffer.find(q, i+3)
-            if e == -1:
-                raise LLSDParseError('Unterminated binary at byte %d' % i,)
+        if self._getc(2) == '64':
+            q = self._getc()
+            b64 = self._get_until(q)
+            if b64 == None:
+                self._error('Unterminated binary')
             try:
-                try:
-                    return binary(base64.decodestring(self._buffer[i+3:e]))
-                except binascii.Error, exc:
-                    # convert exception class so it's more catchable
-                    raise LLSDParseError("Base64 " + str(exc))
-            finally:
-                self._index = e + 1
+                return binary(base64.decodestring(b64))
+            except binascii.Error, exc:
+                # convert exception class so it's more catchable
+                self._error("Base64 " + str(exc))
         else:
-            raise LLSDParseError('random horrible binary format not supported')
+            self._error('random horrible binary format not supported')
 
     def _parse_map(self):
         """
@@ -873,8 +903,7 @@ class LLSDNotationParser(object):
         map: { string:object, string:object }
         """
         rv = {}
-        cc = self._buffer[self._index]
-        self._index += 1
+        cc = self._getc()
         key = ''
         found_key = False
         while (cc != '}'):
@@ -885,22 +914,16 @@ class LLSDNotationParser(object):
                 elif cc.isspace() or cc == ',':
                     pass
                 else:
-                    raise LLSDParseError("invalid map key at byte %d." % (
-                                        self._index - 1,))
+                    self._error("invalid map key")
             elif cc.isspace():
                 pass
-            elif  cc == ':':
+            elif cc == ':':
                 value = self._parse()
                 rv[key] = value
                 found_key = False
             else:
-                raise LLSDParseError(
-                    "missing separator around byte %d." % (self._index - 1,))
-            cc = self._buffer[self._index]
-            self._index += 1
-
-                
-
+                self._error("missing separator")
+            cc = self._getc()
         return rv
 
     def _parse_array(self):
@@ -910,62 +933,44 @@ class LLSDNotationParser(object):
         array: [ object, object, object ]
         """
         rv = []
-        cc = self._buffer[self._index]
+        cc = self._peek()
         while (cc != ']'):
+            if cc == None:
+                self._error('unclosed array')
             if cc.isspace() or cc == ',':
-                self._index += 1
-                cc = self._buffer[self._index]
+                self._getc()
+                cc = self._peek()
                 continue
             rv.append(self._parse())
-            cc = self._buffer[self._index]
+            cc = self._peek()
 
-        if cc != ']':
-            raise LLSDParseError("invalid array close token at index %d." % (
-                self._index,))
-        self._index += 1
+        if self._getc(0) != ']':
+            self._error("invalid array close token")
         return rv
 
     def _parse_uuid(self):
         "Parse a uuid."
-        start = self._index
-        self._index += 36
-        return uuid.UUID(hex=self._buffer[start:self._index])
+        return uuid.UUID(hex=self._getc(36))
 
-    def _skip_alpha(self):
-        match = re.match(_alpha_regex, self._buffer[self._index:])
-        if match:
-            self._index += match.end()
-            
     def _parse_date(self):
         "Parse a date."
-        delim = self._buffer[self._index]
-        self._index += 1
+        delim = self._getc()
         datestr = self._parse_string(delim)
         return _parse_datestr(datestr)
 
     def _parse_real(self):
         "Parse a floating point number."
-        match = re.match(_real_regex, self._buffer[self._index:])
-        if not match:
-            raise LLSDParseError("invalid real token at index %d." % self._index)
-
-        (start, end) = match.span()
-        start += self._index
-        end += self._index
-        self._index = end
-        return float( self._buffer[start:end] )
+        match = self._get_re(_real_regex)
+        if match == None:
+            self._error("invalid real token")
+        return float(match)
 
     def _parse_integer(self):
         "Parse an integer."
-        match = re.match(_int_regex, self._buffer[self._index:])
-        if not match:
-            raise LLSDParseError("invalid integer token at index %d." % self._index)
-
-        (start, end) = match.span()
-        start += self._index
-        end += self._index
-        self._index = end
-        return int( self._buffer[start:end] )
+        match = self._get_re(_int_regex)
+        if match == None:
+            self._error("invalid integer token")
+        return int(match)
 
     def _parse_string(self, delim):
         """
@@ -980,7 +985,7 @@ class LLSDNotationParser(object):
         elif delim == 's':
             rv = self._parse_string_raw()
         else:
-            raise LLSDParseError("invalid string token at index %d." % self._index)
+            self._error("invalid string token")
 
         return rv
 
@@ -996,8 +1001,7 @@ class LLSDNotationParser(object):
         found_digit = False
         byte = 0
         while True:
-            cc = self._buffer[self._index]
-            self._index += 1
+            cc = self._getc()
             if found_escape:
                 if found_hex:
                     if found_digit:
@@ -1049,35 +1053,28 @@ class LLSDNotationParser(object):
         string: s(size)"raw data"
         """ 
         # Read the (size) portion.
-        cc = self._buffer[self._index]
-        self._index += 1
+        cc = self._getc()
         if cc != '(':
-            raise LLSDParseError("invalid string token at index %d." % self._index)
+            self._error("invalid string token")
 
-        rparen = self._buffer.find(')', self._index)
-        if rparen == -1:
-            raise LLSDParseError("invalid string token at index %d." % self._index)
+        size = self._get_until(')')
+        if size == None:
+            self._error("invalid string token")
+        size = int(size)
 
-        size = int(self._buffer[self._index:rparen])
-
-        self._index = rparen + 1
-        delim = self._buffer[self._index]
-        self._index += 1
+        delim = self._getc()
         if delim not in ("'", '"'):
-            raise LLSDParseError("invalid string token at index %d." % self._index)
+            self._error("invalid string token")
 
-        rv = self._buffer[self._index:(self._index + size)]
-        self._index += size
-        cc = self._buffer[self._index]
-        self._index += 1
+        rv = self._getc(size)
+        cc = self._getc()
         if cc != delim:
-            raise LLSDParseError("invalid string token at index %d." % self._index)
+            self._error("invalid string token")
         try:
             return rv.decode('utf-8')
         except UnicodeDecodeError, exc:
             raise LLSDParseError(exc)
 
-        
 def format_binary(something):
     """
     Format application/llsd+binary to a python object.
