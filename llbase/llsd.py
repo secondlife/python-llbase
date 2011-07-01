@@ -43,6 +43,7 @@ import struct
 import time
 import types
 import uuid
+import os
 
 from fastest_elementtree import ElementTreeError, fromstring
 
@@ -1155,6 +1156,14 @@ def _format_binary_recurse(something):
                 "Cannot serialize unknown type: %s (%s)" %
                 (type(something), something))
 
+def _startswith(startstr, something):
+    if hasattr(something, 'startswith'):
+        return something.startswith(startstr)
+    else:
+        pos = something.tell()
+        s = something.read(len(startstr))
+        something.seek(pos, os.SEEK_SET)
+        return (s == startstr)
 
 def parse_binary(something):
     """
@@ -1163,7 +1172,7 @@ def parse_binary(something):
     :param something: The data to parse in an indexable sequence.
     :returns: Returns a python object.
     """
-    if something.startswith('<?llsd/binary?>'):
+    if _startswith('<?llsd/binary?>', something):
         just_binary = something.split('\n', 1)[1]
     else:
         just_binary = something
@@ -1216,10 +1225,10 @@ def parse(something, mime_type = None):
     #    return parse_notation(something)
     try:
         something = something.lstrip()   #remove any pre-trailing whitespace
-        if something.startswith('<?llsd/binary?>'):
+        if _startswith('<?llsd/binary?>', something):
             return parse_binary(something)
         # This should be better.
-        elif something.startswith('<'):
+        elif _startswith('<', something):
             return parse_xml(something)
         else:
             return parse_notation(something)
