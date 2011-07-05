@@ -339,7 +339,6 @@ class LLSDNotationUnitTest(unittest.TestCase):
         notation1 = 'b64' + '"' + base64.b64encode(string_data1).strip() + '"'
         notation2 = 'b64' + '"' + base64.b64encode(string_data2).strip() + '"'
 
-        import pdb; pdb.set_trace()
         self.assertNotationRoundtrip(python_binary1, notation1, True)
         self.assertNotationRoundtrip(python_binary2, notation2, True)
 

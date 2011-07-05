@@ -2,8 +2,12 @@
 
 import os.path
 import sys
+from glob import glob
+import subprocess
 
-from distutils.core import setup, Extension
+from distutils.core import setup, Extension, Command
+from distutils.spawn import spawn
+from unittest import TextTestRunner, TestLoader
 
 import test
 
@@ -30,6 +34,35 @@ ext_modules = [Extension(PACKAGE_NAME + '._cllsd', sources)]
 if PLATFORM_IS_WINDOWS:
     ext_modules = None
 
+
+class TestCommand(Command):
+    user_options = []
+    BUILD_DIR = 'build/lib.linux-x86_64-2.4'
+    CLLSD_DIR = 'llbase'
+
+    def initialize_options(self):
+        cwd = os.getcwd()
+        self._lib_path = os.path.join(cwd, self.BUILD_DIR)
+        self._cllsd_path = os.path.join(cwd, self.BUILD_DIR, self.CLLSD_DIR)
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        """
+        gather all of the tests modules in tests/ and run them
+        """
+
+        # have to run build first
+        self.run_command('build')
+
+        # monkey with the python path
+        python_path = self._lib_path + ':' + self._cllsd_path
+        os.putenv('PYTHONPATH', python_path)
+
+        # shell out and run nosetests
+        subprocess.call(['nosetests'])
+
 setup(
     name=PACKAGE_NAME,
     version=LLBASE_VERSION,
@@ -44,4 +77,5 @@ setup(
     classifiers=filter(None, CLASSIFIERS.split("\n")),
     #requires=['eventlet', 'elementtree'],
     ext_modules=ext_modules,
+    cmdclass = { 'test': TestCommand }
     )
