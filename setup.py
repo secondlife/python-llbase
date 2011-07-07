@@ -61,13 +61,13 @@ class TestCommand(Command):
         os.putenv('PYTHONPATH', python_path)
 
         # shell out and run nosetests
-        subprocess.call(['nosetests'])
+        subprocess.call(['nosetests', '-sv'])
 
 setup(
     name=PACKAGE_NAME,
     version=LLBASE_VERSION,
-    author='Phoenix Linden',
-    author_email='enus@secondlife.com',
+    author='Huseby Linden',
+    author_email='huseby@secondlife.com',
     url='http://bitbucket.org/lindenlab/llbase/',
     description='Base Linden Lab Python modules',
     platforms=["any"],
@@ -75,7 +75,6 @@ setup(
     packages=[PACKAGE_NAME, PACKAGE_NAME + ".test"],
     license='MIT',
     classifiers=filter(None, CLASSIFIERS.split("\n")),
-    #requires=['eventlet', 'elementtree'],
     ext_modules=ext_modules,
     cmdclass = { 'test': TestCommand }
     )

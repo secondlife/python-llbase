@@ -43,7 +43,9 @@ import struct
 import time
 import types
 import uuid
+import urlparse
 import os
+import exceptions
 
 from fastest_elementtree import ElementTreeError, fromstring
 
@@ -76,6 +78,8 @@ class uri(str):
 _int_regex = re.compile(r"[-+]?\d+")
 _real_regex = re.compile(r"[-+]?(?:(\d+(\.\d*)?|\d*\.\d+)([eE][-+]?\d+)?)|[-+]?inf|[-+]?nan")
 _alpha_regex = re.compile(r"[a-zA-Z]+")
+_true_regex = re.compile(r"TRUE|true|\b[Tt]\b")
+_false_regex = re.compile(r"FALSE|false|\b[Ff]\b")
 _date_regex = re.compile(r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T"
                         r"(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})"
                         r"(?P<second_float>(\.\d+)?)Z")
@@ -152,11 +156,22 @@ def _str_to_python(node):
     return node.text or ''
 
 def _bin_to_python(node):
+    base = node.get('encoding') or 'base64'
     try:
-        return binary(base64.decodestring(node.text or ''))
+        if base == 'base16':
+            # parse base16 encoded data
+            return binary(base64.b16decode(node.text or ''))
+        elif base == 'base64':
+            # parse base64 encoded data
+            return binary(base64.b64decode(node.text or ''))
+        elif base == 'base85':
+            return LLSDParseError("Parser doesn't support base85 encoding")
     except binascii.Error, exc:
         # convert exception class so it's more catchable
-        raise LLSDParseError("Base64 " + str(exc))
+        return LLSDParseError("Encoded binary data: " + str(exc))
+    except exceptions.TypeError, exc:
+        # convert exception class so it's more catchable
+        return LLSDParseError("Bad binary data: " + str(exc))
 
 def _date_to_python(node):
     "Convert date node to a python object."
@@ -502,6 +517,7 @@ class LLSDNotationFormatter(object):
         return "u%s" % v
     def BINARY(self, v):
         return 'b64"' + base64.b64encode(v).strip() + '"'
+
     def STRING(self, v):
         if isinstance(v, unicode):
             v = v.encode('utf-8')
@@ -521,7 +537,7 @@ class LLSDNotationFormatter(object):
              for key, value in v.items()])
 
     def _generate(self, something):
-        "Generate xml from a single python object."
+        "Generate notation from a single python object."
         t = type(something)
         handler = self.type_map.get(t)
         if handler:
@@ -806,17 +822,14 @@ class LLSDNotationParser(object):
 
     def _peek(self):
         if self._index >= len(self._buffer):
-            return None
-        else:
-            return self._buffer[self._index:self._index + 1]
             self._error("unexpected end of data")
-        chars = self._buffer[self._index:self._index + num]
-        self._index += num
-        return chars
+        return self._buffer[self._index]
 
     def _getc(self, num=1):
-        if self._index + num - 1 >= len(self._buffer):
-            self._error("unexpected end of data")
+        if self._index == len(self._buffer):
+            self._error("Unexpected end of data")
+        if self._index + num > len(self._buffer):
+            self._error("Trying to read past end of buffer")
         chars = self._buffer[self._index:self._index + num]
         self._index += num
         return chars
@@ -840,22 +853,34 @@ class LLSDNotationParser(object):
 
     def _parse(self):
         "The notation parser workhorse."
-        cc = self._getc()
+        cc = self._peek()
         if cc == '{':
+            # map
             return self._parse_map()
         elif cc == '[':
-            return self._parse_array()
+            # array
+           return self._parse_array()
         elif cc == '!':
+            # undefined
+            self._getc() # eat the '!'
             return None
         elif cc == '0':
+            # false
+            self._getc() # eat the '0'
             return False
         elif cc == '1':
+            # true
+            self._getc() # eat the '1'
             return True
         elif cc in ('F', 'f'):
-            self._get_re(_alpha_regex)
+            # false, must check for F|f|false|FALSE
+            if self._get_re(_false_regex) is None:
+                self._error("Expected 'false' token")
             return False
         elif cc in ('T', 't'):
-            self._get_re(_alpha_regex)
+            # true, must check for T|t|true|TRUE
+            if self._get_re(_true_regex) is None:
+                self._error("Expected 'true' token")
             return True
         elif cc == 'i':
             # 'i' = integer
@@ -867,35 +892,80 @@ class LLSDNotationParser(object):
             # 'u' = uuid
             return self._parse_uuid()
         elif cc in ("'", '"', 's'):
-            return self._parse_string(cc)
+            # string
+            return self._parse_string()
         elif cc == 'l':
             # 'l' = uri
-            delim = self._getc()
-            val = uri(self._parse_string(delim))
-            return val
+            return self._parse_uri()
         elif cc == ('d'):
             # 'd' = date in seconds since epoch
             return self._parse_date()
         elif cc == 'b':
             return self._parse_binary()
-        else:
-            self._error("invalid token %d" % ord(cc))
+       
+        # output error if the token wasn't handled
+        self._error("Invalid token %d" % ord(cc))
 
     def _parse_binary(self):
         "parse a single binary object."
-        if self._getc(2) == '64':
+        
+        self._getc()    # eat the beginning 'b'
+        cc = self._peek()
+        if cc == '(':
+            # parse raw binary
+            paren = self._getc()
+
+            # grab the 'expected' size of the binary data
+            size = self._get_undil(')')
+            if size == None:
+                self._error("Invalid binary size")
+            size = int(size)
+
+            # grab the opening quote
             q = self._getc()
-            b64 = self._get_until(q)
-            if b64 == None:
-                self._error('Unterminated binary')
+            if q != '"':
+                self._error('Expected " to start binary value')
+
+            # grab the data
+            data = self._getc(size)
+
+            # grab the closing quote
+            q = self._getc()
+            if q != '"':
+                self._error('Expected " to end binary value')
+
+            return binary(data)
+
+        else:
+            # get the encoding base
+            base = self._getc(2)
+            if base not in ('16', '64'):
+                self._error('Found unsupported binary encoding')
+
+            # grab the double quote
+            q = self._getc()
+            if q != '"':
+                self._error('Expected " to start binary value')
+
+            # grab the encoded data
+            encoded = self._get_until(q)
+
             try:
-                return binary(base64.decodestring(b64))
+                if base == '16':
+                    # parse base16 encoded data
+                    return binary(base64.b16decode(encoded or ''))
+                elif base == '64':
+                    # parse base64 encoded data
+                    return binary(base64.b64decode(encoded or ''))
+                elif base == '85':
+                    self._error("Parser doesn't support base85 encoding")
             except binascii.Error, exc:
                 # convert exception class so it's more catchable
-                self._error("Base64 " + str(exc))
-        else:
-            self._error('random horrible binary format not supported')
-
+                self._error("Encoded binary data: " + str(exc))
+            except exceptions.TypeError, exc:
+                # convert exception class so it's more catchable
+                self._error("Bad binary data: " + str(exc))
+    
     def _parse_map(self):
         """
         parse a single map
@@ -903,27 +973,37 @@ class LLSDNotationParser(object):
         map: { string:object, string:object }
         """
         rv = {}
-        cc = self._getc()
         key = ''
         found_key = False
+        self._getc()   # eat the beginning '{'
+        cc = self._peek()
         while (cc != '}'):
+            if cc is None:
+                self._error("Unclosed map")
             if not found_key:
                 if cc in ("'", '"', 's'):
-                    key = self._parse_string(cc)
+                    key = self._parse_string()
                     found_key = True
                 elif cc.isspace() or cc == ',':
+                    self._getc()    # eat the character
                     pass
                 else:
-                    self._error("invalid map key")
+                    self._error("Invalid map key")
             elif cc.isspace():
+                self._getc()    # eat the space
                 pass
             elif cc == ':':
+                self._getc()    # eat the ':'
                 value = self._parse()
                 rv[key] = value
                 found_key = False
             else:
                 self._error("missing separator")
-            cc = self._getc()
+            cc = self._peek()
+
+        if self._getc() != '}':
+            self._error("Invalid map close token")
+
         return rv
 
     def _parse_array(self):
@@ -933,10 +1013,11 @@ class LLSDNotationParser(object):
         array: [ object, object, object ]
         """
         rv = []
+        self._getc()    # eat the beginning '['
         cc = self._peek()
         while (cc != ']'):
-            if cc == None:
-                self._error('unclosed array')
+            if cc is None:
+                self._error('Unclosed array')
             if cc.isspace() or cc == ',':
                 self._getc()
                 cc = self._peek()
@@ -944,44 +1025,52 @@ class LLSDNotationParser(object):
             rv.append(self._parse())
             cc = self._peek()
 
-        if self._getc(0) != ']':
-            self._error("invalid array close token")
+        if self._getc() != ']':
+            self._error("Invalid array close token")
         return rv
 
     def _parse_uuid(self):
         "Parse a uuid."
+        self._getc()    # eat the beginning 'u'
         return uuid.UUID(hex=self._getc(36))
+
+    def _parse_uri(self):
+        "Parse a URI."
+        self._getc()    # eat the beginning 'l'
+        return uri(self._parse_string())
 
     def _parse_date(self):
         "Parse a date."
-        delim = self._getc()
-        datestr = self._parse_string(delim)
+        self._getc()    # eat the beginning 'd'
+        datestr = self._parse_string()
         return _parse_datestr(datestr)
 
     def _parse_real(self):
         "Parse a floating point number."
+        self._getc()    # eat the beginning 'r'
         match = self._get_re(_real_regex)
         if match == None:
-            self._error("invalid real token")
+            self._error("Invalid real token")
         return float(match)
 
     def _parse_integer(self):
         "Parse an integer."
+        self._getc()    # eat the beginning 'i'
         match = self._get_re(_int_regex)
         if match == None:
-            self._error("invalid integer token")
+            self._error("Invalid integer token")
         return int(match)
 
-    def _parse_string(self, delim):
+    def _parse_string(self):
         """
         Parse a string
 
         string: "g\'day" | 'have a "nice" day' | s(size)"raw data"
         """
         rv = ""
-
+        delim = self._peek()
         if delim in ("'", '"'):
-            rv = self._parse_string_delim(delim)
+            rv = self._parse_string_delim()
         elif delim == 's':
             rv = self._parse_string_raw()
         else:
@@ -989,7 +1078,7 @@ class LLSDNotationParser(object):
 
         return rv
 
-    def _parse_string_delim(self, delim):
+    def _parse_string_delim(self):
         """
         Parse a delimited string
 
@@ -1000,6 +1089,7 @@ class LLSDNotationParser(object):
         found_hex = False
         found_digit = False
         byte = 0
+        delim = self._getc()    # get the delimeter
         while True:
             cc = self._getc()
             if found_escape:
@@ -1052,24 +1142,25 @@ class LLSDNotationParser(object):
 
         string: s(size)"raw data"
         """ 
+        self._getc()    # eat the beginning 's'
         # Read the (size) portion.
         cc = self._getc()
         if cc != '(':
-            self._error("invalid string token")
+            self._error("Invalid string token")
 
         size = self._get_until(')')
         if size == None:
-            self._error("invalid string token")
+            self._error("Invalid string size")
         size = int(size)
 
         delim = self._getc()
         if delim not in ("'", '"'):
-            self._error("invalid string token")
+            self._error("Invalid string token")
 
         rv = self._getc(size)
         cc = self._getc()
         if cc != delim:
-            self._error("invalid string token")
+            self._error("Invalid string closure token")
         try:
             return rv.decode('utf-8')
         except UnicodeDecodeError, exc:

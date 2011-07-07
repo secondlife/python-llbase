@@ -333,14 +333,34 @@ class LLSDNotationUnitTest(unittest.TestCase):
         string_data2 = """
                 <p>"Take some more <a href="/wiki/Tea" title="Tea">tea</a> ," the March Hare said to Alice, very earnestly.</p>
                 """
-        python_binary1 = string_data1
-        python_binary2 = string_data2
+        python_binary1 = llsd.binary(string_data1)
+        python_binary2 = llsd.binary(string_data2)
         
         notation1 = 'b64' + '"' + base64.b64encode(string_data1).strip() + '"'
         notation2 = 'b64' + '"' + base64.b64encode(string_data2).strip() + '"'
+        notation3 = 'b16' + '"' + base64.b16encode(string_data1).strip() + '"'
+        notation4 = 'b16' + '"' + base64.b16encode(string_data2).strip() + '"'
+        notation5 = 'b85' + '"<~EHPu*CER),Dg-(AAoDo;+T~>"'
+        notation6 = 'b85' + '"<~4E*J.<+0QR+EMI<AKYi.Eb-@U@3B6(AS+(L06_,GBeNFs@3Qh9Bln0&4X*j:@3RmWARR\S@6Peb+s:u@AKX]UEarc*87?OM+ELt*A0>u4+@0gX@q@26G%G]>+D"u%DImm2Cj@Wq05s)~>"'
 
         self.assertNotationRoundtrip(python_binary1, notation1, True)
         self.assertNotationRoundtrip(python_binary2, notation2, True)
+        self.assertNotationRoundtrip(python_binary1, notation3, True)
+        self.assertNotationRoundtrip(python_binary2, notation4, True)
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, notation5)
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, notation6)
+
+    '''
+    def testProblemMap(self):
+        """
+        This is some data that the fuzzer generated that caused a parse error
+        """
+        string_data = "{'$g7N':!,'3r=h':true,'\xe8\x88\xbc\xe9\xa7\xb9\xe1\xb9\xa6\xea\xb3\x95\xe0\xa8\xb3\xe1\x9b\x84\xef\xb2\xa7\xe8\x8f\x99\xe8\x94\xa0\xe9\x90\xb9\xe6\x88\x9b\xe0\xaf\x84\xe8\xb8\xa2\xe4\x94\x83\xea\xb5\x8b\xed\x8c\x8a\xe5\xb5\x97':'\xe6\xbb\xa6\xe3\xbf\x88\xea\x9b\x82\xea\x9f\x8d\xee\xbb\xba\xe4\xbf\x87\xe3\x8c\xb5\xe3\xb2\xb0\xe7\x90\x91\xee\x8f\xab\xee\x81\xa5\xea\x94\x98'}"
+        python_obj = {}
+
+        import pdb; pdb.set_trace()
+        self.assertNotationRoundtrip(python_obj, string_data, True)
+    '''
 
     def testNotationOfAllTypes(self):
         """
