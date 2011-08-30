@@ -9,8 +9,6 @@ from distutils.core import setup, Extension, Command
 from distutils.spawn import spawn
 from unittest import TextTestRunner, TestLoader
 
-import test
-
 
 PACKAGE_NAME = 'llbase'
 LLBASE_VERSION = '0.2.0'
