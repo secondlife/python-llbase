@@ -1,6 +1,6 @@
 recursive-include llbase *
 recursive-include tests *.py
-recursive-include doc *
+recursive-include docs *
 include INSTALL
 include Makefile
 include MANIFEST.in
