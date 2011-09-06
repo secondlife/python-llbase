@@ -9,9 +9,21 @@ from distutils.core import setup, Extension, Command
 from distutils.spawn import spawn
 from unittest import TextTestRunner, TestLoader
 
+# from http://stackoverflow.com/questions/2058802/how-can-i-get-the-version-defined-in-setup-py-setuptools-in-my-package :
+# "make a version.py in your package with a __version__ line, then read it
+# from setup.py using execfile('mypackage/version.py'), so that it sets
+# __version__ in the setup.py namespace."
+
+# [We actually define 'release', but same general idea.]
+
+# "DO NOT import your package from your setup.py... it will seem to work for
+# you (because you already have your package's dependencies installed), but it
+# will wreak havoc upon new users of your package, as they will not be able to
+# install your package without manually installing the dependencies first."
+execfile(os.path.join("docs", "source", "conf.py"))
 
 PACKAGE_NAME = 'llbase'
-LLBASE_VERSION = '0.2.0'
+LLBASE_VERSION = release                # from conf.py
 LLBASE_SOURCE = 'llbase'
 CLASSIFIERS = """\
 Development Status :: 4 - Beta
