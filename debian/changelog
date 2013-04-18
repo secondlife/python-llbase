@@ -1,3 +1,10 @@
+llbase (0.4) unstable; urgency=low
+
+  * Fixed bug in LlIdl around detecting unicode as strings.
+    Stubbing out more extended error information when LlIdl validation fails.
+
+ -- Don Kjer <don@lindenlab.com>  Thu, 18 Apr 2013 23:38:19 +0000
+
 llbase (0.3) unstable; urgency=low
 
   * Change Build Procedure to support both etch and lenny

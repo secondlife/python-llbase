@@ -94,7 +94,31 @@ INCOMPATIBLE    = _Result(0, "INCOMPATIBLE")
 
 class MatchError(Exception):
     """A mis-match between an LLSD and a LLIDL value description"""
-    pass    
+    def __init__(self, mesg):
+        self.mesg = mesg
+
+    def __repr__(self):
+        return self.mesg
+
+    def __str__(self):
+        return self.__repr__()
+        
+
+class MatchErrorStack(Exception):
+    def __init__(self, vtype, val, r=None):
+        if r is not None:
+            self.stack=[ (vtype, val, r) ] 
+        else:
+            self.stack=[ (vtype, val) ] 
+
+    def push(self, vtype, val):
+        self.stack.insert(0, ( vtype, val ) )
+
+    def __repr__(self):
+        return '\n'.join([str(x) for x in self.stack])
+
+    def __str__(self):
+        return self.__repr__()
     
     
 class Value(object):
@@ -137,28 +161,33 @@ class Value(object):
     def _variants_referenced(self):
         return set() # faster than frozenset, really!
 
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         """Compare an LLSD value to the value spec.; return a Result"""
         return INCOMPATIBLE
     
     def _failure(self, raises, message):
         if raises is not None:
             if raises is True:
-                raises = MatchError
+                raises = MatchError(message)
             if callable(raises):
                 raises = raises(message)
             raise raises
         return False    
     
-    def match(self, actual, raises=None):
+    def match(self, actual, match_level=CONVERTED, raises=None):
         """Return True if the value matches exactly"""
-        return (self._compare(actual) >= CONVERTED
-             or self._failure(raises, "did not match"))
+        raise_level=None
+        if raises is not None:
+            raise_level=match_level
+        try:
+            return (self._compare(actual, raise_level=raise_level) >= match_level
+                 or self._failure(raises, "did not match"))
+        except MatchErrorStack, e:
+            return self._failure(raises, str(e))
     
-    def valid(self, actual, raises=None):
+    def valid(self, actual, match_level=MIXED, raises=None):
         """Return True if the value matches, or has additional data"""
-        return (self._compare(actual) >= MIXED
-             or self._failure(raises, "did not match"))
+        return self.match(actual, match_level=match_level, raises=raises)
 
     def has_additional(self, actual):
         """Return True if the value has additional data"""
@@ -177,119 +206,114 @@ class Value(object):
 
 
 class _UndefMatcher(Value):
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         return MATCHED    # every value matches undef
 
 
 class _BoolMatcher(Value):
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         t = type(actual)
+        r = INCOMPATIBLE
         if t == NoneType:
-            return DEFAULTED
-        if t == bool:
-            return MATCHED
-        if t == int:
+            r = DEFAULTED
+        elif t == bool:
+            r = MATCHED
+        elif t == int:
             if actual == 0 or actual == 1:
-                return CONVERTED
-            else:
-                return INCOMPATIBLE
-        if t == float:
+                r = CONVERTED
+        elif t == float:
             if actual == 0.0 or actual == 1.0:
-                return CONVERTED
-            else:
-                return INCOMPATIBLE
-        if t == str:
+                r = CONVERTED
+        elif t in StringTypes:
             if actual == "" or actual == "true":
-                return CONVERTED
-            else:
-                return INCOMPATIBLE
-        return INCOMPATIBLE
+                r = CONVERTED
+        if raise_level is not None and r < raise_level:
+            raise MatchErrorStack(vtype=self.__class__, val=actual, r=r)
+        return r
 
 
 class _TrueMatcher(Value):
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         t = type(actual)
+        r = INCOMPATIBLE
         if t == NoneType:
-            return INCOMPATIBLE
-        if t == bool:
+            pass
+        elif t == bool:
             if actual:
-                return MATCHED
-            return INCOMPATIBLE
-        if t == int:
+                r = MATCHED
+        elif t == int:
             if actual == 1:
-                return CONVERTED
-            return INCOMPATIBLE
-        if t == float:
+                r = CONVERTED
+        elif t == float:
             if actual == 1.0:
-                return CONVERTED
-            return INCOMPATIBLE
-        if t == str:
+                r = CONVERTED
+        elif t in StringTypes:
             if actual == "true":
-                return CONVERTED
-            return INCOMPATIBLE
-        return INCOMPATIBLE
+                r = CONVERTED
+        if raise_level is not None and r < raise_level:
+            raise MatchErrorStack(vtype=(self.__class__, True), val=actual, r=r)
+        return r
 
    
 class _FalseMatcher(Value):
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         t = type(actual)
+        r = INCOMPATIBLE
         if t == NoneType:
-            return DEFAULTED
-        if t == bool:
+            r = DEFAULTED
+        elif t == bool:
             if not actual:
-                return MATCHED
-            return INCOMPATIBLE
-        if t == int:
+                r = MATCHED
+        elif t == int:
             if actual == 0:
-                return CONVERTED
-            return INCOMPATIBLE
-        if t == float:
+                r = CONVERTED
+        elif t == float:
             if actual == 0.0:
-                return CONVERTED
-            return INCOMPATIBLE
-        if t == str:
+                r = CONVERTED
+        elif t in StringTypes:
             if actual == "":
-                return CONVERTED
-            return INCOMPATIBLE
-        return INCOMPATIBLE
+                r = CONVERTED
+        if raise_level is not None and r < raise_level:
+            raise MatchErrorStack(vtype=self.__class__, val=actual, r=r)
+        return r
 
 
 class _IntMatcher(Value):
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         t = type(actual)
+        r = INCOMPATIBLE
         if t == NoneType:
-            return DEFAULTED
-        if t == bool:
-            return CONVERTED
-        if t == int:
-            return MATCHED
-        if t == float:
-            i = int(actual)
-            if actual == i and type(i) == int:
-                return CONVERTED
-            else:
-                return INCOMPATIBLE
-        if t == str:
+            r = DEFAULTED
+        elif t == bool:
+            r = CONVERTED
+        elif t == int:
+            r = MATCHED
+        elif t == float:
+            try:
+                i = int(actual)
+                if actual == i and type(i) == int:
+                    r = CONVERTED
+            except:
+                pass
+        elif t in StringTypes:
             try:
                 f = float(actual)
                 i = int(f)
                 if f == i and type(i) == int:
-                    return CONVERTED
-                else:
-                    return INCOMPATIBLE
+                    r = CONVERTED
             except:
-                pass
-            if actual == "":
-                return DEFAULTED
-            return INCOMPATIBLE
-        return INCOMPATIBLE
+                if actual == "":
+                    r = DEFAULTED
+        if raise_level is not None and r < raise_level:
+            raise MatchErrorStack(vtype=self.__class__, val=actual, r=r)
+        return r
 
 
 class _NumberMatcher(Value):
     def __init__(self, number):
         self._number = int(number)
         
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         n = 0
         r = CONVERTED
         
@@ -306,7 +330,7 @@ class _NumberMatcher(Value):
         elif t == float:
             n = int(actual)
             r = CONVERTED
-        elif t == str:
+        elif t in StringTypes:
             try:
                 n = int(float(actual))
                 r = CONVERTED
@@ -315,65 +339,73 @@ class _NumberMatcher(Value):
                     n = 0
                     r = DEFAULTED
                 else:
-                    return INCOMPATIBLE
+                    r = INCOMPATIBLE
         else:
-            return INCOMPATIBLE
+            r = INCOMPATIBLE
         
-        if n == self._number:
-            return r
-        return INCOMPATIBLE
+        if r != INCOMPATIBLE:
+            if n != self._number:
+                r = INCOMPATIBLE
+        if raise_level is not None and r < raise_level:
+            raise MatchErrorStack(vtype=(self.__class__, self._number), val=actual, r=r)
+        return r
 
                 
 class _RealMatcher(Value):
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         t = type(actual)
+        r = INCOMPATIBLE
         if t == NoneType:
-            return DEFAULTED
-        if t == bool:
-            return CONVERTED
-        if t == int:
-            return CONVERTED
-        if t == float:
-            return MATCHED
-        if t == str:
+            r = DEFAULTED
+        elif t == bool:
+            r = CONVERTED
+        elif t == int:
+            r = CONVERTED
+        elif t == float:
+            r = MATCHED
+        elif t in StringTypes:
             try:
                 f = float(actual)
-                return CONVERTED
+                r = CONVERTED
             except:
-                pass
-            if actual == "":
-                return DEFAULTED
-            return INCOMPATIBLE
-        return INCOMPATIBLE
+                if actual == "":
+                    return DEFAULTED
+        if raise_level is not None and r < raise_level:
+            raise MatchErrorStack(vtype=self.__class__, val=actual, r=r)
+        return r
 
 
 class _StringMatcher(Value):
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         t = type(actual)
+        r = CONVERTED
         if t == NoneType:
-            return DEFAULTED
-        if t == str:
-            return MATCHED
-        if t == llsd.binary:
-            return INCOMPATIBLE
-        return CONVERTED
+            r = DEFAULTED
+        elif t in StringTypes:
+            r = MATCHED
+        elif t == llsd.binary:
+            r = INCOMPATIBLE
+        if raise_level is not None and r < raise_level:
+            raise MatchErrorStack(vtype=self.__class__, val=actual, r=r)
+        return r
 
 
 class _NameMatcher(Value):
     def __init__(self, name):
         self._name = str(name)
 
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         t = type(actual)
+        r = INCOMPATIBLE
         if t == NoneType:
             if self._name == "":
-                return DEFAULTED
-            return INCOMPATIBLE
-        if t == str:
+                r = DEFAULTED
+        elif t in StringTypes:
             if self._name == actual:
-                return MATCHED
-            return INCOMPATIBLE
-        return INCOMPATIBLE
+                r = MATCHED
+        if raise_level is not None and r < raise_level:
+            raise MatchErrorStack(vtype=(self.__class__, self._name), val=actual, r=r)
+        return r
 
 
 
@@ -381,62 +413,73 @@ class _DateMatcher(Value):
     
     _dateRE = re.compile(r'\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d(.\d+)?Z');
     
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         t = type(actual)
+        r = INCOMPATIBLE
         if t == NoneType:
-            return DEFAULTED
-        if t == str:
+            r = DEFAULTED
+        elif t in StringTypes:
             if self._dateRE.match(actual):
-                return CONVERTED
-            if actual == "":
-                return DEFAULTED
-            return INCOMPATIBLE
-        if t == datetime.datetime or t == datetime.date:
-            return MATCHED
-        return INCOMPATIBLE
+                r = CONVERTED
+            elif actual == "":
+                r = DEFAULTED
+        elif t == datetime.datetime or t == datetime.date:
+            r = MATCHED
+        if raise_level is not None and r < raise_level:
+            raise MatchErrorStack(vtype=self.__class__, val=actual, r=r)
+        return r
 
 
 class _UUIDMatcher(Value):
     
     _uuidRE = re.compile(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}');
     
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         t = type(actual)
+        r = INCOMPATIBLE
         if t == NoneType:
-            return DEFAULTED
-        if t == str:
+            r = DEFAULTED
+        elif t in StringTypes:
             if self._uuidRE.match(actual):
-                return CONVERTED
-            if actual == "":
-                return DEFAULTED
-            return INCOMPATIBLE
-        if t == uuid.UUID:
-            return MATCHED
-        return INCOMPATIBLE
+                r = CONVERTED
+            elif actual == "":
+                r = DEFAULTED
+        elif t == uuid.UUID:
+            r = MATCHED
+        if raise_level is not None and r < raise_level:
+            raise MatchErrorStack(vtype=self.__class__, val=actual, r=r)
+        return r
 
 
 class _URIMatcher(Value):
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         t = type(actual)
+        r = INCOMPATIBLE
         if t == NoneType:
-            return DEFAULTED
-        if t == str:
+            r = DEFAULTED
+        elif t in StringTypes:
             if actual == "":
-                return DEFAULTED
-            return CONVERTED
-        if t == llsd.uri:
-            return MATCHED
-        return INCOMPATIBLE
+                r = DEFAULTED
+            else:
+                r = CONVERTED
+        elif t == llsd.uri:
+            r = MATCHED
+        if raise_level is not None and r < raise_level:
+            raise MatchErrorStack(vtype=self.__class__, val=actual, r=r)
+        return r
 
 
 class _BinaryMatcher(Value):
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         t = type(actual)
+        r = INCOMPATIBLE
         if t == NoneType:
-            return DEFAULTED
-        if t == llsd.binary:
-            return MATCHED
-        return INCOMPATIBLE
+            r = DEFAULTED
+        elif t == llsd.binary:
+            r = MATCHED
+        if raise_level is not None and r < raise_level:
+            raise MatchErrorStack(vtype=self.__class__, val=actual, r=r)
+        return r
 
 
 def _roundup(value, multiple):
@@ -458,10 +501,12 @@ class _ArrayMatcher(Value):
             s |= v._variants_referenced()
         return s
             
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         if actual is None:
             actual = []
         if type(actual) != list:
+            if raise_level is not None:
+                raise MatchErrorStack(vtype=self.__class__, val=actual, r=INCOMPATIBLE)
             return INCOMPATIBLE
         
         r = MATCHED
@@ -473,12 +518,18 @@ class _ArrayMatcher(Value):
             tlen = _roundup(alen, vlen)
         elif alen > vlen:
             r &= ADDITIONAL
+            if raise_level is not None and r < raise_level:
+                raise MatchErrorStack(vtype=self.__class__, val=actual, r=ADDITIONAL)
             
         for i in xrange(0,tlen):
             v = None
             if i < alen:
                 v = actual[i]
-            r &= self._values[i%vlen]._compare(v)
+            try:
+                r &= self._values[i%vlen]._compare(v, raise_level=raise_level)
+            except MatchErrorStack, e:
+                e.push(vtype=self.__class__, val=i)
+                raise
         return r
 
         
@@ -497,10 +548,12 @@ class _MapMatcher(Value):
         return s
             
 
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         if actual is None:
             actual = {}
         if type(actual) != dict:
+            if raise_level is not None:
+                raise MatchErrorStack(vtype=self.__class__, val=actual, r=INCOMPATIBLE)
             return INCOMPATIBLE
         
         r = MATCHED
@@ -508,10 +561,16 @@ class _MapMatcher(Value):
             v = None
             if name in actual:
                 v = actual[name]
-            r &= value._compare(v)
+            try:
+                r &= value._compare(v, raise_level=raise_level)
+            except MatchErrorStack, e:
+                e.push(vtype=self.__class__, val=name)
+                raise e
         for name in actual.iterkeys():
             if name not in self._members:
                 r &= ADDITIONAL
+                if raise_level is not None and r < raise_level:
+                    raise MatchErrorStack(vtype=self.__class__, val=name, r=ADDITIONAL)
                 break
         return r
 
@@ -526,15 +585,19 @@ class _DictMatcher(Value):
     def _variants_referenced(self):
         return self._value._variants_referenced()
         
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         if actual is None:
             actual = {}
         if type(actual) != dict:
             return INCOMPATIBLE
         
         r = MATCHED
-        for v in actual.itervalues():
-            r &= self._value._compare(v)
+        for (k, v) in actual.iteritems():
+            try:
+                r &= self._value._compare(v, raise_level=raise_level)
+            except MatchErrorStack, e:
+                e.push(vtype=self.__class__, val=k)
+                raise
         return r
 
 
@@ -549,12 +612,18 @@ class _VariantMatcher(Value):
     def _variants_referenced(self):
         return set([self._name])
     
-    def _compare(self, actual):
+    def _compare(self, actual, raise_level=None):
         if self._suite is None:
             return INCOMPATIBLE
         r = INCOMPATIBLE
+        match_errors=[]
         for option in self._suite._get_variant_options(self._name):
-            r |= option._compare(actual)
+            try:
+                r |= option._compare(actual, raise_level=raise_level)
+            except MatchErrorStack, e:
+                match_errors.append(e)
+        if match_errors and r < raise_level:
+            raise MatchErrorStack(vtype=(self.__class__, self._name), val=match_errors)
         return r
 
 
