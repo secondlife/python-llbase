@@ -1,3 +1,9 @@
+llbase (0.5) unstable; urgency=low
+
+  * Formatting extended error information for LlIdl validation failures.
+
+ -- Don Kjer <don@lindenlab.com>  Fri, 19 Apr 2013 17:04:25 +0000
+
 llbase (0.4) unstable; urgency=low
 
   * Fixed bug in LlIdl around detecting unicode as strings.

@@ -114,8 +114,32 @@ class MatchErrorStack(Exception):
     def push(self, vtype, val):
         self.stack.insert(0, ( vtype, val ) )
 
+    def format_entry(self, klass, val):
+        if type(klass) == tuple:
+            klass, name = klass
+            return "%s::%s (%s)" % (klass.__name__, name, val)
+        else:
+            return "%s (%s)" % (klass.__name__, val)
+
+    def format_stack(self, paths, path, stack):
+        for entry in stack:
+            if len(entry) == 3:
+                klass, val, r = entry
+                paths.append("%s <<%s>>" % (' -> '.join(path + [self.format_entry(klass, val)]), r))
+                continue
+            klass, val = entry
+            if type(val) == list:
+                entries=val
+                klass, val = klass
+                for variant in entries:
+                    self.format_stack(paths, path+["&%s" % val], variant.stack)
+            else:
+                path.append(self.format_entry(klass, val))
+
     def __repr__(self):
-        return '\n'.join([str(x) for x in self.stack])
+        paths=[]
+        self.format_stack(paths, [], self.stack)
+        return '\n'.join(paths)
 
     def __str__(self):
         return self.__repr__()
@@ -174,7 +198,7 @@ class Value(object):
             raise raises
         return False    
     
-    def match(self, actual, match_level=CONVERTED, raises=None):
+    def match(self, actual, raises=None, match_level=CONVERTED):
         """Return True if the value matches exactly"""
         raise_level=None
         if raises is not None:
@@ -185,7 +209,7 @@ class Value(object):
         except MatchErrorStack, e:
             return self._failure(raises, str(e))
     
-    def valid(self, actual, match_level=MIXED, raises=None):
+    def valid(self, actual, raises=None, match_level=MIXED):
         """Return True if the value matches, or has additional data"""
         return self.match(actual, match_level=match_level, raises=raises)
 
@@ -676,21 +700,21 @@ class Suite(object):
             refs |= w._variants_referenced()
         return refs - set(self._variants.iterkeys())
             
-    def match_request(self, name, value, raises=None):
+    def match_request(self, name, *args, **kwargs):
         """Compare an LLSD value to a resource's request description"""
-        return self._get_request(name).match(value, raises=raises)
+        return self._get_request(name).match(*args, **kwargs)
     
-    def match_response(self, name, value, raises=None):
+    def match_response(self, name, *args, **kwargs):
         """Compare an LLSD value to a resource's response description"""
-        return self._get_response(name).match(value, raises=raises)
+        return self._get_response(name).match(*args, **kwargs)
 
-    def valid_request(self, name, value, raises=None):
+    def valid_request(self, name, *args, **kwargs):
         """Compare an LLSD value to a resource's request description"""
-        return self._get_request(name).valid(value, raises=raises)
+        return self._get_request(name).valid(*args, **kwargs)
     
-    def valid_response(self, name, value, raises=None):
+    def valid_response(self, name, *args, **kwargs):
         """Compare an LLSD value to a resource's response description"""
-        return self._get_response(name).valid(value, raises=raises)
+        return self._get_response(name).valid(*args, **kwargs)
     
 
     
