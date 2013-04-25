@@ -1340,6 +1340,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test the binary serialization and parse of llsd type : date.
         """
+        valid_date_binary = "d\x00\x00\x40\x78\x31\xf8\xd0\x41"
         valid_date_xml = "\
 <?xml version=\"1.0\" ?>\
 <llsd>\
@@ -1357,6 +1358,9 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         self.assertEqual(
             python_valid_date,
             self.roundTrip(self.llsd.parse(valid_date_xml)))
+        self.assertEqual(
+            python_valid_date,
+            self.roundTrip(llsd.parse_binary(valid_date_binary)))
         self.assertEqual(
             python_blank_date,
             self.roundTrip(self.llsd.parse(blank_date_xml)))

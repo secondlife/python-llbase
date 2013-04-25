@@ -650,7 +650,7 @@ class LLSDBinaryParser(object):
             # 'd' = date in seconds since epoch
             idx = self._index
             self._index += 8
-            seconds = struct.unpack("!d", self._buffer[idx:idx+8])[0]
+            seconds = struct.unpack("<d", self._buffer[idx:idx+8])[0]
             return datetime.datetime.utcfromtimestamp(seconds)
         elif cc == 'b':
             b = binary(self._parse_string_raw())
@@ -1220,10 +1220,10 @@ def _format_binary_recurse(something):
     elif isinstance(something, datetime.datetime):
         seconds_since_epoch = calendar.timegm(something.utctimetuple()) \
                               + something.microsecond / 1e6
-        return 'd' + struct.pack('!d', seconds_since_epoch)
+        return 'd' + struct.pack('<d', seconds_since_epoch)
     elif isinstance(something, datetime.date):
         seconds_since_epoch = calendar.timegm(something.timetuple())
-        return 'd' + struct.pack('!d', seconds_since_epoch)
+        return 'd' + struct.pack('<d', seconds_since_epoch)
     elif isinstance(something, (list, tuple)):
         return _format_list(something)
     elif isinstance(something, dict):

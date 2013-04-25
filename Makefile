@@ -7,7 +7,7 @@ SOURCE_TARGETS := $(addprefix source-version-,$(PYTHON_VERSIONS))
 BUILD_TARGETS := $(addprefix build-version-,$(PYTHON_VERSIONS))
 TEST_TARGETS := $(addprefix test-version-,$(PYTHON_VERSIONS))
 RPM_TARGETS := $(addprefix rpm-version-,$(PYTHON_VERSIONS))
-VERSION=0.2.0
+VERSION=0.2.3
 DESTDIR=/
 NOSETESTS=`which nosetests`
 

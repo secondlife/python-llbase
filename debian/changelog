@@ -1,3 +1,9 @@
+llbase (0.6) unstable; urgency=low
+
+  * Fixing llsd datetime binary serialization not matching C++ implementation.
+
+ -- Don Kjer <don@lindenlab.com>  Thu, 25 Apr 2013 07:36:27 +0000
+
 llbase (0.5) unstable; urgency=low
 
   * Formatting extended error information for LlIdl validation failures.
