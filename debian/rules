@@ -49,7 +49,7 @@ binary-indep: build install-indep
 	dh_link -i
 	dh_compress -i
 	dh_fixperms -i
-	dh_pycentral -p python-llbase
+	dh_pycentral -p python-llbase || dh_python2 -p python-llbase
 	dh_installdeb -i
 	dh_gencontrol -i
 	dh_md5sums -i
@@ -66,8 +66,8 @@ binary-arch: build install-arch
 	dh_compress -a
 	dh_fixperms -a
 	dh_makeshlibs -a
-	dh_pycentral -a
-	dh_python -a
+	dh_pycentral -a || dh_python2 -a
+	dh_python -a || true
 	dh_installdeb -a
 	dh_shlibdeps -a
 	dh_gencontrol -a

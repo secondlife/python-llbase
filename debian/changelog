@@ -1,3 +1,9 @@
+llbase (0.7) unstable; urgency=medium
+
+  * Adding support for wheezy/jessie builds.
+
+ -- Don Kjer <don@lindenlab.com>  Wed, 29 Jan 2014 19:17:50 +0000
+
 llbase (0.6) unstable; urgency=low
 
   * Fixing llsd datetime binary serialization not matching C++ implementation.
