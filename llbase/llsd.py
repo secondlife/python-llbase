@@ -1199,7 +1199,7 @@ def _format_binary_recurse(something):
     elif isinstance(something, (int, long)):
         try:
             return 'i' + struct.pack('!i', something)
-        except OverflowError, exc:
+        except (OverflowError, struct.error), exc:
             raise LLSDSerializationError(str(exc), something)
     elif isinstance(something, float):
         try:

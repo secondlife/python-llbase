@@ -179,9 +179,9 @@ class LLSDNotationUnitTest(unittest.TestCase):
         python_neg_real = -2983287453.3
 
         self.assertNotationRoundtrip(python_pos_real,
-                                       pos_real_notation)
+                                       pos_real_notation, True)
         self.assertNotationRoundtrip(python_neg_real,
-                                       neg_real_notation)
+                                       neg_real_notation, True)
         self.assertEqual(0, self.llsd.parse(blank_real_notation))
 
 
@@ -541,7 +541,7 @@ class LLSDXMLUnitTest(unittest.TestCase):
         """
         self.llsd = llsd.LLSD()
 
-    def assertXMLRoundtrip(self, py, xml):
+    def assertXMLRoundtrip(self, py, xml, ignore_rounding=False):
         """
         Utility method to test parse_xml and as_xml at the same time
         """
@@ -550,20 +550,22 @@ class LLSDXMLUnitTest(unittest.TestCase):
         parsed_py = self.llsd.parse(xml)
         formatted_xml = self.llsd.as_xml(py)
         self.assertEqual(parsed_py, py)
-        self.assertEqual(self.strip(formatted_xml), self.strip(xml))
         self.assertEqual(py, self.llsd.parse(formatted_xml))
-        self.assertEqual(self.strip(xml),
-                         self.strip(self.llsd.as_xml(parsed_py)))
+        if not ignore_rounding:
+            self.assertEqual(self.strip(formatted_xml), self.strip(xml))
+            self.assertEqual(self.strip(xml),
+                            self.strip(self.llsd.as_xml(parsed_py)))
 
         # use parse_xml to check again
         parsed_py = llsd.parse_xml(xml)
         formatted_xml = self.llsd.as_xml(py)
         self.assertEqual(parsed_py, py)
-        self.assertEqual(self.strip(formatted_xml),
-                         self.strip(xml))
         self.assertEqual(py, llsd.parse_xml(formatted_xml))
-        self.assertEqual(self.strip(xml),
-                         self.strip(self.llsd.as_xml(parsed_py)))
+        if not ignore_rounding:
+            self.assertEqual(self.strip(formatted_xml),
+                            self.strip(xml))
+            self.assertEqual(self.strip(xml),
+                             self.strip(self.llsd.as_xml(parsed_py)))
 
     def testCllsd(self):
         import sys
@@ -682,9 +684,9 @@ class LLSDXMLUnitTest(unittest.TestCase):
         python_blank_real = 0.0
 
         self.assertXMLRoundtrip(python_pos_real,
-                                  pos_real_xml)
+                                  pos_real_xml, True)
         self.assertXMLRoundtrip(python_neg_real,
-                                  neg_real_xml)
+                                  neg_real_xml, True)
         self.assertEqual(python_blank_real, self.llsd.parse(blank_real_xml))
 
     def testUUID(self):
@@ -1579,7 +1581,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         # restore the cllsd module if it was there in the first place
         llsd.cllsd = self._cllsd
 
-    def assertXMLRoundtrip(self, py, xml):
+    def assertXMLRoundtrip(self, py, xml, ignore_rounding=False):
         """
         Utility method to test parse_xml and as_xml at the same time
         """
@@ -1588,29 +1590,32 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         parsed_py = self.llsd.parse(xml)
         formatted_xml = self.llsd.as_xml(py)
         self.assertEqual(parsed_py, py)
-        self.assertEqual(self.strip(formatted_xml),
-                         self.strip(xml))
         self.assertEqual(py, self.llsd.parse(formatted_xml))
-        self.assertEqual(self.strip(xml),
-                         self.strip(self.llsd.as_xml(parsed_py)))
+        if not ignore_rounding:
+            self.assertEqual(self.strip(formatted_xml),
+                             self.strip(xml))
+            self.assertEqual(self.strip(xml),
+                             self.strip(self.llsd.as_xml(parsed_py)))
 
         # use parse_xml to check again
         parsed_py = llsd.parse_xml(xml)
         formatted_xml = self.llsd.as_xml(py)
         self.assertEqual(parsed_py, py)
-        self.assertEqual(self.strip(formatted_xml),
-                         self.strip(xml))
         self.assertEqual(py, llsd.parse_xml(formatted_xml))
-        self.assertEqual(self.strip(xml),
-                         self.strip(self.llsd.as_xml(parsed_py)))
+        if not ignore_rounding:
+            self.assertEqual(self.strip(formatted_xml),
+                             self.strip(xml))
+            self.assertEqual(self.strip(xml),
+                             self.strip(self.llsd.as_xml(parsed_py)))
         parsed_py = self.llsd.parse(xml)
         formatted_xml = self.llsd.as_xml(py)
         self.assertEqual(parsed_py, py)
-        self.assertEqual(self.strip(formatted_xml),
-                         self.strip(xml))
         self.assertEqual(py, self.llsd.parse(formatted_xml))
-        self.assertEqual(self.strip(xml),
-                         self.strip(self.llsd.as_xml(parsed_py)))
+        if not ignore_rounding:
+            self.assertEqual(self.strip(formatted_xml),
+                             self.strip(xml))
+            self.assertEqual(self.strip(xml),
+                             self.strip(self.llsd.as_xml(parsed_py)))
 
     def testInteger(self):
         """
@@ -1708,9 +1713,9 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         python_blank_real = 0.0
 
         self.assertXMLRoundtrip(python_pos_real,
-                                  pos_real_xml)
+                                  pos_real_xml, True)
         self.assertXMLRoundtrip(python_neg_real,
-                                  neg_real_xml)
+                                  neg_real_xml, True)
         self.assertEqual(python_blank_real, self.llsd.parse(blank_real_xml))
 
     def testUUID(self):
