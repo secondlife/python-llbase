@@ -5,6 +5,7 @@ import sys
 from glob import glob
 import subprocess
 
+from distutils.command.build_ext import build_ext
 from distutils.core import setup, Extension, Command
 from distutils.spawn import spawn
 from unittest import TextTestRunner, TestLoader
@@ -43,6 +44,31 @@ sources = [os.path.join(LLBASE_SOURCE, "cllsd.c")]
 ext_modules = [Extension(PACKAGE_NAME + '._cllsd', sources)]
 if PLATFORM_IS_WINDOWS:
     ext_modules = None
+
+# from http://stackoverflow.com/a/22931866 :
+
+# Workaround for OS X 10.9.2 and Xcode 5.1+
+# The latest clang treats unrecognized command-line options as errors and the
+# Python CFLAGS variable contains unrecognized ones (e.g. -mno-fused-madd).
+# See Xcode 5.1 Release Notes (Compiler section) and
+# http://stackoverflow.com/questions/22313407 for more details. This workaround
+# follows the approach suggested in http://stackoverflow.com/questions/724664.
+class build_ext_subclass(build_ext):
+    def build_extensions(self):
+        if sys.platform == 'darwin':
+            # Test the compiler that will actually be used to see if it likes flags
+            proc = subprocess.Popen(self.compiler.compiler + ['-v'],
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                    universal_newlines=True)
+            stdout, stderr = proc.communicate()
+            clang_mesg = "clang: error: unknown argument: '-mno-fused-madd'"
+            if proc.returncode and stderr.splitlines()[0].startswith(clang_mesg):
+                for ext in self.extensions:
+                    # Use temporary workaround to ignore invalid compiler option
+                    # Hopefully -mno-fused-madd goes away before this workaround!
+                    ext.extra_compile_args += \
+                        ['-Wno-error=unused-command-line-argument-hard-error-in-future']
+        build_ext.build_extensions(self)
 
 
 class TestCommand(Command):
@@ -86,5 +112,8 @@ setup(
     license='MIT',
     classifiers=filter(None, CLASSIFIERS.split("\n")),
     ext_modules=ext_modules,
-    cmdclass = { 'test': TestCommand }
+    cmdclass = {
+                 'build_ext': build_ext_subclass,
+                 'test': TestCommand,
+               }
     )
