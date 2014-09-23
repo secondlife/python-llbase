@@ -34,8 +34,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#if defined(__GNUC__)
-  // features.h is gcc-specific?
+#if defined(__unix__)
+  // features.h is unix-specific?
   #include <features.h>
 
   #if __GLIBC_PREREQ(2, 3)
