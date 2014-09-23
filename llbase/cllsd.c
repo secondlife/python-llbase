@@ -34,11 +34,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <features.h>
+#if defined(__GNUC__)
+  // features.h is gcc-specific?
+  #include <features.h>
 
-#if __GLIBC_PREREQ(2, 3)
-asm (".symver memcpy, memcpy@GLIBC_2.2.5");
-#endif
+  #if __GLIBC_PREREQ(2, 3)
+  asm (".symver memcpy, memcpy@GLIBC_2.2.5");
+  #endif
+#endif  /* __GNUC__ */
 
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
 typedef int Py_ssize_t;
