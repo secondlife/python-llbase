@@ -11,7 +11,10 @@
 # All configuration values have a default value; values that are commented out
 # serve to show the default value.
 
-import sys, os
+import sys, os, re
+
+class ConfError(Exception):
+    pass
 
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
@@ -40,11 +43,46 @@ copyright = '2009, Phoenix'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
-#
+
+# nat 2014-09-24: This Sphinx configuration file appears to predate our Debian
+# packaging. Nonetheless setup.py reads the 'release' variable defined here to
+# set the user-visible package version. It is awkward to leave that wildly out
+# of sync with the version used for Debian -- so read the Debian version from
+# the changelog file, even though that change initially bumps 'release' from
+# 0.2.3 to 0.8.0.
+
+# As we can't be sure we'll be running with Python >= 2.5, avoid 'with', even
+# though that would be ideal. We can't leave any attribute in the module that
+# can't be pickled.
+_changename = os.path.join(os.path.dirname(__file__),
+                           os.pardir,
+                           os.pardir,
+                           "debian", "changelog")
+try:
+    _changelog = open(_changename)
+    _firstline = _changelog.readline()
+    _changelog.close()
+except IOError, _err:
+    raise ConfError("Can't read debian changelog file at %s: %s" %
+                    (_changename, _err))
+
+# e.g. "llbase (0.7) unstable; urgency=medium"
+# find just the parenthesized, dotted-decimal version number
+_match = re.search(r"\(([0-9](\.[0-9])+)\)", _firstline)
+if not _match:
+    raise ConfError("First line of %s does not contain (version)" %
+                    _changename)
+
 # The short X.Y version.
-version = '0.2.3'
+version = _match.group(1)
 # The full version, including alpha/beta/rc tags.
-release = '0.2.3'
+release = version
+
+# clean up clutter
+del _match
+del _firstline
+del _changelog
+del _changename
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
