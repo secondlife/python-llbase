@@ -41,7 +41,7 @@
   #if __GLIBC_PREREQ(2, 3)
   asm (".symver memcpy, memcpy@GLIBC_2.2.5");
   #endif
-#endif  /* __GNUC__ */
+#endif  /* __unix__ */
 
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
 typedef int Py_ssize_t;
