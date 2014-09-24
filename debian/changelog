@@ -1,3 +1,9 @@
+llbase (0.8.1) unstable; urgency=high
+
+  * Fixing PyPI pip install: include debian/changelog file read by setup.py.
+
+ -- Nat Goodspeed <nat@lindenlab.com>  Wed, 24 Sep 2014 09:19:00 -0400
+
 llbase (0.8.0) unstable; urgency=medium
 
   * Fixing cllsd.c build for Mac OS X 10.8 with Xcode 5.1.

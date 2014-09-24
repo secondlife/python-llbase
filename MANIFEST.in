@@ -5,3 +5,5 @@ include INSTALL
 include Makefile
 include MANIFEST.in
 include setup.py setup.cfg
+include debian/changelog
+global-exclude *.pyc
