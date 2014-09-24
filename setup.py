@@ -21,10 +21,21 @@ from unittest import TextTestRunner, TestLoader
 # you (because you already have your package's dependencies installed), but it
 # will wreak havoc upon new users of your package, as they will not be able to
 # install your package without manually installing the dependencies first."
-execfile(os.path.join("docs", "source", "conf.py"))
+
+# However: in our case conf.py wants to read our debian/changelog file,
+# relative to its __file__. But if we execfile("docs/source/conf.py"),
+# os.path.dirname(__file__) is THIS directory! Trust that conf.py does not
+# import any dependent modules, and just import it.
+#execfile(os.path.join("docs", "source", "conf.py"))
+docs_source = os.path.join(os.path.dirname(__file__), "docs", "source")
+sys.path.insert(0, docs_source)
+try:
+    import conf
+finally:
+    sys.path.remove(docs_source)
 
 PACKAGE_NAME = 'llbase'
-LLBASE_VERSION = release                # from conf.py
+LLBASE_VERSION = conf.release
 LLBASE_SOURCE = 'llbase'
 CLASSIFIERS = """\
 Development Status :: 4 - Beta
