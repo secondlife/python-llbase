@@ -68,7 +68,7 @@ except IOError, _err:
 
 # e.g. "llbase (0.7) unstable; urgency=medium"
 # find just the parenthesized, dotted-decimal version number
-_match = re.search(r"\(([0-9](\.[0-9])+)\)", _firstline)
+_match = re.search(r"\(([0-9]+(\.[0-9]+)+)\)", _firstline)
 if not _match:
     raise ConfError("First line of %s does not contain (version)" %
                     _changename)
