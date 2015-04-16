@@ -34,14 +34,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#if defined(__unix__)
-  // features.h is unix-specific?
-  #include <features.h>
-
-  #if __GLIBC_PREREQ(2, 3)
-  asm (".symver memcpy, memcpy@GLIBC_2.2.5");
-  #endif
-#endif  /* __unix__ */
 
 #if PY_MAJOR_VERSION == 2 && PY_MINOR_VERSION < 5
 typedef int Py_ssize_t;
@@ -80,7 +72,7 @@ static inline int buf_ensure(Buffer *buf, Py_ssize_t len)
 
 static inline void buf_append(Buffer *buf, const char *str, Py_ssize_t len)
 {
-	memcpy(buf->ptr + buf->off, str, len);
+	memmove(buf->ptr + buf->off, str, len);
 	buf->off += len;
 }
 
