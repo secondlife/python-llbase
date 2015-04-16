@@ -1,3 +1,10 @@
+llbase (0.8.2) unstable; urgency=medium
+
+  * Fixing cllsd.c for modern Linux build: as memcpy() was causing strange
+    link failures, use memmove() instead.
+
+ -- Nat Goodspeed <nat@lindenlab.com>  Thu, 16 Apr 2015 16:33:00 -0500
+
 llbase (0.8.1) unstable; urgency=high
 
   * Fixing PyPI pip install: include debian/changelog file read by setup.py.
