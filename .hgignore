@@ -10,3 +10,5 @@ debian/files
 debian/python-llbase
 debian/python-llbase.*.debhelper
 debian/python-llbase.substvars
+MANIFEST
+dist
