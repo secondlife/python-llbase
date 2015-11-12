@@ -123,6 +123,7 @@ setup(
     license='MIT',
     classifiers=filter(None, CLASSIFIERS.split("\n")),
     ext_modules=ext_modules,
+    install_requires=['requests'],
     cmdclass = {
                  'build_ext': build_ext_subclass,
                  'test': TestCommand,
