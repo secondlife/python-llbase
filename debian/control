@@ -1,17 +1,17 @@
 Source: llbase
 Section: python
 Priority: optional
-Maintainer: Phoenix Linden (phoenix@secondlife.com)
-Build-Depends: debhelper (>= 5.0.42), python-all-dev, python-central (>= 0.5.12), python (>= 2.4.4-2)
+Maintainer: Nat Linden (nat@secondlife.com)
+Build-Depends: debhelper (>= 5.0.42), python-all-dev, python-central (>= 0.5.12), python (>= 2.6)
 Standards-Version: 3.7.2.2
 XS-Python-Version: all
-Homepage: http://bitbucket.org/phoenix_linden/llbase/
+Homepage: http://bitbucket.org/lindenlab/llbase/
 
 Package: python-llbase
 Architecture: any
 Section: python
 Priority: optional
-Depends: ${python:Depends}, ${shlibs:Depends}, python-elementtree, python-uuid | python (>= 2.5)
+Depends: ${python:Depends}, ${shlibs:Depends}, python-elementtree, python-uuid | python (>= 2.6)
 Recommends: python-celementtree
 Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
