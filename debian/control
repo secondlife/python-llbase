@@ -14,6 +14,6 @@ Priority: optional
 Depends: python (>= 2.6), ${shlibs:Depends}, python-elementtree
 Recommends: python-celementtree
 Provides: ${python:Provides}
-XB-Python-Version: ${python:Versions}
+X-Python-Version: python (>= 2.6)
 Description: Base linden python modules
  Base linden python modules used in many python projects.
