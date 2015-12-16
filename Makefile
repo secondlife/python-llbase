@@ -1,7 +1,14 @@
 #!/usr/bin/make -f
 # -*- makefile -*-
 
-PYTHON_VERSIONS := $(shell pyversions -vr)
+#
+# OPS-1487 - we're building this on Python 2.6, only, for now.
+# 
+#  This will need to be reverted post-wheezy.
+#  
+# PYTHON_VERSIONS := $(shell pyversions -vr)
+PYTHON_VERSIONS := 2.6
+
 INSTALL_TARGETS := $(addprefix install-version-,$(PYTHON_VERSIONS))
 SOURCE_TARGETS := $(addprefix source-version-,$(PYTHON_VERSIONS))
 BUILD_TARGETS := $(addprefix build-version-,$(PYTHON_VERSIONS))
