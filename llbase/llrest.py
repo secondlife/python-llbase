@@ -182,7 +182,7 @@ class RESTService(object):
         except requests.exceptions.HTTPError as err:
             if response.status_code == 404:
                 raise RESTError(self.name, response.request.url, response.status_code,
-                                "%s: URL (%s) Not found\n%s" % (self.name, response.request.url, response.text))
+                                "%s: URL (%s) Not found" % (self.name, response.request.url))
             else:
                 raise RESTError(self.name, response.request.url, response.status_code,
                                 '%s: HTTP error: %s\n  for url: %s' % (self.name, err, response.request.url))
