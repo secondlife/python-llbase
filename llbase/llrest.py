@@ -203,4 +203,4 @@ class SimpleRESTService(RESTService):
     for non-authenticated services
     """
     def __init__(self, name, baseurl):
-        RESTService.__init__(self, name=name, baseurl=baseurl, authenticated=False)
+        RESTService.__init__(self, authenticated=False, *args, **kwds)
