@@ -69,7 +69,6 @@ class RESTEncoding:
                 raise ValueError("%s: failed to parse response as json: %s"
                                  % (self.__class__.__name__, err))
 
-
 class RESTService(object):
     """
     Implements a simple wrapper for calling a REST interface that returns
@@ -197,3 +196,11 @@ class RESTService(object):
             raise RESTError(self.name, response.request.url, response.status_code,
                             '%s: response error from url "%s":\n%s\nresponse data:\n%s'
                             % (self.name, response.request.url, err, response.text))
+
+class SimpleRESTService(RESTService):
+    """
+    Subclass wrapper around RESTService to use the right defaults 
+    for non-authenticated services
+    """
+    def __init__(self, name, baseurl):
+        RESTService.__init__(self, name=name, baseurl=baseurl, authenticated=False)
