@@ -202,5 +202,5 @@ class SimpleRESTService(RESTService):
     Subclass wrapper around RESTService to use the right defaults 
     for non-authenticated services
     """
-    def __init__(self, name, baseurl):
+    def __init__(self, name, baseurl, *args, **kwds):
         RESTService.__init__(self, authenticated=False, *args, **kwds)
