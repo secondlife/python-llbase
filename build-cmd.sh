@@ -10,7 +10,7 @@ exec 3>&1; export BASH_XTRACEFD=3; set -x # make tracing work in TeamCity
 # active, so extract into a directory and then dig down to find the one we want
 dist_tarball=../dist/llbase-*.tar.gz
 # our cygwin install does not include the 'find' command, so grep for the directory and file we want
-tar tzf ${dist_tarball} | grep -E '^.*/llbase.*$' > target_files
+tar tzf ${dist_tarball} | grep -E '^.*/llbase[-/].*$' > target_files
 # and then extract them, trimming the stuff we don't want from the pathnames
 prefix_dir=$(dirname $(head -n 1 target_files))
 test -d extract || mkdir extract
