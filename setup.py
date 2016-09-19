@@ -38,7 +38,7 @@ PACKAGE_NAME = 'llbase'
 LLBASE_VERSION = conf.release
 LLBASE_SOURCE = 'llbase'
 CLASSIFIERS = """\
-Development Status :: 4 - Beta
+Development Status :: 5 - Production/Stable
 Intended Audience :: Developers
 License :: OSI Approved :: MIT License
 Programming Language :: Python
