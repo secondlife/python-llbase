@@ -24,9 +24,11 @@
 
 import sys
 import itertools
+import json
 import requests
 from llbase import llsd
 from xml.etree import cElementTree as ElementTree
+from contextlib import contextmanager
 
 class RESTError(Exception):
     """Describes an error from a RESTService request"""
@@ -39,10 +41,24 @@ class RESTError(Exception):
 
 class RESTEncodingBase(object):
     """Abstract base class for REST response types"""
+    def __call__(self):
+        # We don't (yet) have any stateful RESTEncoding classes. RESTService's
+        # constructor calls its set_codec() method; set_codec() expects to be
+        # passed a class, so it calls codec() to instantiate it. But
+        # set_codec() returns the previous codec INSTANCE rather than just its
+        # class. Providing a trivial base-class __call__() method allows us to
+        # pass set_codec() (or RESTService's constructor) a codec instance.
+        # This supports the possible future case of a stateful codec.
+        return self
     def set_accept_header(self, session): # session is the requests.Session object
         raise NotImplementedError
     def decode(self, response): # response is the requests.response object
         """Given invalid input, this should raise ValueError"""
+        raise NotImplementedError
+    def set_content_type_header(self, session):
+        # need not override this method if this codec needs no Content-Type header
+        pass
+    def encode(self, data):
         raise NotImplementedError
 
 class RESTEncoding:
@@ -59,6 +75,15 @@ class RESTEncoding:
                 raise ValueError("%s %s: failed to parse response as llsd: %s"
                              % (self.__class__.__name__, err.__class__.__name__, err))
 
+        def set_content_type_header(self, session):
+            session.headers.update({'Content-Type': 'application/llsd'})
+
+        def encode(self, data):
+            # If a particular REST API requires you to POST xml+llsd,
+            # introduce an LLSDXML codec for the purpose... otherwise, use
+            # notation.
+            return llsd.format_notation(data)
+
     class JSON(RESTEncodingBase):
         def set_accept_header(self, session):
             session.headers.update({'Accept': 'application/json'})
@@ -70,6 +95,12 @@ class RESTEncoding:
                 raise ValueError("%s: failed to parse response as json: %s"
                                  % (self.__class__.__name__, err))
 
+        def set_content_type_header(self, session):
+            session.headers.update({'Content-Type': 'application/json'})
+
+        def encode(self, data):
+            return json.dumps(data)
+
     class XML(RESTEncodingBase):
         def set_accept_header(self, session):
             session.headers.update({'Accept': 'application/xml'})
@@ -78,8 +109,41 @@ class RESTEncoding:
             try:
                 return ElementTree.fromstring(response.content)
             except Exception as err:
-                raise ValueError("%s: failed to parse response as XML: %s"
+                raise ValueError("%s: %s parsing response as XML: %s"
                                  % (self.__class__.__name__, err.__class__.__name__, err))
+
+        def set_content_type_header(self, session):
+            session.headers.update({'Content-Type': 'application/xml'})
+
+        def encode(self, data):
+            return ElementTree.tostring(data)
+
+    class HTML(RESTEncodingBase):
+        def __init__(self):
+            # Only import BeautifulSoup if explicitly instantiated.
+            # Don't make llbase unconditionally depend on beautifulsoup4:
+            # put that on the consumer who chooses this codec.
+            global BeautifulSoup
+            from bs4 import BeautifulSoup
+
+        def set_accept_header(self, session):
+            session.headers.update({'Accept': 'text/html'})
+
+        def decode(self, response):
+            try:
+                return BeautifulSoup(response.content, 'html.parser')
+            except Exception as err:
+                raise ValueError("%s: %s parsing response as HTML: %s"
+                                 % (self.__class__.__name__, err.__class__.__name__, err))
+
+        def set_content_type_header(self, session):
+            # We have a no-op encode() method, so we'll pass caller's
+            # structured data directly into requests function, which will
+            # cause it to be form-encoded.
+            session.headers.update({'Content-Type': 'x-www-form-urlencoded'})
+
+        def encode(self, data):
+            return data
 
 class RESTService(object):
     """
@@ -112,10 +176,10 @@ class RESTService(object):
     def __init__(self, name, baseurl, codec=RESTEncoding.LLSD, authenticated=True, username=None, password=None, proxy_hostport=None):
         self.name = name
         self.baseurl = baseurl
-        self.codec = codec() # the parameter is a class name; instantiate it here
 
         self.session = requests.Session()
-        self.codec.set_accept_header(self.session)
+        self.codec = None               # set_codec() returns previous self.codec
+        self.set_codec(codec)
 
         self.session.proxies = { 'http':'http://%s' % proxy_hostport, 'https':'http://%s' % proxy_hostport } \
           if proxy_hostport else None
@@ -208,6 +272,80 @@ class RESTService(object):
             raise RESTError(self.name, response.request.url, response.status_code,
                             '%s: response error from url "%s":\n%s\nresponse data:\n%s'
                             % (self.name, response.request.url, err, response.text))
+
+    def post(self, path, data):
+        """
+        Execute a POST against the service
+
+        path:          url path extension
+                       if a baseurl was specified for the service, this is
+                       appended with '/'
+
+        data:          the POST body
+                       This can be structured data, according to what the
+                       codec's encode() method expects. In particular, the XML
+                       codec expects an xml.etree.Element.
+        """
+        url = self._url(path)
+
+        try:
+            encoded = self.codec.encode(data)
+        except Exception as err:
+            raise RESTError(self.name, url, '000',
+                            '%s: %s encoding data: %s\n  for url: %s' %
+                            (self.name, err.__class__.__name__, err, url))
+
+        try:
+            response = self.session.post(url, data=encoded, auth=self._get_credentials())
+            response.raise_for_status()
+
+        except requests.RequestException as err:
+            raise RESTError(self.name, response.request.url, response.status_code,
+                            "%s: %s: %s\n  for url: %s" %
+                            (self.name, err.__class__.__name__, err, url))
+
+        # if the response body is non-empty, decode it
+        if response.content:
+            try:
+                return self.codec.decode(response)
+            except Exception as err:
+                raise RESTError(self.name, response.request.url, response.status_code,
+                                '%s: %s decoding response from url "%s":\n%s\nresponse data:\n%s'
+                                % (self.name, err.__class__.__name__, response.request.url,
+                                   err, response.text))
+
+    def set_codec(self, codec):
+        """
+        Some services use different encodings for different operations. This
+        method sets a new codec for all subsequent operations. It returns the
+        previous codec.
+        """
+        old = self.codec
+        # Our parameter could be a codec class, in which case we must
+        # instantiate it. It could also be a RESTEncodingBase subclass
+        # instance, but fortunately RESTEncodingBase.__call__() returns self,
+        # so in that case the call below gets us the instance.
+        self.codec = codec()
+        self.codec.set_accept_header(self.session)
+        self.codec.set_content_type_header(self.session)
+        return old
+
+    @contextmanager
+    def temp_codec(self, codec):
+        """
+        Usage:
+
+        with service.temp_codec(newcodec):
+            service.get(...)
+
+        temp_codec() sets newcodec for the duration of the 'with' body, then
+        restores the previous codec when done.
+        """
+        prev = self.set_codec(codec)
+        try:
+            yield                       # execute 'with' body
+        finally:
+            self.set_codec(prev)
 
 class SimpleRESTService(RESTService):
     """
