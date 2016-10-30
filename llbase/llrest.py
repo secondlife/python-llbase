@@ -26,6 +26,7 @@ import sys
 import itertools
 import requests
 from llbase import llsd
+from xml.etree import cElementTree as ElementTree
 
 class RESTError(Exception):
     """Describes an error from a RESTService request"""
@@ -68,6 +69,17 @@ class RESTEncoding:
             except ValueError as err:
                 raise ValueError("%s: failed to parse response as json: %s"
                                  % (self.__class__.__name__, err))
+
+    class XML(RESTEncodingBase):
+        def set_accept_header(self, session):
+            session.headers.update({'Accept': 'application/xml'})
+
+        def decode(self, response):
+            try:
+                return ElementTree.fromstring(response.content)
+            except Exception as err:
+                raise ValueError("%s: failed to parse response as XML: %s"
+                                 % (self.__class__.__name__, err.__class__.__name__, err))
 
 class RESTService(object):
     """
