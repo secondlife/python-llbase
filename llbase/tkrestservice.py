@@ -33,9 +33,11 @@ class TkRESTService(RESTService):
 
     def get_credentials(self):
         global root
-        root = Tkinter.Tk()
-        # Don't show empty application window
-        root.withdraw()
+        # only create and withdraw a dummy window on first use
+        if root is None:
+            root = Tkinter.Tk()
+            # Don't show empty application window
+            root.withdraw()
 
         # try to get filename of main script for window title -- if none,
         # use our own filename
