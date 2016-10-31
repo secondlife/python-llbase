@@ -113,7 +113,7 @@ class RESTEncoding:
                                  % (self.__class__.__name__, err.__class__.__name__, err))
 
         def set_content_type_header(self, session):
-            session.headers['Content-Type' = 'application/xml'
+            session.headers['Content-Type'] = 'application/xml'
 
         def encode(self, data):
             return ElementTree.tostring(data)
