@@ -66,7 +66,7 @@ class RESTEncoding:
     class LLSD(RESTEncodingBase):
         def set_accept_header(self, session):
             # for most SL services, llsd is the default and we don't use a mime type to select it
-            session.headers.update({'Accept': '*/*'})
+            session.headers['Accept'] = '*/*'
 
         def decode(self, response):
             try:
@@ -76,7 +76,7 @@ class RESTEncoding:
                              % (self.__class__.__name__, err.__class__.__name__, err))
 
         def set_content_type_header(self, session):
-            session.headers.update({'Content-Type': 'application/llsd'})
+            session.headers['Content-Type'] = 'application/llsd'
 
         def encode(self, data):
             # If a particular REST API requires you to POST xml+llsd,
@@ -86,7 +86,7 @@ class RESTEncoding:
 
     class JSON(RESTEncodingBase):
         def set_accept_header(self, session):
-            session.headers.update({'Accept': 'application/json'})
+            session.headers['Accept'] = 'application/json'
 
         def decode(self, response):
             try:
@@ -96,14 +96,14 @@ class RESTEncoding:
                                  % (self.__class__.__name__, err))
 
         def set_content_type_header(self, session):
-            session.headers.update({'Content-Type': 'application/json'})
+            session.headers['Content-Type'] = 'application/json'
 
         def encode(self, data):
             return json.dumps(data)
 
     class XML(RESTEncodingBase):
         def set_accept_header(self, session):
-            session.headers.update({'Accept': 'application/xml'})
+            session.headers['Accept'] = 'application/xml'
 
         def decode(self, response):
             try:
@@ -113,7 +113,7 @@ class RESTEncoding:
                                  % (self.__class__.__name__, err.__class__.__name__, err))
 
         def set_content_type_header(self, session):
-            session.headers.update({'Content-Type': 'application/xml'})
+            session.headers['Content-Type' = 'application/xml'
 
         def encode(self, data):
             return ElementTree.tostring(data)
@@ -127,7 +127,7 @@ class RESTEncoding:
             from bs4 import BeautifulSoup
 
         def set_accept_header(self, session):
-            session.headers.update({'Accept': 'text/html'})
+            session.headers['Accept'] = 'text/html'
 
         def decode(self, response):
             try:
@@ -140,7 +140,12 @@ class RESTEncoding:
             # We have a no-op encode() method, so we'll pass caller's
             # structured data directly into requests function, which will
             # cause it to be form-encoded.
-            session.headers.update({'Content-Type': 'x-www-form-urlencoded'})
+##          session.headers['Content-Type'] = 'x-www-form-urlencoded'
+            # The above reasoning seems perfectly sound. However, when we use
+            # this HTML codec to GET from TeamCity's REST API (which sometimes
+            # emits HTML, as when retrieving a build artifact), passing the
+            # above Content-Type header produces a 500 error! So... skip it.
+            del session.headers["Content-Type"]
 
         def encode(self, data):
             return data
