@@ -1,3 +1,14 @@
+llbase (0.9.0) stable; urgency=low
+
+  * Add llrest.RESTEncoding.XML and HTML codecs.
+  * Add llrest.RESTService.set_codec() and @contextmanager
+    temp_codec() method; use set_codec() in constructor.
+  * Add llrest.RESTService.post() method for sending POST requests.
+  * Add llrest.RESTEncodingBase.set_content_type_header() and encode() for
+    use in post() operations. Add implementations for LLSD, JSON, XML, HTML.
+
+ -- Nat Goodspeed <nat@lindenlab.com>  Mon, 14 Nov 2016 12:58:00 -0400
+
 llbase (0.8.7) stable; urgency=low
 
   * Fix argument passing for the SimpleRESTService convenience subclass
