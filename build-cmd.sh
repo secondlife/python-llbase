@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+make test || exit 1
+
 # create a binary distribution of the llbase package
 (cd ..; python setup.py bdist --format gztar)
 
