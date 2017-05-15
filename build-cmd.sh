@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-exec 3>&1; export BASH_XTRACEFD=3; set -x # make tracing work in TeamCity
-
 # create a binary distribution of the llbase package
 (cd ..; python setup.py bdist --format gztar)
 
