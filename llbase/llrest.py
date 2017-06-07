@@ -209,6 +209,10 @@ class RESTService(object):
         self.authenticated = True
         self.password = password
 
+    def set_cert_authorities(self, capath):
+        """Specify a path for certification verification; see http://docs.python-requests.org/en/master/user/advanced/#ssl-cert-verification"""
+        self.session.verify = capath
+
     def get_credentials(self):
         """
         This can be overridden by the service for obtaining credentials.
@@ -242,13 +246,15 @@ class RESTService(object):
         """Use whichever of self.baseurl and query isn't empty. If they're both present, join them with '/'"""
         return '/'.join(itertools.ifilter(None, (self.baseurl, query)))
 
-    def get(self, query, params={}):
+    def get(self, query, params={}, **requests_params):
         """ Execute a GET request query against the service
 
             query:     request url path extension
                        if a baseurl was specified for the service, this is concatenated to it with '/'
 
             params:    dict of query param names with values.
+
+            Any other keyword arguments are passed through to requests.get
 
             Returns the data as encoded by the response.
 
@@ -280,7 +286,7 @@ class RESTService(object):
                             '%s: response error from url "%s":\n%s\nresponse data:\n%s'
                             % (self.name, response.request.url, err, response.text))
 
-    def post(self, path, data):
+    def post(self, path, data, **requests_params):
         """
         Execute a POST against the service
 
@@ -292,6 +298,8 @@ class RESTService(object):
                        This can be structured data, according to what the
                        codec's encode() method expects. In particular, the XML
                        codec expects an xml.etree.Element.
+
+        Any other keyword arguments are passed through to requests.post
         """
         url = self._url(path)
 
@@ -303,7 +311,7 @@ class RESTService(object):
                             (self.name, err.__class__.__name__, err, url))
 
         try:
-            response = self.session.post(url, data=encoded, auth=self._get_credentials())
+            response = self.session.post(url, data=encoded, auth=self._get_credentials(), **requests_params)
             response.raise_for_status()
 
         except requests.RequestException as err:
