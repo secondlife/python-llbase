@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
+(cd ..; make test) || exit 1
+
 # create a binary distribution of the llbase package
 (cd ..; python setup.py bdist --format gztar)
-
-(cd ..; make test) || exit 1
 
 # extract the binary distribution files we need into the autobuild structure
 # the pathnames in the tarball will depend on whether or not there is a virtualenv
