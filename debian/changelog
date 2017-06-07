@@ -1,3 +1,9 @@
+llbase (0.9.1) stable; urgency=low
+  * Add the ability to pass parameters through to requests.Session
+    when instantiating a RESTService
+
+ -- Scott Lawrence <oz@lindenlab.com>  Tue, 7 Jun 2017 12:00:00 -0400
+
 llbase (0.9.0) stable; urgency=low
 
   * Add llrest.RESTEncoding.XML and HTML codecs.
