@@ -176,13 +176,15 @@ class RESTService(object):
     username:        the username to be used for HTTP authentication
     password:        the password to be used for HTTP authentication
     proxy_hostport:  an HTTP proxy hostname and port number (host:port) through which requests should be routed
+    
+    Any other keyword parameters are passed through to the requests.Session() 
     """
 
-    def __init__(self, name, baseurl, codec=RESTEncoding.LLSD, authenticated=True, username=None, password=None, proxy_hostport=None):
+    def __init__(self, name, baseurl, codec=RESTEncoding.LLSD, authenticated=True, username=None, password=None, proxy_hostport=None, **session_params):
         self.name = name
         self.baseurl = baseurl
 
-        self.session = requests.Session()
+        self.session = requests.Session(**session_params)
         self.codec = None               # set_codec() returns previous self.codec
         self.set_codec(codec)
 
