@@ -264,7 +264,7 @@ class RESTService(object):
         # Execute the request and deal with any connection or server errors
         try:
             url=self._url(query)
-            response = self.session.get(url, auth=self._get_credentials(), params=params)
+            response = self.session.get(url, auth=self._get_credentials(), params=params, **requests_params)
             response.raise_for_status() # turns any error response into an exception
 
         except requests.exceptions.HTTPError as err:

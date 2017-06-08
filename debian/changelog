@@ -1,3 +1,13 @@
+llbase (0.9.3) stable; urgency=high
+  * Fixed omission of requests_params in get
+
+ -- Scott Lawrence <oz@lindenlab.com>  Tue, 8 Jun 2017 12:00:00 -0400
+
+llbase (0.9.2) stable; urgency=high
+  * Add the ability to pass parameters through to requests get and post
+
+ -- Scott Lawrence <oz@lindenlab.com>  Tue, 7 Jun 2017 12:00:00 -0400
+
 llbase (0.9.1) stable; urgency=low
   * Add the ability to pass parameters through to requests.Session
     when instantiating a RESTService
