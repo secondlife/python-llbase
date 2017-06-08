@@ -19,7 +19,7 @@ echo "$version.${AUTOBUILD_BUILD_ID:-0}" > VERSION.txt
 
 # install the source package in a temporary virtual environment
 TMP=$(mktemp -d virtual.XXXXXX)
-trap "rm ${TMP}* 2>/dev/null" EXIT
+trap "rm -rf ${TMP}* 2>/dev/null" EXIT
 venv="${TMP}/environment"
 virtualenv "${venv}"
 . "${venv}/bin/activate"
