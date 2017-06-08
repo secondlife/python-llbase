@@ -25,7 +25,7 @@
               <map>
                 <key>arguments</key>
                 <array>
-                  <string>../build-cmd.sh</string>
+                  <string>../autobuild-build-cmd.sh</string>
                 </array>
                 <key>command</key>
                 <string>bash</string>
@@ -38,7 +38,7 @@
           </map>
           <key>manifest</key>
           <array>
-            <string>llbase</string>
+            <string>lib/python/llbase</string>
           </array>
           <key>name</key>
           <string>common</string>
