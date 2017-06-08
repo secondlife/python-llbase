@@ -12,7 +12,7 @@ cp ../docs/llbase-license.txt LICENSES
 (cd ..; python setup.py sdist --format gztar)
 
 # extract the version number from the distribution tarball name
-dist_tarball=../dist/llbase-*.tar.gz
+dist_tarball=$(ls -t ../dist/llbase-*.tar.gz | head -n 1)
 version=$(echo $dist_tarball | sed -E 's/.*llbase-//; s/\.tar.gz//;')
 # create the version_file required by autobuild, adding the codeticket number
 echo "$version.${AUTOBUILD_BUILD_ID:-0}" > VERSION.txt
