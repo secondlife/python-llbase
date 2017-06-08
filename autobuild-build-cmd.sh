@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -x
+exec 3>&1; export BASH_XTRACEFD=3; set -x # make tracing work in TeamCity
 
 # copy the license file to where autobuild wants it (required by autobuild)
 test -d LICENSES || mkdir LICENSES
