@@ -17,9 +17,12 @@ version=$(echo $dist_tarball | sed -E 's/.*llbase-//; s/\.tar.gz//;')
 # create the version_file required by autobuild, adding the codeticket number
 echo "$version.${AUTOBUILD_BUILD_ID:-0}" > VERSION.txt
 
-# install the source package in a virtual environment
-virtualenv venv
-. venv/bin/activate
+# install the source package in a temporary virtual environment
+TMP=$(mktemp -d virtual.XXXXXX)
+trap "rm ${TMP}* 2>/dev/null" EXIT
+venv="${TMP}/environment"
+virtualenv "${venv}"
+. "${venv}/bin/activate"
 pip install $dist_tarball
 
 # find the path where the installed package files are in the virtual environment
