@@ -5,9 +5,8 @@ import sys
 from glob import glob
 import subprocess
 
-from distutils.command.build_ext import build_ext
-from distutils.core import setup, Extension, Command
-from distutils.spawn import spawn
+from setuptools.command.build_ext import build_ext
+from setuptools import setup, Extension, Command
 from unittest import TextTestRunner, TestLoader
 
 # from http://stackoverflow.com/questions/2058802/how-can-i-get-the-version-defined-in-setup-py-setuptools-in-my-package :
@@ -123,6 +122,7 @@ setup(
     license='MIT',
     classifiers=filter(None, CLASSIFIERS.split("\n")),
     ext_modules=ext_modules,
+    setup_requires=['nose'],
     install_requires=['requests'],
     cmdclass = {
                  'build_ext': build_ext_subclass,
