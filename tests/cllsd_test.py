@@ -69,7 +69,7 @@ class CLLSDTest(unittest.TestCase):
             print("C extension is not supported on Windows. Test abort.")
             return
         
-        import _cllsd as cllsd
+        import llbase._cllsd as cllsd
         
         if debug:
             print('%r => %r' % (v, cllsd.llsd_to_xml(v)))
@@ -195,7 +195,7 @@ class CLLSDTest(unittest.TestCase):
             print("C extension is not supported on Windows. Test abort.")
             return
         
-        import _cllsd as cllsd
+        import llbase._cllsd as cllsd
        
         a = [[{'a': values[12]}]]
         b = [[{'a': datetime(1066, 1, 1, 0, 0)}]]
