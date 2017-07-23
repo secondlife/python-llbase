@@ -1054,7 +1054,7 @@ class LLIDLParseSuiteTests(unittest.TestCase):
         try:
             v = llidl.parse_suite(s)
             self.fail('Incorrectly parsed "%s" as valid' % s)
-        except llidl.ParseError, e:
+        except llidl.ParseError as e:
             if msg and msg not in str(e):
                 self.fail('Missing "%s" in "%s"' % (msg, str(e)))
             if line:
@@ -1665,14 +1665,14 @@ class LLIDLParsingTests(unittest.TestCase):
     def good_parse_value(self, s):
         try:
             v = llidl.parse_value(s)
-        except llidl.ParseError, e:
+        except llidl.ParseError as e:
             self.fail('Failed parsing "%s", %s' % (s, str(e)))
 
     def bad_parse_value(self, s, msg=None, line=None, char=None):
         try:
             v = llidl.parse_value(s)
             self.fail('Incorrectly parsed "%s" as valid' % s)
-        except llidl.ParseError, e:
+        except llidl.ParseError as e:
             if msg and msg not in str(e):
                 self.fail('Mising "%s" in "%s"' % (msg, str(e)))
             if line:
@@ -1921,7 +1921,7 @@ class LLIDLExceptionTests(unittest.TestCase):
         try:
             s.match_request('some_api', {'id': 'bob'})
             self.fail("should have raised an exception")
-        except Exception, me:
+        except Exception as me:
             self.assertEqual(str(me),
                 "Resource name 'some_api' not found in suite.")
             

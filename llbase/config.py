@@ -27,13 +27,15 @@
 """
 Utility module for parsing and using configuration files.
 """
+from __future__ import print_function
+from __future__ import absolute_import
 
 import copy
 import errno
 import os
 import time
 
-import llsd
+from . import llsd
 
 _g_config = None
 
@@ -124,10 +126,10 @@ class Config(object):
                 modtime = self._get_last_modified_time()
                 if modtime > self._last_mod_time:
                     self._load()
-            except OSError, exc:
+            except OSError as exc:
                 if exc.errno == errno.ENOENT: # file not found
-                    print 'WARNING: Configuration file missing:',
-                    print self._config_filename
+                    print('WARNING: Configuration file missing:', end=' ')
+                    print(self._config_filename)
                     self._last_mod_time = 0
                 else:
                     raise  # pass the exception along to the caller

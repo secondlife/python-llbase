@@ -9,9 +9,10 @@ $LicenseInfo:firstyear=2016&license=internal$
 Copyright (c) 2016, Linden Research, Inc.
 $/LicenseInfo$
 """
+from __future__ import absolute_import
 
 import Tkinter, tkSimpleDialog
-from llrest import RESTService, RESTError
+from .llrest import RESTService, RESTError
 import os
 import __main__                         # for filename of main script
 

@@ -26,6 +26,7 @@
 """
 Test the config module
 """
+from __future__ import print_function
 
 import mock
 import os
@@ -180,7 +181,7 @@ class ConfigInstanceTester(unittest.TestCase):
         try:
             self._config.set(123, 123)
             self.fail("Exception is expected for non-string key")
-        except Exception, e:
+        except Exception as e:
             pass
 
     def testUpdateDict(self):
@@ -371,7 +372,7 @@ class ConfigInstanceTester(unittest.TestCase):
         try:
             config.set(123, 123)
             self.fail("Exception is expected for non-string key")
-        except Exception, e:
+        except Exception as e:
             pass
 
     def testGlobalUpdateDict(self):
@@ -523,8 +524,8 @@ class ConfigStressTest(unittest.TestCase):
         for i in range(0, 500):
             x = config.load(r"test_files/config_test.xml")
         delta = time.clock() - t
-        print "config.load", 500, " times takes total :", delta, "secs"
-        print "average time:", delta / 500, "secs"
+        print("config.load", 500, " times takes total :", delta, "secs")
+        print("average time:", delta / 500, "secs")
 
 if __name__ == '__main__':
     unittest.main()

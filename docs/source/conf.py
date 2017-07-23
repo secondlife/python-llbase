@@ -62,7 +62,7 @@ try:
     _changelog = open(_changename)
     _firstline = _changelog.readline()
     _changelog.close()
-except IOError, _err:
+except IOError as _err:
     raise ConfError("Can't read debian changelog file at %s: %s" %
                     (_changename, _err))
 

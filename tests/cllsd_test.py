@@ -26,6 +26,7 @@
 """
 Types as well as parsing and formatting functions for handling LLSD.
 """
+from __future__ import print_function
 
 from datetime import datetime, date
 import os.path
@@ -42,7 +43,7 @@ values = (
     llsd.uri('http://foo<'),
     uuid.UUID(int=0),
     ['thing', 123, 1.34],
-    sys.maxint + 10,
+    sys.maxsize + 10,
     llsd.binary('foo'),
     {u'f&\u1212': 3},
     3.1,
@@ -65,13 +66,13 @@ class CLLSDTest(unittest.TestCase):
         """
         # check whether it's windows platform first
         if sys.platform.lower().startswith('win'):
-            print "C extension is not supported on Windows. Test abort."
+            print("C extension is not supported on Windows. Test abort.")
             return
         
         import _cllsd as cllsd
         
         if debug:
-            print '%r => %r' % (v, cllsd.llsd_to_xml(v))
+            print('%r => %r' % (v, cllsd.llsd_to_xml(v)))
 
         a = [[{'a': v}]] * times
 
@@ -81,7 +82,7 @@ class CLLSDTest(unittest.TestCase):
         e = time.time()
         t1 = e - s
         if debug:
-            print "C running time:", t1
+            print("C running time:", t1)
 
         s = time.time()
         presult = llsd.LLSDXMLFormatter()._format(a)
@@ -89,16 +90,16 @@ class CLLSDTest(unittest.TestCase):
         e = time.time()
         t2 = e - s
         if debug:
-            print "Pure python running time:", t2
-            print "\ncpresult:",cresult
-            print "presult:",presult
+            print("Pure python running time:", t2)
+            print("\ncpresult:",cresult)
+            print("presult:",presult)
 
         self.assertEquals(a, llsd.parse(cresult))
         self.assertEquals(a, llsd.parse(presult))
         #self.assertEquals(chash, phash)
 
         if debug:
-            print 'Speedup:', t2 / t1
+            print('Speedup:', t2 / t1)
 
 
     def testCLLSDPerformanceString(self):
@@ -191,7 +192,7 @@ class CLLSDTest(unittest.TestCase):
         """
         # check whether it's windows platform first
         if sys.platform.lower().startswith('win'):
-            print "C extension is not supported on Windows. Test abort."
+            print("C extension is not supported on Windows. Test abort.")
             return
         
         import _cllsd as cllsd

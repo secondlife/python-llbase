@@ -32,6 +32,7 @@ available on the Second Life wiki:
 
 http://wiki.secondlife.com/wiki/LLSD
 """
+from __future__ import absolute_import
 
 
 import base64
@@ -47,7 +48,7 @@ import urlparse
 import os
 import exceptions
 
-from fastest_elementtree import ElementTreeError, fromstring
+from .fastest_elementtree import ElementTreeError, fromstring
 
 try:
     import _cllsd as cllsd
@@ -166,10 +167,10 @@ def _bin_to_python(node):
             return binary(base64.b64decode(node.text or ''))
         elif base == 'base85':
             return LLSDParseError("Parser doesn't support base85 encoding")
-    except binascii.Error, exc:
+    except binascii.Error as exc:
         # convert exception class so it's more catchable
         return LLSDParseError("Encoded binary data: " + str(exc))
-    except exceptions.TypeError, exc:
+    except exceptions.TypeError as exc:
         # convert exception class so it's more catchable
         return LLSDParseError("Bad binary data: " + str(exc))
 
@@ -333,7 +334,7 @@ class LLSDXMLFormatter(object):
     def _generate(self, something):
         "Generate xml from a single python object."
         t = self.typeof(something)
-        if self.type_map.has_key(t):
+        if t in self.type_map:
             return self.type_map[t](something)
         else:
             raise LLSDSerializationError(
@@ -602,7 +603,7 @@ class LLSDBinaryParser(object):
         self._keep_binary = not ignore_binary
         try:
             return self._parse()
-        except struct.error, exc:
+        except struct.error as exc:
             raise LLSDParseError(exc)
 
     def _parse(self):
@@ -710,14 +711,14 @@ class LLSDBinaryParser(object):
     def _parse_string(self):
         try:
             return self._parse_string_raw().decode('utf-8')
-        except UnicodeDecodeError, exc:
+        except UnicodeDecodeError as exc:
             raise LLSDParseError(exc)
 
     def _parse_string_raw(self):
         "Parse a string which has the leadings size indicator"
         try:
             size = struct.unpack("!i", self._buffer[self._index:self._index+4])[0]
-        except struct.error, exc:
+        except struct.error as exc:
             # convert exception class for client convenience
             raise LLSDParseError("struct " + str(exc))
         self._index += 4
@@ -776,7 +777,7 @@ class LLSDBinaryParser(object):
                 parts.append(cc)
         try:
             return ''.join(parts).decode('utf-8')
-        except UnicodeDecodeError, exc:
+        except UnicodeDecodeError as exc:
             raise LLSDParseError(exc)
 
 
@@ -959,10 +960,10 @@ class LLSDNotationParser(object):
                     return binary(base64.b64decode(encoded or ''))
                 elif base == '85':
                     self._error("Parser doesn't support base85 encoding")
-            except binascii.Error, exc:
+            except binascii.Error as exc:
                 # convert exception class so it's more catchable
                 self._error("Encoded binary data: " + str(exc))
-            except exceptions.TypeError, exc:
+            except exceptions.TypeError as exc:
                 # convert exception class so it's more catchable
                 self._error("Bad binary data: " + str(exc))
     
@@ -1133,7 +1134,7 @@ class LLSDNotationParser(object):
                 parts.append(cc)
         try:
             return ''.join(parts).decode('utf-8')
-        except UnicodeDecodeError, exc:
+        except UnicodeDecodeError as exc:
             raise LLSDParseError(exc)
 
     def _parse_string_raw(self):
@@ -1163,7 +1164,7 @@ class LLSDNotationParser(object):
             self._error("Invalid string closure token")
         try:
             return rv.decode('utf-8')
-        except UnicodeDecodeError, exc:
+        except UnicodeDecodeError as exc:
             raise LLSDParseError(exc)
 
 def format_binary(something):
@@ -1199,12 +1200,12 @@ def _format_binary_recurse(something):
     elif isinstance(something, (int, long)):
         try:
             return 'i' + struct.pack('!i', something)
-        except (OverflowError, struct.error), exc:
+        except (OverflowError, struct.error) as exc:
             raise LLSDSerializationError(str(exc), something)
     elif isinstance(something, float):
         try:
             return 'r' + struct.pack('!d', something)
-        except SystemError, exc:
+        except SystemError as exc:
             raise LLSDSerializationError(str(exc), something)
     elif isinstance(something, uuid.UUID):
         return 'u' + something.bytes
@@ -1283,7 +1284,7 @@ def parse_xml(something):
         # validate xml declaration manually until http://bugs.python.org/issue7138 is fixed
         validate_xml_declaration(something)
         return _to_python(fromstring(something)[0])
-    except ElementTreeError, err:
+    except ElementTreeError as err:
         raise LLSDParseError(*err.args)
 
 def parse_notation(something):
@@ -1320,7 +1321,7 @@ def parse(something, mime_type = None):
             return parse_xml(something)
         else:
             return parse_notation(something)
-    except KeyError, e:
+    except KeyError as e:
         raise LLSDParseError('LLSD could not be parsed: %s' % (e,))
 
 class LLSD(object):

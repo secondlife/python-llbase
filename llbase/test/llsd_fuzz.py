@@ -186,9 +186,9 @@ class LLSDFuzzer(object):
         lambda s, v: -v,
         lambda s, v: 0,
         lambda s, v: v + s.r.randint(-(v**4), (v**4)),
-        lambda s, v: 4294967296L,  # 2^32
-        lambda s, v: -2147483649L,  # -2^31 - 1
-        lambda s, v: 18446744073709551616L, # 2^64
+        lambda s, v: 4294967296,  # 2^32
+        lambda s, v: -2147483649,  # -2^31 - 1
+        lambda s, v: 18446744073709551616, # 2^64
         lambda s, v: s.random_integer(),
         lambda s, v: v * ((s.r.getrandbits(16) - 2**15) or 1),
         lambda s, v: v / ((s.r.getrandbits(16) - 2**15) or 1),
@@ -306,7 +306,7 @@ class LLSDFuzzer(object):
             return {}
         k = self.r.choice(val.keys())
         permuted = val.copy()
-        permuted[k] = self.structure_fuzz(val[k]).next()
+        permuted[k] = next(self.structure_fuzz(val[k]))
         return permuted
     
     def _permute_map_key_delete(self, val):
@@ -356,7 +356,7 @@ class LLSDFuzzer(object):
     def _permute_array_permute_value(self, val):
         idx = self.r.randrange(0, len(val))
         permuted = list(val)
-        permuted[idx] = self.structure_fuzz(val[idx]).next()
+        permuted[idx] = next(self.structure_fuzz(val[idx]))
         return permuted
         
     def _permute_array_subsets(self, val):
@@ -447,7 +447,7 @@ class LLSDFuzzer(object):
 
     def _serialized_fuzz(self, it, formatter):
         while True:
-            struct = it.next()
+            struct = next(it)
             try:
                 text = formatter(struct)
             except llsd.LLSDSerializationError:

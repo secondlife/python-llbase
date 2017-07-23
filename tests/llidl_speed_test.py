@@ -27,6 +27,7 @@
 """
 Performance tests for llidl
 """
+from __future__ import print_function
 
 import random
 import string
@@ -76,13 +77,13 @@ def grid():
     trial_range = xrange(100,1100,100)
     size_range = xrange(0,550,50)
     
-    print "trials,%s" % (",".join(["%d items" % d for d in size_range]))
+    print("trials,%s" % (",".join(["%d items" % d for d in size_range])))
     for n in trial_range:
         cs = []
         for k in size_range:
             (c,t) = time_llidl_match(n,k)
             cs.append(c)
-        print "%d,%s" % (n, ','.join(map(str, cs)))
+        print("%d,%s" % (n, ','.join(map(str, cs))))
     
 if __name__ == '__main__':
     simple_llidl_match()

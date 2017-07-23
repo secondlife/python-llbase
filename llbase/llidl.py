@@ -29,14 +29,15 @@ LLIDL parser and value checker.
 LLIDL is an interface description language for REST like protocols based on
 the LLSD type system.
 """
+from __future__ import absolute_import
 
 import datetime
 import re
 from types import *
 import uuid
 
-import llsd
-import lluuid
+from . import llsd
+from . import lluuid
 
 class _Result(object):
     """
@@ -206,7 +207,7 @@ class Value(object):
         try:
             return (self._compare(actual, raise_level=raise_level) >= match_level
                  or self._failure(raises, "did not match"))
-        except MatchErrorStack, e:
+        except MatchErrorStack as e:
             return self._failure(raises, str(e))
     
     def valid(self, actual, raises=None, match_level=MIXED):
@@ -551,7 +552,7 @@ class _ArrayMatcher(Value):
                 v = actual[i]
             try:
                 r &= self._values[i%vlen]._compare(v, raise_level=raise_level)
-            except MatchErrorStack, e:
+            except MatchErrorStack as e:
                 e.push(vtype=self.__class__, val=i)
                 raise
         return r
@@ -587,7 +588,7 @@ class _MapMatcher(Value):
                 v = actual[name]
             try:
                 r &= value._compare(v, raise_level=raise_level)
-            except MatchErrorStack, e:
+            except MatchErrorStack as e:
                 e.push(vtype=self.__class__, val=name)
                 raise e
         for name in actual.iterkeys():
@@ -619,7 +620,7 @@ class _DictMatcher(Value):
         for (k, v) in actual.iteritems():
             try:
                 r &= self._value._compare(v, raise_level=raise_level)
-            except MatchErrorStack, e:
+            except MatchErrorStack as e:
                 e.push(vtype=self.__class__, val=k)
                 raise
         return r
@@ -644,7 +645,7 @@ class _VariantMatcher(Value):
         for option in self._suite._get_variant_options(self._name):
             try:
                 r |= option._compare(actual, raise_level=raise_level)
-            except MatchErrorStack, e:
+            except MatchErrorStack as e:
                 match_errors.append(e)
         if match_errors and r < raise_level:
             raise MatchErrorStack(vtype=(self.__class__, self._name), val=match_errors)

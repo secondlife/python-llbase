@@ -1,3 +1,4 @@
+from __future__ import print_function
 # $LicenseInfo:firstyear=2006&license=mit$
 #
 # Copyright (c) 2006-2009, Linden Research, Inc.
@@ -199,7 +200,7 @@ class Fuzz(Base):
                 
     # contains every type we should be expected to deal with
     base_obj = {'a':True, 
-                'c': [1,2L,3.0], 
+                'c': [1,2,3.0], 
                 'd': datetime.now(),
                 'e':(1,2,3, 'j', u'y'),
                 'f':date.today(),
@@ -236,8 +237,8 @@ class Fuzz(Base):
     def test_unrecognized_type(self):
         fuzz_it = self.lf.structure_fuzz(set())
         try:
-            fuzz_it.next()
-        except KeyError, e:
+            next(fuzz_it)
+        except KeyError as e:
             pass
             
     def test_unmodified(self):
@@ -281,21 +282,21 @@ class Fuzz(Base):
 
 def show_permuted():
     lf = llsd_fuzz.LLSDFuzzer()
-    print "seed", lf.seed
+    print("seed", lf.seed)
     ft = lf.structure_fuzz(Fuzz.base_obj)
     for i in xrange(10000):
-        x = ft.next()
+        x = next(ft)
         import pprint
         pprint.pprint(x)
-        print
-        print "---------------------"
+        print()
+        print("---------------------")
             
 def run_profile():
     def time_test():
         lf = llsd_fuzz.LLSDFuzzer()
         ft = lf.structure_fuzz(Fuzz.base_obj)
         for i in xrange(10000):
-            x = ft.next()
+            x = next(ft)
 
     import cProfile, pstats
     prof = cProfile.Profile()

@@ -26,6 +26,7 @@
 """
 Types as well as parsing and formatting functions for handling LLSD.
 """
+from __future__ import print_function
 
 import base64
 from datetime import datetime, date
@@ -259,7 +260,7 @@ class LLSDNotationUnitTest(unittest.TestCase):
         python_valid_date = datetime(2006, 2, 1, 14, 29, 53, 460000)
         python_valid_date_no_float = datetime(2006, 2, 1, 14, 29, 53)
         python_valid_date_zero_seconds = datetime(2006, 2, 1, 14, 29, 0)
-        python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 05)
+        python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 0o5)
         python_valid_date_19th_century = datetime(1833,2,1)
 
         python_blank_date = datetime(1970, 1, 1)
@@ -792,7 +793,7 @@ class LLSDXMLUnitTest(unittest.TestCase):
 
         python_valid_date = datetime(2006, 2, 1, 14, 29, 53, 460000)
         python_valid_date_no_fractional = datetime(2006, 2, 1, 14, 29, 53)
-        python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 05)
+        python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 0o5)
         python_19th_century_date = datetime(1853, 2, 1)
         python_blank_date = datetime(1970, 1, 1)
         
@@ -1821,7 +1822,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 
         python_valid_date = datetime(2006, 2, 1, 14, 29, 53, 460000)
         python_valid_date_no_fractional = datetime(2006, 2, 1, 14, 29, 53)
-        python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 05)
+        python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 0o5)
         python_blank_date = datetime(1970, 1, 1)
         python_19th_century_date = datetime(1853, 2, 1)
         self.assertXMLRoundtrip(python_valid_date,
@@ -2188,15 +2189,15 @@ class LLSDStressTest(unittest.TestCase):
         for i in range(0, self.number):
             x = llsd.format_xml(self.python_object)
         delta = time.clock() - t
-        print "format_xml", str(self.number), " times takes total :", delta, "secs"
-        print "average time:", delta / self.number, "secs"
+        print("format_xml", str(self.number), " times takes total :", delta, "secs")
+        print("average time:", delta / self.number, "secs")
 
         t = time.clock()
         for i in range(0, self.number):
             r = llsd.parse(x)
         delta = time.clock() - t
-        print "parse_xml", str(self.number), " times takes total :", delta, "secs"
-        print "average time:", delta / self.number, "secs"
+        print("parse_xml", str(self.number), " times takes total :", delta, "secs")
+        print("average time:", delta / self.number, "secs")
 
 
     def testParseAndFormatNotationStress(self):
@@ -2209,15 +2210,15 @@ class LLSDStressTest(unittest.TestCase):
         for i in range(0, self.number):
             x = llsd.format_notation(self.python_object)
         delta = time.clock() - t
-        print "format_notation", str(self.number), " times takes total :", delta, "secs"
-        print "average time:", delta / self.number, "secs"
+        print("format_notation", str(self.number), " times takes total :", delta, "secs")
+        print("average time:", delta / self.number, "secs")
 
         t = time.clock()
         for i in range(0, self.number):
             r = llsd.parse(x)
         delta = time.clock() - t
-        print "parse_notation", str(self.number), " times takes total :", delta, "secs"
-        print "average time:", delta / self.number, "secs"
+        print("parse_notation", str(self.number), " times takes total :", delta, "secs")
+        print("average time:", delta / self.number, "secs")
 
     def testParseAndFormatBinaryStress(self):
         """
@@ -2229,15 +2230,15 @@ class LLSDStressTest(unittest.TestCase):
         for i in range(0, self.number):
             x = llsd.format_binary(self.python_object)
         delta = time.clock() - t
-        print "format_binary", str(self.number), " times takes total :", delta, "secs"
-        print "average time:", delta / self.number, "secs"
+        print("format_binary", str(self.number), " times takes total :", delta, "secs")
+        print("average time:", delta / self.number, "secs")
 
         t = time.clock()
         for i in range(0, self.number):
             r = llsd.parse(x)
         delta = time.clock() - t
-        print "parse_binary", str(self.number), " times takes total :", delta, "secs"
-        print "average time:", delta / self.number, "secs"
+        print("parse_binary", str(self.number), " times takes total :", delta, "secs")
+        print("average time:", delta / self.number, "secs")
 
 
 FUZZ_ITERATIONS = 5000
@@ -2260,9 +2261,9 @@ class LLSDFuzzTest(unittest.TestCase):
                 parsed = llsd.parse(f)
             except legit_exceptions:
                 pass  # expected, since many of the inputs will be invalid
-            except Exception, e:
-                print "Raised exception", e.__class__
-                print "Fuzzed value was", repr(f)
+            except Exception as e:
+                print("Raised exception", e.__class__)
+                print("Fuzzed value was", repr(f))
                 raise
 
     def fuzz_roundtrip_base(self, formatter_method, normalize=None):
@@ -2283,7 +2284,7 @@ class LLSDFuzzTest(unittest.TestCase):
                     else:
                         raise
             except llsd.LLSDParseError:
-                print "Failed to parse", repr(text)
+                print("Failed to parse", repr(text))
                 raise
                            
             
