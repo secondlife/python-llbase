@@ -604,6 +604,23 @@ class LLSDBinaryParser(object):
     def __init__(self):
         pass
 
+    def _error(self, message, offset=0):
+        try:
+            byte = _buffer[_index+offset]
+        except:
+            byte = None
+        raise LLSDParseError("%s at byte %d: %s" % (message, self._index+offset, byte))
+
+    def _peek(self, num=1):
+        if self._index + num > len(self._buffer):
+            self._error("Trying to read past end of buffer")
+        return self._buffer[self._index:self._index + num]
+
+    def _getc(self, num=1):
+        chars = self._peek(num)
+        self._index += num
+        return chars
+
     def parse(self, buffer, ignore_binary = False):
         """
         This is the basic public interface for parsing.
@@ -618,17 +635,16 @@ class LLSDBinaryParser(object):
         try:
             return self._parse()
         except struct.error as exc:
-            raise LLSDParseError(exc)
+            self._error(exc)
 
     def _parse(self):
         "The actual parser which is called recursively when necessary."
-        cc = self._buffer[self._index:self._index+1]
-        self._index += 1
+        cc = self._getc()
         if cc == b'{':
             try:
                 return self._parse_map()
             except IndexError:
-                raise LLSDParseError("Found unterminated map ")
+                self._error("Found unterminated map ")
         elif cc == b'[':
             return self._parse_array()
         elif cc == b'!':
@@ -639,19 +655,13 @@ class LLSDBinaryParser(object):
             return True
         elif cc == b'i':
             # b'i' = integer
-            idx = self._index
-            self._index += 4
-            return struct.unpack("!i", self._buffer[idx:idx+4])[0]
+            return struct.unpack("!i", self._getc(4))[0]
         elif cc == (b'r'):
             # b'r' = real number
-            idx = self._index
-            self._index += 8
-            return struct.unpack("!d", self._buffer[idx:idx+8])[0]
+            return struct.unpack("!d", self._getc(8))[0]
         elif cc == b'u':
             # b'u' = uuid
-            idx = self._index
-            self._index += 16
-            return uuid.UUID(bytes=self._buffer[idx:idx+16])
+            return uuid.UUID(bytes=self._getc(16))
         elif cc == b's':
             # b's' = string
             return self._parse_string()
@@ -663,9 +673,7 @@ class LLSDBinaryParser(object):
             return uri(self._parse_string())
         elif cc == (b'd'):
             # b'd' = date in seconds since epoch
-            idx = self._index
-            self._index += 8
-            seconds = struct.unpack("<d", self._buffer[idx:idx+8])[0]
+            seconds = struct.unpack("<d", self._getc(8))[0]
             return datetime.datetime.utcfromtimestamp(seconds)
         elif cc == b'b':
             b = binary(self._parse_string_raw())
@@ -675,17 +683,14 @@ class LLSDBinaryParser(object):
             # length.
             return None
         else:
-            raise LLSDParseError("invalid binary token at byte %d: %d" % (
-                self._index - 1, ord(cc)))
+            self._error("invalid binary token", -1)
 
     def _parse_map(self):
         "Parse a single llsd map"
         rv = {}
-        size = struct.unpack("!i", self._buffer[self._index:self._index+4])[0]
-        self._index += 4
+        size = struct.unpack("!i", self._getc(4))[0]
         count = 0
-        cc = self._buffer[self._index]
-        self._index += 1
+        cc = self._getc()
         key = b''
         while (cc != b'}') and (count < size):
             if cc == b'k':
@@ -693,32 +698,27 @@ class LLSDBinaryParser(object):
             elif cc in (b"'", b'"'):
                 key = self._parse_string_delim(cc)
             else:
-                raise LLSDParseError("invalid map key at byte %d." % (
-                    self._index - 1,))
+                self._error("invalid map key", -1)
             value = self._parse()
             rv[key] = value
             count += 1
-            cc = self._buffer[self._index]
-            self._index += 1
+            cc = self._getc()
         if cc != b'}':
-            raise LLSDParseError("invalid map close token at byte %d." % (
-                self._index,))
+            self._error("invalid map close token")
         return rv
 
     def _parse_array(self):
         "Parse a single llsd array"
         rv = []
-        size = struct.unpack("!i", self._buffer[self._index:self._index+4])[0]
-        self._index += 4
+        size = struct.unpack("!i", self._getc(4))[0]
         count = 0
-        cc = self._buffer[self._index]
+        cc = self._peek()
         while (cc != b']') and (count < size):
             rv.append(self._parse())
             count += 1
-            cc = self._buffer[self._index]
+            cc = self._peek()
         if cc != b']':
-            raise LLSDParseError("invalid array close token at byte %d." % (
-                self._index,))
+            self._error("invalid array close token")
         self._index += 1
         return rv
 
@@ -726,18 +726,16 @@ class LLSDBinaryParser(object):
         try:
             return self._parse_string_raw().decode('utf-8')
         except UnicodeDecodeError as exc:
-            raise LLSDParseError(exc)
+            self._error(exc)
 
     def _parse_string_raw(self):
         "Parse a string which has the leadings size indicator"
         try:
-            size = struct.unpack("!i", self._buffer[self._index:self._index+4])[0]
+            size = struct.unpack("!i", self._getc(4))[0]
         except struct.error as exc:
             # convert exception class for client convenience
-            raise LLSDParseError("struct " + str(exc))
-        self._index += 4
-        rv = self._buffer[self._index:self._index+size]
-        self._index += size
+            self._error("struct " + str(exc))
+        rv = self._getc(size)
         return rv
 
     def _parse_string_delim(self, delim):
@@ -748,8 +746,7 @@ class LLSDBinaryParser(object):
         found_digit = False
         byte = 0
         while True:
-            cc = self._buffer[self._index]
-            self._index += 1
+            cc = self._getc()
             if found_escape:
                 if found_hex:
                     if found_digit:
@@ -792,7 +789,7 @@ class LLSDBinaryParser(object):
         try:
             return parts.decode('utf-8')
         except UnicodeDecodeError as exc:
-            raise LLSDParseError(exc)
+            self._error(exc)
 
 
 class LLSDNotationParser(object):
@@ -1209,7 +1206,7 @@ def _format_binary_recurse(something):
             return b'1'
         else:
             return b'0'
-    elif isinstance(something, (int, int)):
+    elif isinstance(something, int) or PY2 and isinstance(something, long):
         try:
             return b'i' + struct.pack('!i', something)
         except (OverflowError, struct.error) as exc:
@@ -1223,10 +1220,7 @@ def _format_binary_recurse(something):
         return b'u' + something.bytes
     elif isinstance(something, binary):
         return b'b' + struct.pack('!i', len(something)) + something
-    elif isinstance(something, str):
-        something = _str_to_bytes(something)
-        return b's' + struct.pack('!i', len(something)) + something
-    elif PY2 and isinstance(something, unicode):
+    elif isinstance(something, str) or PY2 and isinstance(something, unicode):
         something = _str_to_bytes(something)
         return b's' + struct.pack('!i', len(something)) + something
     elif isinstance(something, uri):

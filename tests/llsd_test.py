@@ -1163,7 +1163,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test the binary serialization and parse of llsd type : Map.
         """
-        map_xml = """
+        map_xml = b"""
 <?xml version="1.0" ?>
 <llsd>
 <map>
@@ -1172,7 +1172,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
 </map>
 </llsd>"""
 
-        map_within_map_xml = "\
+        map_within_map_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <map>\
@@ -1186,7 +1186,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
 </map>\
 </llsd>"
 
-        blank_map_xml = "\
+        blank_map_xml = b"\
 <llsd>\
 <map />\
 </llsd>"
@@ -1204,7 +1204,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test the binary serialization and parse of llsd type : Array.
         """
-        array_xml = "\
+        array_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <array>\
@@ -1212,7 +1212,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
 <string>bar</string>\
 </array>\
 </llsd>"
-        array_within_array_xml = "\
+        array_within_array_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <array>\
@@ -1224,7 +1224,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
 </array>\
 </array>\
 </llsd>"
-        blank_array_xml = "\
+        blank_array_xml = b"\
 <llsd>\
 <array />\
 </llsd>"
@@ -1246,13 +1246,13 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test the binary serialization and parse of llsd type : string.
         """
-        normal_xml = """
+        normal_xml = b"""
 <?xml version="1.0" ?>
 <llsd>
 <string>foo</string>
 </llsd>"""
 
-        blank_xml = "\
+        blank_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <string />\
@@ -1265,19 +1265,19 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test the binary serialization and parse of llsd type : integer
         """
-        pos_int_xml = "\
+        pos_int_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <integer>289343</integer>\
 </llsd>"
 
-        neg_int_xml = "\
+        neg_int_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <integer>-289343</integer>\
 </llsd>"
 
-        blank_int_xml = "\
+        blank_int_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <integer />\
@@ -1300,19 +1300,19 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test the binary serialization and parse of llsd type : real.
         """
-        pos_real_xml = "\
+        pos_real_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <real>2983287453.3</real>\
 </llsd>"
 
-        neg_real_xml = "\
+        neg_real_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <real>-2983287453.3</real>\
 </llsd>"
 
-        blank_real_xml = "\
+        blank_real_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <real />\
@@ -1335,19 +1335,19 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test the binary serialization and parse of llsd type : boolean.
         """
-        true_xml = "\
+        true_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <boolean>true</boolean>\
 </llsd>"
 
-        false_xml = "\
+        false_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <boolean>false</boolean>\
 </llsd>"
 
-        blank_xml = "\
+        blank_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <boolean />\
@@ -1361,14 +1361,14 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test the binary serialization and parse of llsd type : date.
         """
-        valid_date_binary = "d\x00\x00\x40\x78\x31\xf8\xd0\x41"
-        valid_date_xml = "\
+        valid_date_binary = b"d\x00\x00\x40\x78\x31\xf8\xd0\x41"
+        valid_date_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <date>2006-02-01T14:29:53Z</date>\
 </llsd>"
 
-        blank_date_xml = "\
+        blank_date_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <date />\
@@ -1390,7 +1390,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test the binary serialization and parse of llsd type : binary.
         """
-        base64_binary_xml = "\
+        base64_binary_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <binary>dGhlIHF1aWNrIGJyb3duIGZveA==</binary>\
@@ -1398,19 +1398,19 @@ class LLSDBinaryUnitTest(unittest.TestCase):
 
         foo = self.llsd.parse(base64_binary_xml)
         self.assertEqual(
-            llsd.binary("the quick brown fox"),
+            llsd.binary(b"the quick brown fox"),
             self.roundTrip(foo))
 
     def testUUID(self):
         """
         Test the binary serialization and parse of llsd type : UUID.
         """
-        valid_uuid_xml = "\
+        valid_uuid_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <uuid>d7f4aeca-88f1-42a1-b385-b9db18abb255</uuid>\
 </llsd>"
-        blank_uuid_xml = "\
+        blank_uuid_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <uuid />\
@@ -1422,7 +1422,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
             '00000000-0000-0000-0000-000000000000',
             self.roundTrip(str(self.llsd.parse(blank_uuid_xml))))
 
-        binary_uuid = """<?llsd/binary?>\nu\xe1g\xa9D\xd9\x06\x89\x04-\x04\x92\xab\x8e\xaf5\xbf"""
+        binary_uuid = b"""<?llsd/binary?>\nu\xe1g\xa9D\xd9\x06\x89\x04-\x04\x92\xab\x8e\xaf5\xbf"""
 
         self.assertEquals(uuid.UUID('e167a944-d906-8904-2d04-92ab8eaf35bf'),
                           llsd.parse(binary_uuid))
@@ -1431,13 +1431,13 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test the binary serialization and parse of llsd type : URI.
         """
-        valid_uri_xml = "\
+        valid_uri_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <uri>http://sim956.agni.lindenlab.com:12035/runtime/agents</uri>\
 </llsd>"
 
-        blank_uri_xml = "\
+        blank_uri_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <uri />\
@@ -1454,7 +1454,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test the binary serialization and parse of llsd type : undef.
         """
-        undef_xml = "<?xml version=\"1.0\" ?><llsd><undef /></llsd>"
+        undef_xml = b"<?xml version=\"1.0\" ?><llsd><undef /></llsd>"
         self.assertEqual(
             None,
             self.roundTrip(self.llsd.parse(undef_xml)))
@@ -1465,7 +1465,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         Test the binary serialization and parse of a composited llsd object
         which is composited of simple llsd types.
         """
-        multi_xml = "\
+        multi_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <array>\
@@ -1485,8 +1485,8 @@ class LLSDBinaryUnitTest(unittest.TestCase):
 </llsd>"
 
         multi_python = [
-            [{'content-type':'application/binary'},'123456\n'],
-            [{'content-type':'application/exe'},"while(1) { print 'yes'};\n"]]
+            [{'content-type':'application/binary'},b'123456\n'],
+            [{'content-type':'application/exe'},b"while(1) { print 'yes'};\n"]]
 
         self.assertEqual(
             multi_python,
@@ -1499,7 +1499,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
 
         Maps to test scenarios : module:llsd:test#78
         """
-        invalid_binary = """<?llsd/binary?>\n[\\xx0\{}]]"""
+        invalid_binary = b"""<?llsd/binary?>\n[\\xx0\{}]]"""
 
         self.assertRaises(llsd.LLSDParseError, llsd.parse, invalid_binary)
 
@@ -1511,7 +1511,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
 
         Maps to test scenarios : module:llsd:test#81
         """
-        binary_data = """<?llsd/binary?>\n[\x00\x00\x00\x02i\x00\x00\x00{i\x00\x00\x00{]"""
+        binary_data = b"""<?llsd/binary?>\n[\x00\x00\x00\x02i\x00\x00\x00{i\x00\x00\x00{]"""
 
         try:
             llsd.parse(binary_data, llsd.XML_MIME_TYPE)
@@ -1526,7 +1526,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
 
         Maps to test scenario : module:llsd:test#82
         """
-        invalid_binary = """<?llsd/binary?>\n[\\xx0\{}]]"""
+        invalid_binary = b"""<?llsd/binary?>\n[\\xx0\{}]]"""
 
         self.assertRaises(llsd.LLSDParseError, llsd.parse_binary, invalid_binary)
 
@@ -1541,13 +1541,13 @@ class LLSDBinaryUnitTest(unittest.TestCase):
 
         # assert than an exception is raised
         self.assertRaises(TypeError, self.llsd.as_binary, python_native_obj)
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, '2')
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b'2')
 
     def testInvlaidBinaryParse1(self):
         """
         Test with invalid binary format of map.
         """
-        invalid_binary = """<?llsd/binary?>\n{\x00\x00\x00\x01k\x00\x00\x00\x06'kaka'i\x00\x00\x00{{"""
+        invalid_binary = b"""<?llsd/binary?>\n{\x00\x00\x00\x01k\x00\x00\x00\x06'kaka'i\x00\x00\x00{{"""
 
         self.assertRaises(llsd.LLSDParseError, self.llsd.parse, invalid_binary)
 
@@ -1555,7 +1555,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test with invalid binary format of array.
         """
-        invalid_binary = """<?llsd/binary?>\n[\x00\x00\x00\x02i\x00\x00\x00\x01i\x00\x00\x00\x02*"""
+        invalid_binary = b"""<?llsd/binary?>\n[\x00\x00\x00\x02i\x00\x00\x00\x01i\x00\x00\x00\x02*"""
 
         self.assertRaises(llsd.LLSDParseError, self.llsd.parse, invalid_binary)
 
@@ -1563,7 +1563,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test parse_binary with delimited string.
         """
-        delimited_string = """<?llsd/binary?>\n'\\t\\a\\b\\f\\n\\r\\t\\v\\x0f\\p'"""
+        delimited_string = b"""<?llsd/binary?>\n'\\t\\a\\b\\f\\n\\r\\t\\v\\x0f\\p'"""
 
         self.assertEquals('\t\x07\x08\x0c\n\r\t\x0b\x0fp', llsd.parse(delimited_string))
 
