@@ -303,8 +303,7 @@ class LLSDXMLFormatter(object):
 
     def xml_esc(self, v):
         "Escape string or unicode object v for xml output"
-        if PY2: str = unicode
-        if type(v) is str:
+        if type(v) is str or PY2 and type(v) is unicode:
             # we need to drop these invalid characters because they
             # cannot be parsed (and encode() doesn't drop them for us)
             v = v.replace(u'\uffff', u'')
@@ -323,14 +322,14 @@ class LLSDXMLFormatter(object):
         else:
             return self._elt(b'boolean', b'false')
     def INTEGER(self, v):
-        return self._elt(b'integer', v)
+        return self._elt(b'integer', repr(v))
     def REAL(self, v):
         return self._elt(b'real', repr(v))
     def UUID(self, v):
         if v.int == 0:
             return self._elt(b'uuid')
         else:
-            return self._elt(b'uuid', v)
+            return self._elt(b'uuid', str(v))
     def BINARY(self, v):
         return self._elt(b'binary', base64.b64encode(v).strip())
     def STRING(self, v):
@@ -346,7 +345,7 @@ class LLSDXMLFormatter(object):
     def MAP(self, v):
         return self._elt(
             b'map',
-            b''.join(["%s%s" % (self._elt(b'key', self.xml_esc(key)),
+            b''.join([b"%s%s" % (self._elt(b'key', self.xml_esc(key)),
                                self._generate(value))
              for key, value in v.items()]))
 
@@ -460,7 +459,7 @@ class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
         self._indent_level = self._indent_level - 1
         rv.append(self._indent())
         rv.append(b'</map>')
-        return ''.join(rv)
+        return b''.join(rv)
 
     def format(self, something):
         """
@@ -623,7 +622,7 @@ class LLSDBinaryParser(object):
 
     def _parse(self):
         "The actual parser which is called recursively when necessary."
-        cc = self._buffer[self._index]
+        cc = self._buffer[self._index:self._index+1]
         self._index += 1
         if cc == b'{':
             try:
@@ -1342,8 +1341,11 @@ class LLSD(object):
     def __init__(self, thing=None):
         self.thing = thing
 
-    def __str__(self):
+    def __bytes__(self):
         return self.as_xml(self.thing)
+
+    def __str__(self):
+        return self.__bytes__().decode()
 
     parse = staticmethod(parse)
     as_xml = staticmethod(format_xml)
