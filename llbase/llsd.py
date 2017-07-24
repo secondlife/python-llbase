@@ -51,7 +51,7 @@ import exceptions
 from .fastest_elementtree import ElementTreeError, fromstring
 
 try:
-    import _cllsd as cllsd
+    from . import _cllsd as cllsd
 except ImportError:
     cllsd = None
 
