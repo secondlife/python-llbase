@@ -5,6 +5,7 @@ syntax: glob
 .coverage
 build
 build-stamp
+*.so
 configure-stamp
 debian/files
 debian/python-llbase
@@ -13,4 +14,8 @@ debian/python-llbase.substvars
 MANIFEST
 dist
 stage/
+.eggs/
 llbase-*.tar.bz2
+llbase.egg-info/
+*.orig
+*.bak
