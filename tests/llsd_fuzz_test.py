@@ -23,7 +23,6 @@
 
 from __future__ import print_function
 from __future__ import division
-from future.utils import PY2
 
 from llbase import llsd
 import copy
@@ -34,21 +33,8 @@ from llbase.test import llsd_fuzz
 from datetime import datetime, date
 from itertools import islice
 
-
 def is_nan(o):
     return isinstance(o, float) and o != o
-
-def is_int_or_long(o):
-    return isinstance(o, int) or PY2 and isinstance(o, long)
-
-def is_str_or_unicode(o):
-    return isinstance(o, str) or PY2 and isinstance(o, unicode)
-
-def is_bytes(o):
-    if PY2:
-        return isinstance(o, str)
-    else:
-        return isinstance(o, bytes)
 
 class Base(unittest.TestCase):
     def setUp(self):
@@ -65,7 +51,7 @@ class Random(Base):
 
     def test_random_integer(self):
         for i in range(10):
-            self.assert_(is_int_or_long(self.lf.random_integer()))
+            self.assert_(llsd.is_int_or_long(self.lf.random_integer()))
 
     def test_random_real(self):
         for i in range(10):
@@ -86,16 +72,13 @@ class Random(Base):
     def test_random_unicode(self):
         for i in range(10):
             printed = self.lf.random_unicode()
-            if PY2:
-                self.assert_(isinstance(printed, unicode))
-            else:
-                self.assert_(isinstance(printed, str))
+            self.assert_(llsd.is_unicode(printed))
 
     def test_random_bytes(self):
         for i in range(10):
             length = 17 + i
             randbytes = self.lf.random_bytes(length)
-            self.assert_(is_bytes(randbytes))
+            self.assert_(llsd.is_bytes(randbytes))
             self.assertEquals(len(randbytes), length)
             for index in range(len(randbytes)):
                 i = randbytes[index:index+1]
@@ -120,7 +103,7 @@ class Random(Base):
             self.assert_(isinstance(generated, dict))
             self.assert_(len(generated) > 0)
             for k in generated.keys():
-                self.assert_(is_str_or_unicode(k))
+                self.assert_(llsd.is_str_or_unicode(k))
                 
     def test_random_array(self):
         for i in range(10):
@@ -145,7 +128,7 @@ class Permute(Base):
 
     def test_permute_integer(self):        
         for i in self.permute(self.lf.permute_integer, 1):
-            self.assert_(is_int_or_long(i))
+            self.assert_(llsd.is_int_or_long(i))
 
     def test_permute_real(self):
         for i in self.permute(self.lf.permute_real, 1.0):
@@ -157,9 +140,9 @@ class Permute(Base):
             
     def test_permute_string(self):
         for i in self.permute(self.lf.permute_string, 'abc'):
-            self.assert_(is_str_or_unicode(i))
+            self.assert_(llsd.is_str_or_unicode(i))
         for i in self.permute(self.lf.permute_string, u'abc'):
-            self.assert_(is_str_or_unicode(i))
+            self.assert_(llsd.is_str_or_unicode(i))
     
     def test_permute_binary(self):
         for i in self.permute(self.lf.permute_binary, llsd.binary(b'123')):
@@ -195,7 +178,7 @@ class Fuzz(Base):
         if self.type_map is None:
             self.type_map = llsd.LLSDXMLFormatter().type_map
         self.assert_(type(obj) in self.type_map, repr(obj))
-        if not is_str_or_unicode(obj):
+        if not llsd.is_str_or_unicode(obj):
             try:
                 for x in obj:
                     self.recursive_type_check(x)
@@ -207,7 +190,7 @@ class Fuzz(Base):
         """ Returns true if the object has a NaN value somewhere in it."""
         if is_nan(obj):
             return True
-        if not is_str_or_unicode(obj):
+        if not llsd.is_str_or_unicode(obj):
             try:
                 for x in obj:
                     if self.contains_nan(x):
@@ -273,7 +256,7 @@ class Fuzz(Base):
         self.assert_(len(fuzzed) == quantity)
         empties = 0
         for f in fuzzed:
-            self.assert_(is_bytes(f))
+            self.assert_(llsd.is_bytes(f))
             if len(f) == 0:
                 empties += 1
         # no more than 1% should be zero-length

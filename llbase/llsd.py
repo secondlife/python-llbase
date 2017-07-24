@@ -81,6 +81,28 @@ class uri(str):
     "Simple wrapper for llsd.uri data."
     pass
 
+def is_int_or_long(o):
+    """ portable test if an object is like an int """
+    return isinstance(o, int) or PY2 and isinstance(o, long)
+
+def is_unicode(o):
+    """ portable check if an object is unicode and not bytes """
+    if PY2:
+        return isinstance(printed, unicode))
+    else:
+        return isinstance(printed, str)
+
+def is_str_or_unicode(o):
+    """ portable check if an object is string-like """
+    return isinstance(o, str) or PY2 and isinstance(o, unicode)
+
+def is_bytes(o):
+    """ portable check if an object is an immutable byte array """
+    if PY2:
+        return isinstance(o, str)
+    else:
+        return isinstance(o, bytes)
+
 _int_regex = re.compile(br"[-+]?\d+")
 _real_regex = re.compile(br"[-+]?(?:(\d+(\.\d*)?|\d*\.\d+)([eE][-+]?\d+)?)|[-+]?inf|[-+]?nan")
 _alpha_regex = re.compile(br"[a-zA-Z]+")
@@ -303,7 +325,7 @@ class LLSDXMLFormatter(object):
 
     def xml_esc(self, v):
         "Escape string or unicode object v for xml output"
-        if type(v) is str or PY2 and type(v) is unicode:
+        if is_str_or_unicode(v):
             # we need to drop these invalid characters because they
             # cannot be parsed (and encode() doesn't drop them for us)
             v = v.replace(u'\uffff', u'')
@@ -1206,7 +1228,7 @@ def _format_binary_recurse(something):
             return b'1'
         else:
             return b'0'
-    elif isinstance(something, int) or PY2 and isinstance(something, long):
+    elif is_int_or_long(something):
         try:
             return b'i' + struct.pack('!i', something)
         except (OverflowError, struct.error) as exc:
@@ -1220,7 +1242,7 @@ def _format_binary_recurse(something):
         return b'u' + something.bytes
     elif isinstance(something, binary):
         return b'b' + struct.pack('!i', len(something)) + something
-    elif isinstance(something, str) or PY2 and isinstance(something, unicode):
+    elif is_str_or_unicode(something):
         something = _str_to_bytes(something)
         return b's' + struct.pack('!i', len(something)) + something
     elif isinstance(something, uri):
