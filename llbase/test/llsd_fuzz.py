@@ -22,7 +22,6 @@
 # $/LicenseInfo$
 
 from __future__ import division
-from future.utils import PY2
 
 from collections import deque
 from datetime import datetime, timedelta, date
@@ -255,7 +254,7 @@ class LLSDFuzzer(object):
     def permute_string(self, val):
         """Generates variations on a given string or unicode.  All
         generated values are strings/unicodes."""
-        assert isinstance(val, str) or PY2 and isinstance(val, unicode)
+        assert llsd.is_str_or_unicode(val)
         def string_strgen(length = None):
             if self.random_boolean():
                 return self.random_printable(length)
@@ -411,7 +410,7 @@ class LLSDFuzzer(object):
         dict: permute_map,
         list: permute_array,
         tuple: permute_array}
-    if PY2:
+    if llsd.PY2:
         permuters[long] = permute_integer
         permuters[unicode] = permute_string
 

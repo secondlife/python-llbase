@@ -29,7 +29,6 @@ Types as well as parsing and formatting functions for handling LLSD.
 from __future__ import print_function
 from __future__ import division
 
-from future.utils import PY2
 import base64
 from datetime import datetime, date
 from itertools import islice
@@ -579,7 +578,7 @@ class LLSDXMLUnitTest(unittest.TestCase):
         """
         Test the __bytes__() conversion on the LLSD class
         """
-        if PY2:
+        if llsd.PY2:
             return # not applicable on python 2
         some_xml =b"\
 <?xml version=\"1.0\" ?>\
@@ -2318,7 +2317,7 @@ class LLSDFuzzTest(unittest.TestCase):
             * date objects -> datetime objects (parser only produces datetimes)
             * nan converted to None (just because nan's are incomparable)
             """
-            if isinstance(s, str) or PY2 and isinstance(s, unicode):
+            if llsd.is_str_or_unicode(s):
                 return s
             if isnan(s):
                 return None
@@ -2350,7 +2349,7 @@ class LLSDFuzzTest(unittest.TestCase):
             """
             if isnan(s):
                 return None
-            if isinstance(s, int) or PY2 and isinstance(s, long):
+            if llsd.is_int_or_long(s):
                 if (s > (2<<30) - 1 or
                     s < -(2<<30)):
                     return struct.unpack('!i', struct.pack('!i', s))[0]
@@ -2381,10 +2380,10 @@ class LLSDFuzzTest(unittest.TestCase):
             * date objects -> datetime objects (parser only produces datetimes)
             * nan converted to None (just because nan's are incomparable)
             """
-            if isinstance(s, str) or PY2 and isinstance(s, unicode):
+            if llsd.is_str_or_unicode(s):
                 s = llsd.remove_invalid_xml_bytes(s)
                 s = self.newline_re.sub('\n', s)
-                if not PY2 or PY2 and isinstance(s, unicode):
+                if llsd.is_unicode(s):
                     s = s.replace(u'\uffff', u'')
                     s = s.replace(u'\ufffe', u'')
                 return s

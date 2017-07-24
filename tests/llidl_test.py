@@ -27,7 +27,6 @@
 Test the llidl module
 """
 
-from future.utils import PY2
 import datetime
 import io
 import unittest
@@ -137,7 +136,7 @@ class LLIDLTypeTests(unittest.TestCase):
         self.assert_(v.match(0.0))
         self.assert_(v.match(10.0))
         self.assert_(v.incompatible(3.14))
-        if PY2:
+        if llsd.PY2:
             self.assert_(v.incompatible(6.02e23))
         self.assert_(v.has_defaulted(""))
         self.assert_(v.match("0"))
@@ -145,7 +144,7 @@ class LLIDLTypeTests(unittest.TestCase):
         self.assert_(v.match("0.0"))
         self.assert_(v.match("10.0"))
         self.assert_(v.incompatible("3.14"))
-        if PY2:
+        if llsd.PY2:
             self.assert_(v.incompatible("6.02e23"))
         self.assert_(v.incompatible("blob"))
         self.assert_(v.incompatible(_dateToday()))
