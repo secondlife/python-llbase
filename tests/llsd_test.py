@@ -27,7 +27,9 @@
 Types as well as parsing and formatting functions for handling LLSD.
 """
 from __future__ import print_function
+from __future__ import division
 
+from future.utils import PY2
 import base64
 from datetime import datetime, date
 from itertools import islice
@@ -81,7 +83,7 @@ class LLSDNotationUnitTest(unittest.TestCase):
         :Parameters:
         - 'the_string': string to remove the whitespaces.
         """
-        return re.sub('\s', '', the_string)
+        return re.sub(b'\s', b'', the_string)
 
     def assertNotationRoundtrip(self, py_in, str_in, is_alternate_notation=False):
         """
@@ -121,9 +123,9 @@ class LLSDNotationUnitTest(unittest.TestCase):
         Test the input type integer.
         Maps to test scenarios module:llsd:test#4-6
         """
-        pos_int_notation = "i123456"
-        neg_int_notation = "i-123457890"
-        blank_int_notation = "i0"
+        pos_int_notation = b"i123456"
+        neg_int_notation = b"i-123457890"
+        blank_int_notation = b"i0"
 
         python_pos_int = 123456
         python_neg_int = -123457890
@@ -139,7 +141,7 @@ class LLSDNotationUnitTest(unittest.TestCase):
         Test the input type : undef
         Maps to test scenarios module:llsd:test#7
         """
-        undef_notation = "!"
+        undef_notation = b"!"
         self.assertNotationRoundtrip(None, undef_notation)
 
     def testBoolean(self):
@@ -147,24 +149,24 @@ class LLSDNotationUnitTest(unittest.TestCase):
         Test the input type : Boolean
         Maps to test scenarios module:llsd:test#8-17
         """
-        sample_data = [(True, "TRUE"),
-            (True, "true"),
-            (True, "T"),
-            (True, "t"),
-            (True, "1"),
-            (False, "FALSE"),
-            (False, "false"),
-            (False, "F"),
-            (False, "f"),
-            (False, "0")
+        sample_data = [(True, b"TRUE"),
+            (True, b"true"),
+            (True, b"T"),
+            (True, b"t"),
+            (True, b"1"),
+            (False, b"FALSE"),
+            (False, b"false"),
+            (False, b"F"),
+            (False, b"f"),
+            (False, b"0")
         ]
         for py, notation in sample_data:
             is_alternate_notation = False
-            if notation not in ("true", "false"):
+            if notation not in (b"true", b"false"):
                 is_alternate_notation = True
             self.assertNotationRoundtrip(py, notation, is_alternate_notation)
 
-        blank_notation = ""
+        blank_notation = b""
         self.assertEqual(False, self.llsd.parse(blank_notation))
 
     def testReal(self):
@@ -172,9 +174,9 @@ class LLSDNotationUnitTest(unittest.TestCase):
         Test the input type: real.
         Maps to test scenarios module:llsd:test#18-20
         """
-        pos_real_notation = "r2983287453.3000002"
-        neg_real_notation = "r-2983287453.3000002"
-        blank_real_notation = "r0"
+        pos_real_notation = b"r2983287453.3000002"
+        neg_real_notation = b"r-2983287453.3000002"
+        blank_real_notation = b"r0"
 
         python_pos_real = 2983287453.3
         python_neg_real = -2983287453.3
@@ -192,8 +194,8 @@ class LLSDNotationUnitTest(unittest.TestCase):
         Maps to test scenarios module:llsd:test#21
         """
         uuid_tests = {
-            uuid.UUID(hex='d7f4aeca-88f1-42a1-b385-b9db18abb255'):"ud7f4aeca-88f1-42a1-b385-b9db18abb255",
-            uuid.UUID(hex='00000000-0000-0000-0000-000000000000'):"u00000000-0000-0000-0000-000000000000"}
+            uuid.UUID(hex='d7f4aeca-88f1-42a1-b385-b9db18abb255'):b"ud7f4aeca-88f1-42a1-b385-b9db18abb255",
+            uuid.UUID(hex='00000000-0000-0000-0000-000000000000'):b"u00000000-0000-0000-0000-000000000000"}
 
         for py, notation in uuid_tests.items():
             self.assertNotationRoundtrip(py, notation)
@@ -203,26 +205,26 @@ class LLSDNotationUnitTest(unittest.TestCase):
         Test the input type: String.
         Maps to test scenarios module:llsd:test#22-24
         """
-        sample_data = [('foo bar magic" go!', "'foo bar magic\" go!'"),
-            ("foo bar magic's go!", '"foo bar magic\'s go!"'),
-            ('have a nice day', "'have a nice day'"),
-            ('have a nice day', '"have a nice day"'),
-            ('have a nice day', 's(15)"have a nice day"'),
-            ('have a "nice" day', '\'have a "nice" day\''),
-            ('have a "nice" day', '"have a \\"nice\\" day"'),
-            ('have a "nice" day', 's(17)"have a "nice" day"'),
-            ("have a 'nice' day", "'have a \\'nice\\' day'"),
-            ("have a 'nice' day", '"have a \'nice\' day"'),
-            ("have a 'nice' day", 's(17)"have a \'nice\' day"'),
+        sample_data = [('foo bar magic" go!', b"'foo bar magic\" go!'"),
+            ("foo bar magic's go!", b'"foo bar magic\'s go!"'),
+            ('have a nice day', b"'have a nice day'"),
+            ('have a nice day', b'"have a nice day"'),
+            ('have a nice day', b's(15)"have a nice day"'),
+            ('have a "nice" day', b'\'have a "nice" day\''),
+            ('have a "nice" day', b'"have a \\"nice\\" day"'),
+            ('have a "nice" day', b's(17)"have a "nice" day"'),
+            ("have a 'nice' day", b"'have a \\'nice\\' day'"),
+            ("have a 'nice' day", b'"have a \'nice\' day"'),
+            ("have a 'nice' day", b's(17)"have a \'nice\' day"'),
             (u"Kanji: '\u5c0f\u5fc3\u8005'",
-             "'Kanji: \\'\xe5\xb0\x8f\xe5\xbf\x83\xe8\x80\x85\\''"),
+             b"'Kanji: \\'\xe5\xb0\x8f\xe5\xbf\x83\xe8\x80\x85\\''"),
             (u"Kanji: '\u5c0f\u5fc3\u8005'",
-             "\"Kanji: '\\xe5\\xb0\\x8f\\xE5\\xbf\\x83\\xe8\\x80\\x85'\""),
-             ('\a\b\f\n\r\t\v', '"\\a\\b\\f\\n\\r\\t\\v"')
+             b"\"Kanji: '\\xe5\\xb0\\x8f\\xE5\\xbf\\x83\\xe8\\x80\\x85'\""),
+             ('\a\b\f\n\r\t\v', b'"\\a\\b\\f\\n\\r\\t\\v"')
         ]
         for py, notation in sample_data:
             is_alternate_notation = False
-            if notation[0] != "'":
+            if notation[0:1] != "'":
                 is_alternate_notation = True
             self.assertNotationRoundtrip(py, notation, is_alternate_notation)
 
@@ -232,14 +234,14 @@ class LLSDNotationUnitTest(unittest.TestCase):
         Maps to test scenarios module:llsd:test#25 - 26
         """
         uri_tests = {
-            llsd.uri('http://www.topcoder.com/tc/projects?id=1230'):'l"http://www.topcoder.com/tc/projects?id=1230"',
-            llsd.uri('http://www.topcoder.com/tc/projects?id=1231'):"l'http://www.topcoder.com/tc/projects?id=1231'"}
+            llsd.uri('http://www.topcoder.com/tc/projects?id=1230'):b'l"http://www.topcoder.com/tc/projects?id=1230"',
+            llsd.uri('http://www.topcoder.com/tc/projects?id=1231'):b"l'http://www.topcoder.com/tc/projects?id=1231'"}
 
-        blank_uri_notation = 'l""'
+        blank_uri_notation = b'l""'
 
         for py, notation in uri_tests.items():
             is_alternate_notation = False
-            if notation[1] != '"':
+            if notation[1:2] != b'"':
                 is_alternate_notation = True
             self.assertNotationRoundtrip(py, notation, is_alternate_notation)
         self.assertEqual('', self.llsd.parse(blank_uri_notation))
@@ -249,13 +251,13 @@ class LLSDNotationUnitTest(unittest.TestCase):
         Test the input type : Date.
         Maps to test scenarios module:llsd:test#27 - 30
         """
-        valid_date_notation = 'd"2006-02-01T14:29:53.460000Z"'
-        valid_date_notation_no_float = 'd"2006-02-01T14:29:53Z"'
-        valid_date_notation_zero_seconds = 'd"2006-02-01T14:29:00Z"'
-        valid_date_notation_filled = 'd"2006-02-01T14:29:05Z"'
-        valid_date_19th_century = 'd"1833-02-01T00:00:00Z"'
+        valid_date_notation = b'd"2006-02-01T14:29:53.460000Z"'
+        valid_date_notation_no_float = b'd"2006-02-01T14:29:53Z"'
+        valid_date_notation_zero_seconds = b'd"2006-02-01T14:29:00Z"'
+        valid_date_notation_filled = b'd"2006-02-01T14:29:05Z"'
+        valid_date_19th_century = b'd"1833-02-01T00:00:00Z"'
 
-        blank_date_notation = 'd""'
+        blank_date_notation = b'd""'
 
         python_valid_date = datetime(2006, 2, 1, 14, 29, 53, 460000)
         python_valid_date_no_float = datetime(2006, 2, 1, 14, 29, 53)
@@ -287,13 +289,13 @@ class LLSDNotationUnitTest(unittest.TestCase):
         Maps to test scenarios module:llsd:test#31-33
         """
         # simple array
-        array_notation = "['foo', 'bar']"
+        array_notation = b"['foo', 'bar']"
         # composite array
-        array_within_array_notation = "['foo', 'bar',['foo', 'bar']]"
+        array_within_array_notation = b"['foo', 'bar',['foo', 'bar']]"
         # blank array
-        blank_array_notation = "[]"
+        blank_array_notation = b"[]"
 
-        python_array = [unicode("foo"), "bar"]
+        python_array = [str("foo"), "bar"]
         python_array_within_array = ["foo", "bar", ["foo", "bar"]]
         python_blank_array = []
 
@@ -308,13 +310,13 @@ class LLSDNotationUnitTest(unittest.TestCase):
         Maps to test scenarios module:llsd:test#34-36
         """
         # simple map
-        map_notation = "{'foo':'bar'}"
+        map_notation = b"{'foo':'bar'}"
 
         # composite map
-        map_within_map_notation = "{'foo':'bar','doo':{'goo':'poo'}}"
+        map_within_map_notation = b"{'foo':'bar','doo':{'goo':'poo'}}"
 
         # blank map
-        blank_map_notation = "{}"
+        blank_map_notation = b"{}"
 
         python_map = {"foo":"bar"}
         python_map_within_map = {"foo":"bar", "doo":{"goo":"poo"}}
@@ -330,19 +332,19 @@ class LLSDNotationUnitTest(unittest.TestCase):
         Test the input type: binary.
         Maps to test scenarios module:llsd:test#37
         """
-        string_data1 = "quick brown fox!!"
-        string_data2 = """
+        string_data1 = b"quick brown fox!!"
+        string_data2 = b"""
                 <p>"Take some more <a href="/wiki/Tea" title="Tea">tea</a> ," the March Hare said to Alice, very earnestly.</p>
                 """
         python_binary1 = llsd.binary(string_data1)
         python_binary2 = llsd.binary(string_data2)
         
-        notation1 = 'b64' + '"' + base64.b64encode(string_data1).strip() + '"'
-        notation2 = 'b64' + '"' + base64.b64encode(string_data2).strip() + '"'
-        notation3 = 'b16' + '"' + base64.b16encode(string_data1).strip() + '"'
-        notation4 = 'b16' + '"' + base64.b16encode(string_data2).strip() + '"'
-        notation5 = 'b85' + '"<~EHPu*CER),Dg-(AAoDo;+T~>"'
-        notation6 = 'b85' + '"<~4E*J.<+0QR+EMI<AKYi.Eb-@U@3B6(AS+(L06_,GBeNFs@3Qh9Bln0&4X*j:@3RmWARR\S@6Peb+s:u@AKX]UEarc*87?OM+ELt*A0>u4+@0gX@q@26G%G]>+D"u%DImm2Cj@Wq05s)~>"'
+        notation1 = b'b64' + b'"' + base64.b64encode(string_data1).strip() + b'"'
+        notation2 = b'b64' + b'"' + base64.b64encode(string_data2).strip() + b'"'
+        notation3 = b'b16' + b'"' + base64.b16encode(string_data1).strip() + b'"'
+        notation4 = b'b16' + b'"' + base64.b16encode(string_data2).strip() + b'"'
+        notation5 = b'b85' + b'"<~EHPu*CER),Dg-(AAoDo;+T~>"'
+        notation6 = b'b85' + b'"<~4E*J.<+0QR+EMI<AKYi.Eb-@U@3B6(AS+(L06_,GBeNFs@3Qh9Bln0&4X*j:@3RmWARR\S@6Peb+s:u@AKX]UEarc*87?OM+ELt*A0>u4+@0gX@q@26G%G]>+D"u%DImm2Cj@Wq05s)~>"'
 
         self.assertNotationRoundtrip(python_binary1, notation1, True)
         self.assertNotationRoundtrip(python_binary2, notation2, True)
@@ -356,7 +358,7 @@ class LLSDNotationUnitTest(unittest.TestCase):
         """
         This is some data that the fuzzer generated that caused a parse error
         """
-        string_data = "{'$g7N':!,'3r=h':true,'\xe8\x88\xbc\xe9\xa7\xb9\xe1\xb9\xa6\xea\xb3\x95\xe0\xa8\xb3\xe1\x9b\x84\xef\xb2\xa7\xe8\x8f\x99\xe8\x94\xa0\xe9\x90\xb9\xe6\x88\x9b\xe0\xaf\x84\xe8\xb8\xa2\xe4\x94\x83\xea\xb5\x8b\xed\x8c\x8a\xe5\xb5\x97':'\xe6\xbb\xa6\xe3\xbf\x88\xea\x9b\x82\xea\x9f\x8d\xee\xbb\xba\xe4\xbf\x87\xe3\x8c\xb5\xe3\xb2\xb0\xe7\x90\x91\xee\x8f\xab\xee\x81\xa5\xea\x94\x98'}"
+        string_data = b"{'$g7N':!,'3r=h':true,'\xe8\x88\xbc\xe9\xa7\xb9\xe1\xb9\xa6\xea\xb3\x95\xe0\xa8\xb3\xe1\x9b\x84\xef\xb2\xa7\xe8\x8f\x99\xe8\x94\xa0\xe9\x90\xb9\xe6\x88\x9b\xe0\xaf\x84\xe8\xb8\xa2\xe4\x94\x83\xea\xb5\x8b\xed\x8c\x8a\xe5\xb5\x97':'\xe6\xbb\xa6\xe3\xbf\x88\xea\x9b\x82\xea\x9f\x8d\xee\xbb\xba\xe4\xbf\x87\xe3\x8c\xb5\xe3\xb2\xb0\xe7\x90\x91\xee\x8f\xab\xee\x81\xa5\xea\x94\x98'}"
         python_obj = {}
 
         import pdb; pdb.set_trace()
@@ -383,7 +385,7 @@ class LLSDNotationUnitTest(unittest.TestCase):
             'position': [70.9247, 254.378,
             38.7304]}]
 
-        notation = """[
+        notation = b"""[
           {'destination':'http://secondlife.com'},
           {'version':i1},
           {'modification_date':d"2006-02-01T14:29:53.460000Z"}
@@ -430,96 +432,96 @@ class LLSDNotationUnitTest(unittest.TestCase):
 
         # assert than an exception is raised
         self.assertRaises(TypeError, self.llsd.as_notation, python_native_obj)
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, '2')
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b'2')
 
     def testParseNotationInvalidNotation1(self):
         """
         Test with an invalid array notation.
         Maps to module:llsd:test#76, 86
         """
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, "[ 'foo' : 'bar')")
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b"[ 'foo' : 'bar')")
 
     def testParseNotationInvalidNotation2(self):
         """
         Test with an invalid map notation.
         Maps to module:llsd:test#87
         """
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, "{'foo':'bar','doo':{'goo' 'poo'}") # missing separator
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, "{'foo':'bar','doo':{'goo' : 'poo'}") # missing closing '}'
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b"{'foo':'bar','doo':{'goo' 'poo'}") # missing separator
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b"{'foo':'bar','doo':{'goo' : 'poo'}") # missing closing '}'
 
     def testParseNotationInvalidNotation3(self):
         """
         Test with an invalid map notation.
         Maps to module:llsd:test#88
         """
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, "day day up, day day up")
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b"day day up, day day up")
 
     def testParseNotationInvalidNotation4(self):
         """
         Test with an invalid date notation. 
         """
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, 'd"2006#02-01T1429:53.460000Z"')
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b'd"2006#02-01T1429:53.460000Z"')
 
     def testParseNotationInvalidNotation5(self):
         """
         Test with an invalid int notation.
         """
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, 'i*123xx')
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b'i*123xx')
 
     def testParseNotationInvalidNotation6(self):
         """
         Test with an invalid real notation.
         """
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, 'r**1.23.3434')
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b'r**1.23.3434')
 
     def testParseNotationInvalidNotation7(self):
         """
         Test with an invalid binary notation.
         """
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, "b634'bGFsYQ='")
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b"b634'bGFsYQ='")
 
     def testParseNotationInvalidNotation8(self):
         """
         Test with an invalid map notation.
         """
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, "{'foo':'bar',doo':{'goo' 'poo'}}")
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b"{'foo':'bar',doo':{'goo' 'poo'}}")
 
     def testParseNotationInvalidNotation9(self):
         """
         Test with an invalid map notation.
         """
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, "[i123,i123)")
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b"[i123,i123)")
         
     def testParseNotationInvalidNotation10(self):
         """
         Test with an invalid raw string notation.
         """
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, "s[2]'xx'")
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b"s[2]'xx'")
 
     def testParseNotationInvalidNotation11(self):
         """
         Test with an invalid raw string notation.
         """
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, "s(2]'xx'")
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b"s(2]'xx'")
 
     def testParseNotationInvalidNotation12(self):
         """
         Test with an invalid raw string notation.
         """
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, "s(2)'xxxxx'")
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b"s(2)'xxxxx'")
 
     def testParseNotationInvalidNotation13(self):
         """
         Test with an invalid raw string notation.
         """
-        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, "s(2)*xx'")
+        self.assertRaises(llsd.LLSDParseError, self.llsd.parse, b"s(2)*xx'")
 
     def testParseNotationIncorrectMIME(self):
         """
         Test with correct notation format but incorrect MIME type. -> llsd:test79
         """
         try:
-            self.llsd.parse("[ {'foo':'bar'}, {'foo':'bar'} ]", llsd.XML_MIME_TYPE)
+            self.llsd.parse(b"[ {'foo':'bar'}, {'foo':'bar'} ]", llsd.XML_MIME_TYPE)
             self.fail("LLSDParseError should be raised.")
         except llsd.LLSDParseError:
             pass
@@ -2300,7 +2302,7 @@ class LLSDFuzzTest(unittest.TestCase):
             * date objects -> datetime objects (parser only produces datetimes)
             * nan converted to None (just because nan's are incomparable)
             """
-            if isinstance(s, (str, unicode)):
+            if isinstance(s, str) or PY2 and isinstance(s, unicode):
                 return s
             if isnan(s):
                 return None
@@ -2310,7 +2312,7 @@ class LLSDFuzzTest(unittest.TestCase):
                 s = [normalize(x) for x in s]
             if isinstance(s, dict):
                 s = dict([(normalize(k), normalize(v))
-                          for k,v in s.iteritems()])
+                          for k,v in s.items()])
             return s
  
         self.fuzz_roundtrip_base(llsd.format_notation, normalize)
@@ -2332,7 +2334,7 @@ class LLSDFuzzTest(unittest.TestCase):
             """
             if isnan(s):
                 return None
-            if isinstance(s, (int, long)):
+            if isinstance(s, int) or PY2 and isinstance(s, long):
                 if (s > (2<<30) - 1 or
                     s < -(2<<30)):
                     return struct.unpack('!i', struct.pack('!i', s))[0]
@@ -2344,7 +2346,7 @@ class LLSDFuzzTest(unittest.TestCase):
                 s = [normalize(x) for x in s]
             if isinstance(s, dict):
                 s = dict([(normalize(k), normalize(v))
-                          for k,v in s.iteritems()])
+                          for k,v in s.items()])
             return s
         self.fuzz_roundtrip_base(llsd.format_binary, normalize)
                 
@@ -2363,10 +2365,10 @@ class LLSDFuzzTest(unittest.TestCase):
             * date objects -> datetime objects (parser only produces datetimes)
             * nan converted to None (just because nan's are incomparable)
             """
-            if isinstance(s, (str, unicode)):
+            if isinstance(s, str) or PY2 and isinstance(s, unicode):
                 s = llsd.remove_invalid_xml_bytes(s)
                 s = self.newline_re.sub('\n', s)
-                if isinstance(s, unicode):
+                if not PY2 or PY2 and isinstance(s, unicode):
                     s = s.replace(u'\uffff', '')
                     s = s.replace(u'\ufffe', '')
                 return s
@@ -2378,7 +2380,7 @@ class LLSDFuzzTest(unittest.TestCase):
                 s = [normalize(x) for x in s]
             if isinstance(s, dict):
                 s = dict([(normalize(k), normalize(v))
-                          for k,v in s.iteritems()])
+                          for k,v in s.items()])
             return s
         self.fuzz_roundtrip_base(llsd.format_xml, normalize)
         

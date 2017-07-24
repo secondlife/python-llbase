@@ -81,11 +81,11 @@ class uri(str):
     "Simple wrapper for llsd.uri data."
     pass
 
-_int_regex = re.compile(r"[-+]?\d+")
-_real_regex = re.compile(r"[-+]?(?:(\d+(\.\d*)?|\d*\.\d+)([eE][-+]?\d+)?)|[-+]?inf|[-+]?nan")
-_alpha_regex = re.compile(r"[a-zA-Z]+")
-_true_regex = re.compile(r"TRUE|true|\b[Tt]\b")
-_false_regex = re.compile(r"FALSE|false|\b[Ff]\b")
+_int_regex = re.compile(br"[-+]?\d+")
+_real_regex = re.compile(br"[-+]?(?:(\d+(\.\d*)?|\d*\.\d+)([eE][-+]?\d+)?)|[-+]?inf|[-+]?nan")
+_alpha_regex = re.compile(br"[a-zA-Z]+")
+_true_regex = re.compile(br"TRUE|true|\b[Tt]\b")
+_false_regex = re.compile(br"FALSE|false|\b[Ff]\b")
 _date_regex = re.compile(r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T"
                         r"(?P<hour>\d{2}):(?P<minute>\d{2}):(?P<second>\d{2})"
                         r"(?P<second_float>(\.\d+)?)Z")
@@ -532,11 +532,11 @@ class LLSDNotationFormatter(object):
         else:
             return b'false'
     def INTEGER(self, v):
-        return b"i%s" % v
+        return b"i%d" % v
     def REAL(self, v):
         return b"r%r" % v
     def UUID(self, v):
-        return b"u%s" % v
+        return b"u%s" % str(v).encode('latin-1')
     def BINARY(self, v):
         return b'b64"' + base64.b64encode(v).strip() + b'"'
 
@@ -1046,7 +1046,7 @@ class LLSDNotationParser(object):
     def _parse_uuid(self):
         "Parse a uuid."
         self._getc()    # eat the beginning b'u'
-        return uuid.UUID(hex=self._getc(36))
+        return uuid.UUID(hex=self._getc(36).decode('latin-1'))
 
     def _parse_uri(self):
         "Parse a URI."
