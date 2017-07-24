@@ -1641,19 +1641,19 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         Test the parse and serializatioin of input type : integer
         Maps to the test scenarios : module:llsd:test#39 - 41
         """
-        pos_int_xml = "\
+        pos_int_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <integer>289343</integer>\
 </llsd>"
 
-        neg_int_xml = "\
+        neg_int_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <integer>-289343</integer>\
 </llsd>"
 
-        blank_int_xml = "\
+        blank_int_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <integer />\
@@ -1675,26 +1675,26 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 
         Maps to test scenarios module:llsd:test#42
         """
-        undef_xml = "<?xml version=\"1.0\" ?><llsd><undef /></llsd>"
+        undef_xml = b"<?xml version=\"1.0\" ?><llsd><undef /></llsd>"
         self.assertXMLRoundtrip(None, undef_xml)
 
     def testBoolean(self):
         """
         Test the parse and serialization of input tye: boolean. -> llsd:test 43 - 45
         """
-        true_xml = "\
+        true_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <boolean>true</boolean>\
 </llsd>"
 
-        false_xml = "\
+        false_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <boolean>false</boolean>\
 </llsd>"
 
-        blank_xml = "\
+        blank_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <boolean />\
@@ -1709,19 +1709,19 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         Test the parse and serialization of input type : real.
         Maps to test scenarios module:llsd:test# 46 - 48
         """
-        pos_real_xml = "\
+        pos_real_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <real>2983287453.3000002</real>\
 </llsd>"
 
-        neg_real_xml = "\
+        neg_real_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <real>-2983287453.3000002</real>\
 </llsd>"
 
-        blank_real_xml = "\
+        blank_real_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <real />\
@@ -1743,12 +1743,12 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         Maps to test scenarios module:llsd:test#49
         """
         uuid_tests = {
-            uuid.UUID(hex='d7f4aeca-88f1-42a1-b385-b9db18abb255'):"\
+            uuid.UUID(hex='d7f4aeca-88f1-42a1-b385-b9db18abb255'):b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <uuid>d7f4aeca-88f1-42a1-b385-b9db18abb255</uuid>\
 </llsd>",
-            uuid.UUID(int=0):"\
+            uuid.UUID(int=0):b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <uuid />\
@@ -1763,17 +1763,17 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         Test the parse and serialization of input type : String.
         Maps to test scenarios module:llsd:test# 50 - 51
         """
-        sample_data = {'foo':"\
+        sample_data = {'foo':b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <string>foo</string>\
 </llsd>",
-            '':"\
+            '':b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <string />\
 </llsd>",
-            '<xml>&ent;</xml>':"\
+            '<xml>&ent;</xml>':b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <string>&lt;xml&gt;&amp;ent;&lt;/xml&gt;</string>\
@@ -1788,13 +1788,13 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         Maps to test scenarios module:llsd:test# 52 - 53
         """
         uri_tests = {
-            llsd.uri('http://sim956.agni.lindenlab.com:12035/runtime/agents'):"\
+            llsd.uri('http://sim956.agni.lindenlab.com:12035/runtime/agents'):b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <uri>http://sim956.agni.lindenlab.com:12035/runtime/agents</uri>\
 </llsd>"}
 
-        blank_uri_xml = "\
+        blank_uri_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <uri />\
@@ -1809,30 +1809,30 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         Test the parse and serialization of input type : Date.
         Maps to test scenarios module:llsd:test#54 - 57
         """
-        valid_date_xml = "\
+        valid_date_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <date>2006-02-01T14:29:53.460000Z</date>\
 </llsd>"
 
-        valid_date_xml_no_fractional = "\
+        valid_date_xml_no_fractional = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <date>2006-02-01T14:29:53Z</date>\
 </llsd>"
-        valid_date_xml_filled = "\
+        valid_date_xml_filled = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <date>2006-02-01T14:29:05Z</date>\
 </llsd>"
 
-        blank_date_xml = "\
+        blank_date_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <date />\
 </llsd>"
 
-        before_19th_century_date = "\
+        before_19th_century_date = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <date>1853-02-01T00:00:00Z</date>\
@@ -1859,7 +1859,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         Maps to test scenarios module:llsd:test# 58 - 60
         """
         # simple array
-        array_xml = "\
+        array_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <array>\
@@ -1868,7 +1868,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 </array>\
 </llsd>"
         # composite array
-        array_within_array_xml = "\
+        array_within_array_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <array>\
@@ -1881,7 +1881,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 </array>\
 </llsd>"
         # blank array
-        blank_array_xml = "\
+        blank_array_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <array />\
@@ -1901,7 +1901,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         Maps to test scenarios module:llsd:test# 61 - 63
         """
         # simple map
-        map_xml = "\
+        map_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <map>\
@@ -1910,7 +1910,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 </map>\
 </llsd>"
         # composite map
-        map_within_map_xml = "\
+        map_within_map_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <map>\
@@ -1924,7 +1924,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 </map>\
 </llsd>"
         # blank map
-        blank_map_xml = "\
+        blank_map_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <map />\
@@ -1943,19 +1943,19 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         Test the parse and serialization of input type : binary.
         Maps to test scenarios module:llsd:test#64
         """
-        base64_binary_xml = "\
+        base64_binary_xml = b"\
 <?xml version=\"1.0\" ?>\
 <llsd>\
 <binary>dGhlIHF1aWNrIGJyb3duIGZveA==</binary>\
 </llsd>"
 
-        python_binary = llsd.binary("the quick brown fox")
+        python_binary = llsd.binary(b"the quick brown fox")
         self.assertXMLRoundtrip(python_binary,
                                   base64_binary_xml)
 
-        blank_binary_xml = """<?xml version="1.0" ?><llsd><binary /></llsd>"""
+        blank_binary_xml = b"""<?xml version="1.0" ?><llsd><binary /></llsd>"""
 
-        python_binary = llsd.binary('');
+        python_binary = llsd.binary(b'');
 
         self.assertXMLRoundtrip(python_binary, blank_binary_xml)
 
@@ -1964,7 +1964,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         Test parse_xml with complex xml data which contains all types xml element.
         Maps to test scenarios module:llsd:test#65
         """
-        xml_of_all_types = """<?xml version="1.0" encoding="UTF-8"?>
+        xml_of_all_types = b"""<?xml version="1.0" encoding="UTF-8"?>
             <llsd>
                 <array>
 		<string>string1</string>
@@ -2057,8 +2057,8 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         output_xml = llsd.format_pretty_xml(python_object)
 
         # check whether the output_xml contains whitespaces and new line character
-        whitespaces_count = string.count(output_xml, ' ')
-        newline_count = string.count(output_xml, '\n')
+        whitespaces_count = output_xml.count(b' ')
+        newline_count = output_xml.count(b'\n')
 
         self.assert_(whitespaces_count > 50)
         self.assert_(newline_count > 10)
@@ -2069,8 +2069,8 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         # the result should equal to the reuslt of format_xml
         # the xml version tag should be removed before comparing
         format_xml_result = self.llsd.as_xml(python_object)
-        self.assertEqual(result[result.find("?>") + 2: len(result)],
-                         format_xml_result[format_xml_result.find("?>") + 2: len(format_xml_result)])
+        self.assertEqual(result[result.find(b"?>") + 2: len(result)],
+                         format_xml_result[format_xml_result.find(b"?>") + 2: len(format_xml_result)])
 
     def testLLSDSerializationFailure(self):
         """
@@ -2091,7 +2091,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 
         Maps to test scenario module:llsd:test#80
         """
-        llsd_xml = """<?xml version="1.0" ?><llsd><real>12.3232</real></llsd>"""
+        llsd_xml = b"""<?xml version="1.0" ?><llsd><real>12.3232</real></llsd>"""
 
         try:
             self.llsd.parse(llsd_xml, llsd.NOTATION_MIME_TYPE)
@@ -2105,7 +2105,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 
         Maps to test scenario module:llsd:test#80
         """
-        llsd_xml = """<?xml version="1.0" ?><llsd><real>12.3232</real></llsd>"""
+        llsd_xml = b"""<?xml version="1.0" ?><llsd><real>12.3232</real></llsd>"""
 
         try:
             self.llsd.parse(llsd_xml, llsd.BINARY_MIME_TYPE)
@@ -2119,7 +2119,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 
         Maps to test scenarios module:llsd:test#77
         """
-        malformed_xml = """<?xml version="1.0" ?><llsd>string>123/llsd>"""
+        malformed_xml = b"""<?xml version="1.0" ?><llsd>string>123/llsd>"""
         self.assertRaises(llsd.LLSDParseError, llsd.parse, malformed_xml)
 
     def testParseXMLUnsupportedTag(self):
@@ -2129,7 +2129,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 
         Maps to test scenario module:llsd:test#83
         """
-        unsupported_tag_xml = """<?xml version="1.0" ?><llsd><string>123</string>
+        unsupported_tag_xml = b"""<?xml version="1.0" ?><llsd><string>123</string>
                                 <lala>1</lala>/llsd>"""
         self.assertRaises(llsd.LLSDParseError, llsd.parse, unsupported_tag_xml)
 
@@ -2140,7 +2140,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 
         Maps to test scenario module:llsd:test#84
         """
-        no_root_tag_xml = """<array><string>test</string><real>1.3434</real></array>"""
+        no_root_tag_xml = b"""<array><string>test</string><real>1.3434</real></array>"""
 
         self.assertRaises(llsd.LLSDParseError, llsd.parse, no_root_tag_xml)
 
@@ -2151,7 +2151,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 
         Maps to test scenario module:llsd:test#85
         """
-        unclosed_tag_xml = """<?xml version="1.0" ?><llsd><string>123</string>
+        unclosed_tag_xml = b"""<?xml version="1.0" ?><llsd><string>123</string>
                                 <integer>12345/llsd>"""
         self.assertRaises(llsd.LLSDParseError, llsd.parse, unclosed_tag_xml)
 
@@ -2160,17 +2160,17 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         Utility method to remove all the whitespace characters from
         the given string.
         """
-        return re.sub('\s', '', the_string)
+        return re.sub(b'\s', b'', the_string)
         
     def test_segfault(self):
         for i, badstring in enumerate([
-            '<?xml \xee\xae\x94 ?>',
-            '<?xml \xc4\x9d ?>',
-            '<?xml \xc8\x84 ?>',
-            '<?xml \xd9\xb5 ?>',
-            '<?xml \xd9\xaa ?>',
-            '<?xml \xc9\x88 ?>',
-            '<?xml \xcb\x8c ?>']):
+            b'<?xml \xee\xae\x94 ?>',
+            b'<?xml \xc4\x9d ?>',
+            b'<?xml \xc8\x84 ?>',
+            b'<?xml \xd9\xb5 ?>',
+            b'<?xml \xd9\xaa ?>',
+            b'<?xml \xc9\x88 ?>',
+            b'<?xml \xcb\x8c ?>']):
             self.assertRaises(llsd.LLSDParseError, llsd.parse, badstring)
 
 class LLSDStressTest(unittest.TestCase):
