@@ -21,6 +21,9 @@
 # THE SOFTWARE.
 # $/LicenseInfo$
 
+from __future__ import division
+from future.utils import PY2
+
 from collections import deque
 from datetime import datetime, timedelta, date
 import string
@@ -80,7 +83,7 @@ class LLSDFuzzer(object):
         if length is None:
             length = self._string_length()
         return ''.join([string.printable[int(self.r.random() * printable_len)]
-                        for x in xrange(length)])
+                        for x in range(length)])
         
     def random_unicode(self, length = None):
         """Returns a string of random unicode characters with length *length*. 
@@ -102,13 +105,13 @@ class LLSDFuzzer(object):
             length = self._string_length()
             
         if length % 8 == 0:
-            num_chunks = length/8
+            num_chunks = length // 8
         else:
-            num_chunks = length/8 + 1
+            num_chunks = length // 8 + 1
             
         # this appears to be the fastest way to generate random byte strings
         packstr = 'Q'*num_chunks
-        randchunks = [self.r.getrandbits(64) for i in xrange(num_chunks)]
+        randchunks = [self.r.getrandbits(64) for i in range(num_chunks)]
         return struct.pack(packstr, *randchunks)[:length]
             
     def random_binary(self, length=None):
@@ -137,7 +140,7 @@ class LLSDFuzzer(object):
         randomly-chosen values.  It is single-level; none of the 
         values are themselves maps or arrays."""
         retval = {}
-        for x in xrange(self._container_size()):
+        for x in range(self._container_size()):
             if self.random_boolean():
                 key = self.random_unicode()
             else:
@@ -151,7 +154,7 @@ class LLSDFuzzer(object):
         with random values.  It is single-level; none of the 
         values are themselves maps or arrays."""
         return [self.random_atom(include_containers=False)
-                for x in xrange(self._container_size())]
+                for x in range(self._container_size())]
     
     random_generators = [
         lambda self: None,
@@ -190,12 +193,12 @@ class LLSDFuzzer(object):
         lambda s, v: -2147483649,  # -2^31 - 1
         lambda s, v: 18446744073709551616, # 2^64
         lambda s, v: s.random_integer(),
-        lambda s, v: v * ((s.r.getrandbits(16) - 2**15) or 1),
-        lambda s, v: v / ((s.r.getrandbits(16) - 2**15) or 1),
+        lambda s, v: v *  ((s.r.getrandbits(16) - 2**15) or 1),
+        lambda s, v: v // ((s.r.getrandbits(16) - 2**15) or 1),
         lambda s, v: v + s.random_integer(),
         lambda s, v: v - s.random_integer(),
-        lambda s, v: v * ((s.r.getrandbits(8) - 2**7) or 1),
-        lambda s, v: v / ((s.r.getrandbits(8) - 2**7) or 1)
+        lambda s, v: v *  ((s.r.getrandbits(8) - 2**7) or 1),
+        lambda s, v: v // ((s.r.getrandbits(8) - 2**7) or 1)
     ]
     
     def permute_integer(self, val):
@@ -252,7 +255,7 @@ class LLSDFuzzer(object):
     def permute_string(self, val):
         """Generates variations on a given string or unicode.  All
         generated values are strings/unicodes."""
-        assert isinstance(val, (str, unicode))
+        assert isinstance(val, str) or PY2 and isinstance(val, unicode)
         def string_strgen(length = None):
             if self.random_boolean():
                 return self.random_printable(length)
@@ -304,7 +307,7 @@ class LLSDFuzzer(object):
     def _permute_map_permute_value(self, val):
         if len(val) == 0:
             return {}
-        k = self.r.choice(val.keys())
+        k = self.r.choice(list(val.keys()))
         permuted = val.copy()
         permuted[k] = next(self.structure_fuzz(val[k]))
         return permuted
@@ -312,7 +315,7 @@ class LLSDFuzzer(object):
     def _permute_map_key_delete(self, val):
         if len(val) == 0:
             return {}
-        k = self.r.choice(val.keys())
+        k = self.r.choice(list(val.keys()))
         permuted = val.copy()
         permuted.pop(k, None)
         return permuted
@@ -320,7 +323,7 @@ class LLSDFuzzer(object):
     def _permute_map_new_key(self, val):
         permuted = val.copy()
         if len(val) > 0 and self.random_boolean():
-            new_key = self.permute_string(self.r.choice(val.keys()))
+            new_key = self.permute_string(self.r.choice(list(val.keys())))
         else:
             new_key = self.random_unicode()
 
@@ -330,7 +333,7 @@ class LLSDFuzzer(object):
     def _permute_map_permute_key_names(self, val):
         if len(val) == 0:
             return {}
-        k = self.r.choice(val.keys())
+        k = self.r.choice(list(val.keys()))
         k = self.permute_string(k)
         permuted = val.copy()
         v = permuted.pop(k, None)
@@ -349,7 +352,7 @@ class LLSDFuzzer(object):
         The return value is a dict."""
         assert isinstance(val, dict)
         permuted = self.r.choice(self.map_sub_permuters)(self, val)
-        for i in xrange(int(self.r.expovariate(0.5)) + 1):
+        for i in range(int(self.r.expovariate(0.5)) + 1):
             permuted = self.r.choice(self.map_sub_permuters)(self, permuted)
         return permuted
     
@@ -371,7 +374,7 @@ class LLSDFuzzer(object):
     def _permute_array_reorder(self, val):
         permuted = list(val)
         swaps = self.r.randrange(0, len(val))
-        for s in xrange(swaps):
+        for s in range(swaps):
             i = self.r.randrange(0, len(val))
             j = self.r.randrange(0, len(val))
             permuted[i], permuted[j] = permuted[j], permuted[i]
@@ -388,7 +391,7 @@ class LLSDFuzzer(object):
         The return value is a dict."""
         assert isinstance(val, (list, tuple))
         permuted = self.r.choice(self.array_sub_permuters)(self, val)
-        for i in xrange(int(self.r.expovariate(0.5)) + 1):
+        for i in range(int(self.r.expovariate(0.5)) + 1):
             permuted = self.r.choice(self.array_sub_permuters)(self, permuted)
         if self.random_boolean():
             permuted = tuple(permuted)
@@ -398,11 +401,9 @@ class LLSDFuzzer(object):
         type(None):permute_undef,
         bool: permute_boolean,
         int: permute_integer,
-        long: permute_integer,
         float: permute_real,
         uuid.UUID: permute_uuid,
         str: permute_string,
-        unicode: permute_string,
         llsd.binary: permute_binary,
         datetime: permute_date,
         date: permute_date,
@@ -410,7 +411,10 @@ class LLSDFuzzer(object):
         dict: permute_map,
         list: permute_array,
         tuple: permute_array}
-        
+    if PY2:
+        permuters[long] = permute_integer
+        permuters[unicode] = permute_string
+
     def structure_fuzz(self, starting_structure):
         """ Generates a series of Python structures
         based on the input structure."""
@@ -423,7 +427,7 @@ class LLSDFuzzer(object):
        
     def _random_numeric(self, length):
         return ''.join([self.r.choice(string.digits)
-                        for x in xrange(length)])     
+                        for x in range(length)])     
             
     def _dirty(self, val):
         idx1 = self.rand_idx(val)
@@ -437,9 +441,9 @@ class LLSDFuzzer(object):
         if self.random_boolean():
             # use printable
             if self.random_boolean():
-                replacement = self._random_numeric(subst_len)
+                replacement = self._random_numeric(subst_len).encode('latin-1')
             else:
-                replacement = self.random_printable(subst_len)
+                replacement = self.random_printable(subst_len).encode('latin-1')
         else:
             replacement = self.random_bytes(subst_len)
         
@@ -454,7 +458,7 @@ class LLSDFuzzer(object):
                 continue
             yield text
             dirtied = self._dirty(text)
-            for i in xrange(int(round(self.r.expovariate(0.3)))):
+            for i in range(int(round(self.r.expovariate(0.3)))):
                 dirtied = self._dirty(dirtied)
             yield dirtied
 

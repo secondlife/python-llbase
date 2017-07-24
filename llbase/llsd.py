@@ -245,7 +245,7 @@ else:
 INVALID_XML_BYTES = b'\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0b\x0c'\
                     b'\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18'\
                     b'\x19\x1a\x1b\x1c\x1d\x1e\x1f'
-INVALID_XML_RE = re.compile(br'[\x00-\x08\x0b\x0c\x0e-\x1f]')
+INVALID_XML_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f]')
 def remove_invalid_xml_bytes(b):
     try:
         # Dropping chars that cannot be parsed later on.  The

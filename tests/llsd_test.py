@@ -2385,8 +2385,8 @@ class LLSDFuzzTest(unittest.TestCase):
                 s = llsd.remove_invalid_xml_bytes(s)
                 s = self.newline_re.sub('\n', s)
                 if not PY2 or PY2 and isinstance(s, unicode):
-                    s = s.replace(u'\uffff', '')
-                    s = s.replace(u'\ufffe', '')
+                    s = s.replace(u'\uffff', u'')
+                    s = s.replace(u'\ufffe', u'')
                 return s
             if isnan(s):
                 return None
@@ -2406,21 +2406,21 @@ class Regression(unittest.TestCase):
     '''
 
     def test_no_newline_in_base64_notation(self):
-        n = llsd.format_notation(llsd.binary('\0'*100))
-        self.assertEqual(n.replace('\n', ''), n)
+        n = llsd.format_notation(llsd.binary(b'\0'*100))
+        self.assertEqual(n.replace(b'\n', b''), n)
 
     def test_no_newline_in_base64_xml(self):
-        n = llsd.format_xml(llsd.binary('\0'*100))
-        self.assertEqual(n.replace('\n', ''), n)
+        n = llsd.format_xml(llsd.binary(b'\0'*100))
+        self.assertEqual(n.replace(b'\n', b''), n)
 
     def test_no_newline_in_base64_xml_sans_cllsd(self):
         try:
             real_cllsd = llsd.cllsd
             llsd.cllsd = None
-            n = llsd.format_xml(llsd.binary('\0'*100))
+            n = llsd.format_xml(llsd.binary(b'\0'*100))
         finally:
             llsd.cllsd = real_cllsd
-        self.assertEqual(n.replace('\n', ''), n)
+        self.assertEqual(n.replace(b'\n', b''), n)
 
 if __name__ == '__main__':
     unittest.main()
