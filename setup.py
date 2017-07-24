@@ -120,10 +120,10 @@ setup(
     package_dir={PACKAGE_NAME:LLBASE_SOURCE},
     packages=[PACKAGE_NAME, PACKAGE_NAME + ".test"],
     license='MIT',
-    classifiers=filter(None, CLASSIFIERS.split("\n")),
+    classifiers=[_f for _f in CLASSIFIERS.split("\n") if _f],
     ext_modules=ext_modules,
     setup_requires=['nose'],
-    install_requires=['requests'],
+    install_requires=['requests', 'future'],
     cmdclass = {
                  'build_ext': build_ext_subclass,
                  'test': TestCommand,
