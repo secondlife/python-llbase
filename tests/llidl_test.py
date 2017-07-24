@@ -27,9 +27,9 @@
 Test the llidl module
 """
 
-
+from future.utils import PY2
 import datetime
-import StringIO
+import io
 import unittest
 
 from llbase import llidl
@@ -66,7 +66,7 @@ def _binary():
     """
     Return a llsd.binary object for testing.
     """
-    return llsd.binary("\0x01\x02\x03")
+    return llsd.binary(b"\0x01\x02\x03")
 
 class LLIDLTypeTests(unittest.TestCase):
     """
@@ -137,14 +137,16 @@ class LLIDLTypeTests(unittest.TestCase):
         self.assert_(v.match(0.0))
         self.assert_(v.match(10.0))
         self.assert_(v.incompatible(3.14))
-        self.assert_(v.incompatible(6.02e23))
+        if PY2:
+            self.assert_(v.incompatible(6.02e23))
         self.assert_(v.has_defaulted(""))
         self.assert_(v.match("0"))
         self.assert_(v.match("1"))
         self.assert_(v.match("0.0"))
         self.assert_(v.match("10.0"))
         self.assert_(v.incompatible("3.14"))
-        self.assert_(v.incompatible("6.02e23"))
+        if PY2:
+            self.assert_(v.incompatible("6.02e23"))
         self.assert_(v.incompatible("blob"))
         self.assert_(v.incompatible(_dateToday()))
         self.assert_(v.incompatible(_uuid()))
@@ -1937,13 +1939,13 @@ class LLIDLReportingTests(unittest.TestCase):
 
 class LLIDLFileTests(unittest.TestCase):
     def test_parse_value_from_file(self):
-        file = StringIO.StringIO("[ int, int ]")
+        file = io.StringIO("[ int, int ]")
         v = llidl.parse_value(file)
         self.assert_(v.match([1,2]))
         self.assert_(v.incompatible(["one", "two"]))
         
     def test_parse_suite_from_file(self):
-        file = StringIO.StringIO(""";test suite
+        file = io.StringIO(""";test suite
 %% agent/name
 -> { agent_id: uuid }
 <- { first: string, last: string }
