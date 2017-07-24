@@ -84,7 +84,7 @@ class Config(object):
         if self._config_filename is None:
             return
 
-        config_file = open(self._config_filename)
+        config_file = open(self._config_filename, 'rb')
         self._config_file_dict = llsd.parse(config_file.read())
         self._combine_dictionaries()
         config_file.close()
@@ -198,8 +198,8 @@ class Config(object):
         """
         if isinstance(new_conf, dict):
             overrides = new_conf
-        elif isinstance(new_conf, basestring):
-            config_file = open(new_conf)
+        elif llsd.is_str_or_unicode(new_conf):
+            config_file = open(new_conf, 'rb')
             overrides = llsd.parse(config_file.read())
             config_file.close()
         else:

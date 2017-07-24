@@ -123,6 +123,7 @@ setup(
     classifiers=[_f for _f in CLASSIFIERS.split("\n") if _f],
     ext_modules=ext_modules,
     setup_requires=['nose'],
+    tests_require=['mock'],
     install_requires=['requests', 'future'],
     cmdclass = {
                  'build_ext': build_ext_subclass,

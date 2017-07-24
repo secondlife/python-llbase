@@ -88,7 +88,7 @@ def is_int_or_long(o):
 def is_unicode(o):
     """ portable check if an object is unicode and not bytes """
     if PY2:
-        return isinstance(printed, unicode))
+        return isinstance(printed, unicode)
     else:
         return isinstance(printed, str)
 
