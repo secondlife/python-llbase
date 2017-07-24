@@ -1,4 +1,3 @@
-from __future__ import print_function
 # $LicenseInfo:firstyear=2006&license=mit$
 #
 # Copyright (c) 2006-2009, Linden Research, Inc.
@@ -22,6 +21,10 @@ from __future__ import print_function
 # THE SOFTWARE.
 # $/LicenseInfo$
 
+from __future__ import print_function
+from __future__ import division
+from future.utils import PY2
+
 from llbase import llsd
 import copy
 import string
@@ -29,12 +32,23 @@ import uuid
 import unittest
 from llbase.test import llsd_fuzz
 from datetime import datetime, date
-from itertools import islice, izip, count
+from itertools import islice
 
 
 def is_nan(o):
     return isinstance(o, float) and o != o
 
+def is_int_or_long(o):
+    return isinstance(o, int) or PY2 and isinstance(o, long)
+
+def is_str_or_unicode(o):
+    return isinstance(o, str) or PY2 and isinstance(o, unicode)
+
+def is_bytes(o):
+    if PY2:
+        return isinstance(o, str)
+    else:
+        return isinstance(o, bytes)
 
 class Base(unittest.TestCase):
     def setUp(self):
@@ -44,68 +58,72 @@ class Base(unittest.TestCase):
 
 class Random(Base):
     def test_random_boolean(self):
-        for i in xrange(10):
+        for i in range(10):
             rb = self.lf.random_boolean()
             self.assert_(isinstance(rb, bool))
             self.assertEquals(self.lf2.random_boolean(), rb)
 
     def test_random_integer(self):
-        for i in xrange(10):
-            self.assert_(isinstance(self.lf.random_integer(), (int, long)))
+        for i in range(10):
+            self.assert_(is_int_or_long(self.lf.random_integer()))
 
     def test_random_real(self):
-        for i in xrange(10):
+        for i in range(10):
             self.assert_(isinstance(self.lf.random_real(), float))
 
     def test_random_uuid(self):
-        for i in xrange(10):
+        for i in range(10):
             self.assert_(isinstance(self.lf.random_uuid(), uuid.UUID))
 
     def test_random_printable(self):
         self.assertEquals(len(self.lf.random_printable(100)), 100)
-        for i in xrange(10):
+        for i in range(10):
             printed = self.lf.random_printable()
             self.assert_(isinstance(printed, str))
             for c in printed:
                 self.assert_(c in string.printable)
                 
     def test_random_unicode(self):
-        for i in xrange(10):
+        for i in range(10):
             printed = self.lf.random_unicode()
-            self.assert_(isinstance(printed, unicode))
+            if PY2:
+                self.assert_(isinstance(printed, unicode))
+            else:
+                self.assert_(isinstance(printed, str))
 
     def test_random_bytes(self):
-        for i in xrange(10):
+        for i in range(10):
             length = 17 + i
             randbytes = self.lf.random_bytes(length)
-            self.assert_(isinstance(randbytes, str))
+            self.assert_(is_bytes(randbytes))
             self.assertEquals(len(randbytes), length)
-            for i in randbytes:
+            for index in range(len(randbytes)):
+                i = randbytes[index:index+1]
                 self.assert_(ord(i) >= 0)
                 self.assert_(ord(i) < 256)            
 
     def test_random_binary(self):
-        for i in xrange(10):
+        for i in range(10):
             self.assert_(isinstance(self.lf.random_binary(), llsd.binary))
 
     def test_random_uri(self):
-        for i in xrange(10):
+        for i in range(10):
             self.assert_(isinstance(self.lf.random_uri(), llsd.uri))
             
     def test_random_date(self):
-        for i in xrange(10):
+        for i in range(10):
             self.assert_(isinstance(self.lf.random_date(), datetime))
 
     def test_random_map(self):
-        for i in xrange(10):
+        for i in range(10):
             generated = self.lf.random_map()
             self.assert_(isinstance(generated, dict))
             self.assert_(len(generated) > 0)
-            for k in generated.iterkeys():
-                self.assert_(isinstance(k, (str, unicode)))
+            for k in generated.keys():
+                self.assert_(is_str_or_unicode(k))
                 
     def test_random_array(self):
-        for i in xrange(10):
+        for i in range(10):
             generated = self.lf.random_array()
             self.assert_(isinstance(generated, list))
             self.assert_(len(generated) > 0)
@@ -113,7 +131,7 @@ class Random(Base):
 
 class Permute(Base):
     def permute(self, func, arg, size=100):
-        perms = [func(arg) for x in xrange(size)]
+        perms = [func(arg) for x in range(size)]
         self.assert_(len(perms) == size)
         return perms
 
@@ -127,7 +145,7 @@ class Permute(Base):
 
     def test_permute_integer(self):        
         for i in self.permute(self.lf.permute_integer, 1):
-            self.assert_(isinstance(i, (int,long)))
+            self.assert_(is_int_or_long(i))
 
     def test_permute_real(self):
         for i in self.permute(self.lf.permute_real, 1.0):
@@ -139,12 +157,12 @@ class Permute(Base):
             
     def test_permute_string(self):
         for i in self.permute(self.lf.permute_string, 'abc'):
-            self.assert_(isinstance(i, (str, unicode)))
+            self.assert_(is_str_or_unicode(i))
         for i in self.permute(self.lf.permute_string, u'abc'):
-            self.assert_(isinstance(i, (str, unicode)))
+            self.assert_(is_str_or_unicode(i))
     
     def test_permute_binary(self):
-        for i in self.permute(self.lf.permute_binary, llsd.binary('123')):
+        for i in self.permute(self.lf.permute_binary, llsd.binary(b'123')):
             self.assert_(isinstance(i, llsd.binary))
 
     def test_permute_date(self):
@@ -177,7 +195,7 @@ class Fuzz(Base):
         if self.type_map is None:
             self.type_map = llsd.LLSDXMLFormatter().type_map
         self.assert_(type(obj) in self.type_map, repr(obj))
-        if not isinstance(obj, (str, unicode)):
+        if not is_str_or_unicode(obj):
             try:
                 for x in obj:
                     self.recursive_type_check(x)
@@ -189,7 +207,7 @@ class Fuzz(Base):
         """ Returns true if the object has a NaN value somewhere in it."""
         if is_nan(obj):
             return True
-        if not isinstance(obj, (str, unicode)):
+        if not is_str_or_unicode(obj):
             try:
                 for x in obj:
                     if self.contains_nan(x):
@@ -205,18 +223,18 @@ class Fuzz(Base):
                 'e':(1,2,3, 'j', u'y'),
                 'f':date.today(),
                 'g':uuid.UUID(int=1),
-                'h':llsd.binary('hi'),
+                'h':llsd.binary(b'hi'),
                 'i':llsd.uri('http://www.example.com')}
 
     def test_structure_fuzz(self):
-         for i in xrange(10):
+         for i in range(10):
             fuzzed = list(islice(self.lf.structure_fuzz(self.base_obj), 200))
             self.assert_(len(fuzzed) == 200)
             for f in fuzzed:
                 self.recursive_type_check(f)
                 
     def test_determinisim(self):
-        base_obj = list(xrange(10))
+        base_obj = list(range(10))
         seed = self.lf.seed
         fuzzed_1 = list(islice(self.lf.structure_fuzz(base_obj), 1000))
 
@@ -255,7 +273,7 @@ class Fuzz(Base):
         self.assert_(len(fuzzed) == quantity)
         empties = 0
         for f in fuzzed:
-            self.assert_(isinstance(f, str))
+            self.assert_(is_bytes(f))
             if len(f) == 0:
                 empties += 1
         # no more than 1% should be zero-length
@@ -284,7 +302,7 @@ def show_permuted():
     lf = llsd_fuzz.LLSDFuzzer()
     print("seed", lf.seed)
     ft = lf.structure_fuzz(Fuzz.base_obj)
-    for i in xrange(10000):
+    for i in range(10000):
         x = next(ft)
         import pprint
         pprint.pprint(x)
@@ -295,7 +313,7 @@ def run_profile():
     def time_test():
         lf = llsd_fuzz.LLSDFuzzer()
         ft = lf.structure_fuzz(Fuzz.base_obj)
-        for i in xrange(10000):
+        for i in range(10000):
             x = next(ft)
 
     import cProfile, pstats
