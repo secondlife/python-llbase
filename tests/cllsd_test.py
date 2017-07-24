@@ -27,6 +27,7 @@
 Types as well as parsing and formatting functions for handling LLSD.
 """
 from __future__ import print_function
+from __future__ import division
 
 from datetime import datetime, date
 import os.path
@@ -44,7 +45,7 @@ values = (
     uuid.UUID(int=0),
     ['thing', 123, 1.34],
     sys.maxsize + 10,
-    llsd.binary('foo'),
+    llsd.binary(b'foo'),
     {u'f&\u1212': 3},
     3.1,
     True,
