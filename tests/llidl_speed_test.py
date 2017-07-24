@@ -28,6 +28,7 @@
 Performance tests for llidl
 """
 from __future__ import print_function
+from __future__ import division
 
 import random
 import string
@@ -37,7 +38,7 @@ from llbase import llidl
 
 def random_string():
     s = random.choice(string.ascii_uppercase)
-    for i in xrange(1,random.randint(2,11)):
+    for i in range(1,random.randint(2,11)):
         s += random.choice(string.ascii_lowercase)
     return s
 
@@ -45,9 +46,9 @@ def time_llidl_match(n, k):
     value = llidl.parse_value("[ { name: [ string, string ], size: int }, ... ]")
     
     data_set = []
-    for i in xrange(0,n):
+    for i in range(0,n):
         item = []
-        for i in xrange(0,k/5):
+        for i in range(0, k // 5):
             n1 = random_string()
             n2 = random_string()
             s = random.randint(100,10000)
@@ -74,8 +75,8 @@ def simple_llidl_match():
 
 
 def grid():
-    trial_range = xrange(100,1100,100)
-    size_range = xrange(0,550,50)
+    trial_range = range(100,1100,100)
+    size_range = range(0,550,50)
     
     print("trials,%s" % (",".join(["%d items" % d for d in size_range])))
     for n in trial_range:
