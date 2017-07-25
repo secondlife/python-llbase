@@ -41,6 +41,7 @@ Development Status :: 5 - Production/Stable
 Intended Audience :: Developers
 License :: OSI Approved :: MIT License
 Programming Language :: Python
+Programming Language :: Python :: 3
 Programming Language :: C
 Topic :: Software Development
 Topic :: Software Development :: Libraries :: Python Modules
