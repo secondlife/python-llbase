@@ -2,6 +2,7 @@ syntax: glob
 
 *.pyc
 .*.swp
+*$py.class
 .coverage
 build
 build-stamp
@@ -15,6 +16,7 @@ MANIFEST
 dist
 stage/
 .eggs/
+.tox/
 llbase-*.tar.bz2
 llbase.egg-info/
 *.orig
