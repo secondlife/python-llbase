@@ -36,7 +36,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 
-from future.utils import PY2
+import sys
 import base64
 import binascii
 import calendar
@@ -49,6 +49,8 @@ import uuid
 import os
 
 from .fastest_elementtree import ElementTreeError, fromstring
+
+PY2 = sys.version_info[0] == 2
 
 try:
     if PY2:

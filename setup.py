@@ -124,7 +124,7 @@ setup(
     ext_modules=ext_modules,
     setup_requires=['nose'],
     tests_require=['mock'],
-    install_requires=['requests', 'future'],
+    install_requires=['requests'],
     cmdclass = {
                  'build_ext': build_ext_subclass,
                  'test': TestCommand,
