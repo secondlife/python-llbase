@@ -1938,13 +1938,13 @@ class LLIDLReportingTests(unittest.TestCase):
 
 class LLIDLFileTests(unittest.TestCase):
     def test_parse_value_from_file(self):
-        file = io.StringIO("[ int, int ]")
+        file = io.StringIO(u"[ int, int ]")
         v = llidl.parse_value(file)
         self.assert_(v.match([1,2]))
         self.assert_(v.incompatible(["one", "two"]))
         
     def test_parse_suite_from_file(self):
-        file = io.StringIO(""";test suite
+        file = io.StringIO(u""";test suite
 %% agent/name
 -> { agent_id: uuid }
 <- { first: string, last: string }

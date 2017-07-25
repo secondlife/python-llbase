@@ -314,7 +314,7 @@ class LLSDXMLFormatter(object):
             }
         if PY2:
             self.type_map[long] = self.INTEGER
-            self.type_map[unicode] = self.STRING,
+            self.type_map[unicode] = self.STRING
 
     def _elt(self, name, contents=None):
         "Serialize a single element."
@@ -344,7 +344,7 @@ class LLSDXMLFormatter(object):
         else:
             return self._elt(b'boolean', b'false')
     def INTEGER(self, v):
-        return self._elt(b'integer', repr(v))
+        return self._elt(b'integer', str(v))
     def REAL(self, v):
         return self._elt(b'real', repr(v))
     def UUID(self, v):
@@ -541,7 +541,7 @@ class LLSDNotationFormatter(object):
         }
         if PY2:
             self.type_map[long] = self.INTEGER
-            self.type_map[unicode] = self.STRING,
+            self.type_map[unicode] = self.STRING
 
     def LLSD(self, v):
         return self._generate(v.thing)
