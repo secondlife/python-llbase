@@ -39,7 +39,6 @@
           <key>manifest</key>
           <array>
             <string>llbase</string>
-            <string>llbase-*.egg-info</string>
           </array>
           <key>name</key>
           <string>common</string>

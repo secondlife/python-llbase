@@ -13,3 +13,4 @@ debian/python-llbase.substvars
 MANIFEST
 dist
 stage/
+llbase-*.tar.bz2
