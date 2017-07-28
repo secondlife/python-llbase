@@ -5,9 +5,8 @@ import sys
 from glob import glob
 import subprocess
 
-from distutils.command.build_ext import build_ext
-from distutils.core import setup, Extension, Command
-from distutils.spawn import spawn
+from setuptools.command.build_ext import build_ext
+from setuptools import setup, Extension, Command
 from unittest import TextTestRunner, TestLoader
 
 # from http://stackoverflow.com/questions/2058802/how-can-i-get-the-version-defined-in-setup-py-setuptools-in-my-package :
@@ -41,7 +40,10 @@ CLASSIFIERS = """\
 Development Status :: 5 - Production/Stable
 Intended Audience :: Developers
 License :: OSI Approved :: MIT License
-Programming Language :: Python
+Programming Language :: Python :: 2.6
+Programming Language :: Python :: 2.7
+Programming Language :: Python :: 3.5
+Programming Language :: Python :: 3.6
 Programming Language :: C
 Topic :: Software Development
 Topic :: Software Development :: Libraries :: Python Modules
@@ -121,8 +123,10 @@ setup(
     package_dir={PACKAGE_NAME:LLBASE_SOURCE},
     packages=[PACKAGE_NAME, PACKAGE_NAME + ".test"],
     license='MIT',
-    classifiers=filter(None, CLASSIFIERS.split("\n")),
+    classifiers=[_f for _f in CLASSIFIERS.split("\n") if _f],
     ext_modules=ext_modules,
+    setup_requires=['nose'],
+    tests_require=['mock'],
     install_requires=['requests'],
     cmdclass = {
                  'build_ext': build_ext_subclass,

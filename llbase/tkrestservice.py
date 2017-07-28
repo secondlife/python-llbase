@@ -11,7 +11,12 @@ $/LicenseInfo$
 """
 from __future__ import absolute_import
 
-import Tkinter, tkSimpleDialog
+try:
+    from tkinter import Tk, simpledialog
+except ImportError: # Python 2
+    from Tkinter import Tk
+    import tkSimpleDialog as simpledialog
+
 from .llrest import RESTService, RESTError
 import os
 import __main__                         # for filename of main script
@@ -36,7 +41,7 @@ class TkRESTService(RESTService):
         global root
         # only create and withdraw a dummy window on first use
         if root is None:
-            root = Tkinter.Tk()
+            root = Tk()
             # Don't show empty application window
             root.withdraw()
 
@@ -47,13 +52,13 @@ class TkRESTService(RESTService):
         username, password = self.username, self.password
 
         if username is None:
-            username = tkSimpleDialog.askstring(title, "%s username:" % self.name)
+            username = simpledialog.askstring(title, "%s username:" % self.name)
             if username is None:
                 # user clicked Cancel
                 raise RESTError(self.name, '', '000', "Prompt for username canceled")
 
         if password is None:
-            password = tkSimpleDialog.askstring(title,
+            password = simpledialog.askstring(title,
                                                 "%s password for '%s':" % (self.name, username),
                                                 show='*')
             if password is None:

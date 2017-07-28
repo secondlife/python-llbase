@@ -27,11 +27,12 @@
 Test the config module
 """
 from __future__ import print_function
+from __future__ import division
 
 import mock
 import os
 import tempfile
-from StringIO import StringIO
+from io import BytesIO
 import time
 import unittest
 import uuid
@@ -447,7 +448,7 @@ class ConfigInstanceTester(unittest.TestCase):
         self._config['k1'] = 'v1'
         self._config['k2'] = 'v2'
         new = {'k1': 'new_value', 'k3':'v3'}
-        filelike = StringIO(llsd.format_xml(new))
+        filelike = BytesIO(llsd.format_xml(new))
         self._config.update(filelike)
 
         self.assertEquals('new_value', self._config.get('k1'))

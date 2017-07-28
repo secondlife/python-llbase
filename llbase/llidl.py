@@ -33,12 +33,16 @@ from __future__ import absolute_import
 
 import datetime
 import re
-from types import *
 import uuid
+from functools import total_ordering
 
 from . import llsd
 from . import lluuid
 
+NoneType = type(None)
+StringTypes = llsd.StringTypes
+
+@total_ordering
 class _Result(object):
     """
     The result of a llsd/llidl spciciation comparison
@@ -67,10 +71,13 @@ class _Result(object):
         
     def __str__(self):
         return self._name
-    
-    def __cmp__(self, other):
-        return cmp(self._value, other._value)
-    
+
+    def __eq__(self, other):
+        return self._value == other._value
+
+    def __lt__(self, other):
+        return self._value < other._value
+
     def __and__(self, other):
         sv = int(self._value)
         ov = int(other._value)
@@ -546,7 +553,7 @@ class _ArrayMatcher(Value):
             if raise_level is not None and r < raise_level:
                 raise MatchErrorStack(vtype=self.__class__, val=actual, r=ADDITIONAL)
             
-        for i in xrange(0,tlen):
+        for i in range(0,tlen):
             v = None
             if i < alen:
                 v = actual[i]
@@ -563,12 +570,12 @@ class _MapMatcher(Value):
         self._members = members
     
     def _set_suite(self, suite):
-        for v in self._members.itervalues():
+        for v in self._members.values():
             v._set_suite(suite)
 
     def _variants_referenced(self):
         s = set()
-        for v in self._members.itervalues():
+        for v in self._members.values():
             s |= v._variants_referenced()
         return s
             
@@ -582,7 +589,7 @@ class _MapMatcher(Value):
             return INCOMPATIBLE
         
         r = MATCHED
-        for (name, value) in self._members.iteritems():
+        for (name, value) in self._members.items():
             v = None
             if name in actual:
                 v = actual[name]
@@ -591,7 +598,8 @@ class _MapMatcher(Value):
             except MatchErrorStack as e:
                 e.push(vtype=self.__class__, val=name)
                 raise e
-        for name in actual.iterkeys():
+        # iterates through keys
+        for name in actual:
             if name not in self._members:
                 r &= ADDITIONAL
                 if raise_level is not None and r < raise_level:
@@ -617,7 +625,7 @@ class _DictMatcher(Value):
             return INCOMPATIBLE
         
         r = MATCHED
-        for (k, v) in actual.iteritems():
+        for (k, v) in actual.items():
             try:
                 r &= self._value._compare(v, raise_level=raise_level)
             except MatchErrorStack as e:
@@ -695,11 +703,12 @@ class Suite(object):
     
     def _missing_variants(self):
         refs = set()
-        for v in self._requests.itervalues():
+        for v in self._requests.values():
             refs |= v._variants_referenced()
-        for w in self._responses.itervalues():
+        for w in self._responses.values():
             refs |= w._variants_referenced()
-        return refs - set(self._variants.iterkeys())
+        # set of keys
+        return refs - set(self._variants)
             
     def match_request(self, name, *args, **kwargs):
         """Compare an LLSD value to a resource's request description"""
