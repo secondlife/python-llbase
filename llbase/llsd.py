@@ -83,27 +83,45 @@ class uri(str):
     "Simple wrapper for llsd.uri data."
     pass
 
-def is_int_or_long(o):
+# In Python 2, this expression produces (str, unicode); in Python 3 it's
+# simply (str,). Either way, it's valid to test isinstance(somevar,
+# StringTypes). (Some consumers test (type(somevar) in StringTypes), so we do
+# want (str,) rather than plain str.)
+StringTypes = tuple(set((type(''), type(u''))))
+
+try:
+    LongType = long
+    IntTypes = (int, long)
+except NameError:
+    LongType = int
+    IntTypes = int
+
+try:
+    UnicodeType = unicode
+except NameError:
+    UnicodeType = str
+
+# can't just check for NameError: 'bytes' is defined in both Python 2 and 3
+if PY2:
+    BytesType = str
+else:
+    BytesType = bytes
+
+def is_integer(o):
     """ portable test if an object is like an int """
-    return isinstance(o, int) or PY2 and isinstance(o, long)
+    return isinstance(o, IntTypes)
 
 def is_unicode(o):
     """ portable check if an object is unicode and not bytes """
-    if PY2:
-        return isinstance(o, unicode)
-    else:
-        return isinstance(o, str)
+    return isinstance(o, UnicodeType)
 
-def is_str_or_unicode(o):
+def is_string(o):
     """ portable check if an object is string-like """
-    return isinstance(o, str) or PY2 and isinstance(o, unicode)
+    return isinstance(o, StringTypes)
 
 def is_bytes(o):
     """ portable check if an object is an immutable byte array """
-    if PY2:
-        return isinstance(o, str)
-    else:
-        return isinstance(o, bytes)
+    return isinstance(o, BytesType)
 
 _int_regex = re.compile(br"[-+]?\d+")
 _real_regex = re.compile(br"[-+]?(?:(\d+(\.\d*)?|\d*\.\d+)([eE][-+]?\d+)?)|[-+]?inf|[-+]?nan")
@@ -116,16 +134,10 @@ _date_regex = re.compile(r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})T"
 #date: d"YYYY-MM-DDTHH:MM:SS.FFFFFFZ"
 
 def _str_to_bytes(s):
-    if PY2: 
-        if isinstance(s, unicode):
-            return s.encode('utf-8')
-        else:
-            return s
+    if is_unicode(s):
+        return s.encode('utf-8')
     else:
-        if isinstance(s, str):
-            return s.encode('utf-8')
-        else:
-            return s
+        return s
 
 def _format_datestr(v):
     """
@@ -282,7 +294,37 @@ def remove_invalid_xml_bytes(b):
         return INVALID_XML_RE.sub('', b)
 
 
-class LLSDXMLFormatter(object):
+class LLSDBaseFormatter(object):
+    """
+    This base class cannot be instantiated on its own: it assumes a subclass
+    containing methods with canonical names specified in self.__init__(). The
+    role of this base class is to provide self.type_map based on the methods
+    defined in its subclass.
+    """
+    def __init__(self):
+        "Construct a new formatter dispatch table."
+        self.type_map = {
+            type(None) :          self.UNDEF,
+            bool :                self.BOOLEAN,
+            int :                 self.INTEGER,
+            LongType :            self.INTEGER,
+            float :               self.REAL,
+            uuid.UUID :           self.UUID,
+            binary :              self.BINARY,
+            str :                 self.STRING,
+            UnicodeType :         self.STRING,
+            uri :                 self.URI,
+            datetime.datetime :   self.DATE,
+            datetime.date :       self.DATE,
+            list :                self.ARRAY,
+            tuple :               self.ARRAY,
+            types.GeneratorType : self.ARRAY,
+            dict :                self.MAP,
+            LLSD :                self.LLSD
+            }
+
+
+class LLSDXMLFormatter(LLSDBaseFormatter):
     """
     Class which implements LLSD XML serialization..
 
@@ -295,39 +337,16 @@ class LLSDXMLFormatter(object):
     functionality.
     """
 
-    def __init__(self):
-        "Construct a new formatter."
-        self.type_map = {
-            type(None) : self.UNDEF,
-            bool : self.BOOLEAN,
-            int : self.INTEGER,
-            float : self.REAL,
-            uuid.UUID : self.UUID,
-            binary : self.BINARY,
-            str : self.STRING,
-            uri : self.URI,
-            datetime.datetime : self.DATE,
-            datetime.date : self.DATE,
-            list : self.ARRAY,
-            tuple : self.ARRAY,
-            types.GeneratorType : self.ARRAY,
-            dict : self.MAP,
-            LLSD : self.LLSD
-            }
-        if PY2:
-            self.type_map[long] = self.INTEGER
-            self.type_map[unicode] = self.STRING
-
     def _elt(self, name, contents=None):
         "Serialize a single element."
-        if contents in (None, u'', b''):
+        if not contents:
             return b"<%s />" % (name,)
         else:
             return b"<%s>%s</%s>" % (name, _str_to_bytes(contents), name)
 
     def xml_esc(self, v):
         "Escape string or unicode object v for xml output"
-        if is_str_or_unicode(v):
+        if is_string(v):
             # we need to drop these invalid characters because they
             # cannot be parsed (and encode() doesn't drop them for us)
             v = v.replace(u'\uffff', u'')
@@ -472,7 +491,8 @@ class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
         rv = []
         rv.append(b'<map>\n')
         self._indent_level = self._indent_level + 1
-        keys = list(v.keys())
+        # list of keys
+        keys = list(v)
         keys.sort()
         rv.extend([b"%s%s\n%s%s\n" %
                    (self._indent(),
@@ -516,35 +536,12 @@ def format_pretty_xml(something):
     """
     return LLSDXMLPrettyFormatter().format(something)
 
-class LLSDNotationFormatter(object):
+class LLSDNotationFormatter(LLSDBaseFormatter):
     """
     Serialize a python object as application/llsd+notation 
 
     See http://wiki.secondlife.com/wiki/LLSD#Notation_Serialization
     """
-    def __init__(self):
-        "Construct a notation serializer."
-        self.type_map = {
-            type(None) : self.UNDEF,
-            bool : self.BOOLEAN,
-            int : self.INTEGER,
-            float : self.REAL,
-            uuid.UUID : self.UUID,
-            binary : self.BINARY,
-            str : self.STRING,
-            uri : self.URI,
-            datetime.datetime : self.DATE,
-            datetime.date : self.DATE,
-            list : self.ARRAY,
-            tuple : self.ARRAY,
-            types.GeneratorType : self.ARRAY,
-            dict : self.MAP,
-            LLSD : self.LLSD
-        }
-        if PY2:
-            self.type_map[long] = self.INTEGER
-            self.type_map[unicode] = self.STRING
-
     def LLSD(self, v):
         return self._generate(v.thing)
     def UNDEF(self, v):
@@ -559,6 +556,14 @@ class LLSDNotationFormatter(object):
     def REAL(self, v):
         return b"r%r" % v
     def UUID(self, v):
+        # latin-1 is the byte-to-byte encoding, mapping \x00-\xFF ->
+        # \u0000-\u00FF. It's also the fastest encoding, I believe, from
+        # https://docs.python.org/3/library/codecs.html#encodings-and-unicode
+        # UUID doesn't like the hex to be a bytes object, so I have to
+        # convert it to a string. I chose latin-1 to exactly match the old
+        # error behavior in case someone passes an invalid hex string, with
+        # things other than 0-9a-fA-F, so that they will fail in the UUID
+        # decode, rather than with a UnicodeError.
         return b"u%s" % str(v).encode('latin-1')
     def BINARY(self, v):
         return b'b64"' + base64.b64encode(v).strip() + b'"'
@@ -573,7 +578,7 @@ class LLSDNotationFormatter(object):
         return b"[%s]" % b','.join([self._generate(item) for item in v])
     def MAP(self, v):
         return b"{%s}" % b','.join([b"'%s':%s" % (_str_to_bytes(key).replace(b"\\", b"\\\\").replace(b"'", b"\\'"), self._generate(value))
-             for key, value in list(v.items())])
+             for key, value in v.items()])
 
     def _generate(self, something):
         "Generate notation from a single python object."
@@ -619,23 +624,29 @@ def _hex_as_nybble(hex):
     else:
         raise LLSDParseError('Invalid hex character: %s' % hex)
 
-class LLSDBinaryParser(object):
-    """
-    Parse application/llsd+binary to a python object.
 
-    See http://wiki.secondlife.com/wiki/LLSD#Binary_Serialization
+class LLSDBaseParser(object):
+    """
+    Utility methods useful for parser subclasses.
     """
     def __init__(self):
-        pass
+        self._buffer = b''
+        self._index  = 0
 
     def _error(self, message, offset=0):
         try:
-            byte = _buffer[_index+offset]
-        except:
+            byte = self._buffer[self._index+offset]
+        except IndexError:
             byte = None
         raise LLSDParseError("%s at byte %d: %s" % (message, self._index+offset, byte))
 
     def _peek(self, num=1):
+        if num < 0:
+            # There aren't many ways this can happen. The likeliest is that
+            # we've just read garbage length bytes from a binary input string.
+            # We happen to know that lengths are encoded as 4 bytes, so back
+            # off by 4 bytes to try to point the user at the right spot.
+            self._error("Invalid length field %d" % num, -4)
         if self._index + num > len(self._buffer):
             self._error("Trying to read past end of buffer")
         return self._buffer[self._index:self._index + num]
@@ -644,6 +655,105 @@ class LLSDBinaryParser(object):
         chars = self._peek(num)
         self._index += num
         return chars
+
+    # map char following escape char to corresponding character
+    _escaped = {
+        b'a': b'\a',
+        b'b': b'\b',
+        b'f': b'\f',
+        b'n': b'\n',
+        b'r': b'\r',
+        b't': b'\t',
+        b'v': b'\v',
+        }
+
+    def _parse_string_delim(self, delim):
+        "Parse a delimited string."
+        parts = bytearray()
+        found_escape = False
+        found_hex = False
+        found_digit = False
+        byte = 0
+        while True:
+            cc = self._getc()
+            if found_escape:
+                if found_hex:
+                    if found_digit:
+                        found_escape = False
+                        found_hex = False
+                        found_digit = False
+                        byte <<= 4
+                        byte |= _hex_as_nybble(cc)
+                        parts.append(byte)
+                        byte = 0
+                    else:
+                        found_digit = True
+                        byte = _hex_as_nybble(cc)
+                elif cc == b'x':
+                    found_hex = True
+                else:
+                    found_escape = False
+                    # escape char preceding anything other than the chars in
+                    # _escaped just results in that same char without the
+                    # escape char
+                    parts.extend(self._escaped.get(cc, cc))
+            elif cc == b'\\':
+                found_escape = True
+            elif cc == delim:
+                break
+            else:
+                parts.extend(cc)
+        try:
+            return parts.decode('utf-8')
+        except UnicodeDecodeError as exc:
+            self._error(exc)
+
+
+class LLSDBinaryParser(LLSDBaseParser):
+    """
+    Parse application/llsd+binary to a python object.
+
+    See http://wiki.secondlife.com/wiki/LLSD#Binary_Serialization
+    """
+    def __init__(self):
+        super(LLSDBinaryParser, self).__init__()
+        # One way of dispatching based on the next character we see would be a
+        # dict lookup, and indeed that's the best way to express it in source.
+        _dispatch_dict = {
+            b'{': self._parse_map,
+            b'[': self._parse_array,
+            b'!': lambda: None,
+            b'0': lambda: False,
+            b'1': lambda: True,
+            # 'i' = integer
+            b'i': lambda: struct.unpack("!i", self._getc(4))[0],
+            # 'r' = real number
+            b'r': lambda: struct.unpack("!d", self._getc(8))[0],
+            # 'u' = uuid
+            b'u': lambda: uuid.UUID(bytes=self._getc(16)),
+            # 's' = string
+            b's': self._parse_string,
+            # delimited/escaped string
+            b"'": lambda: self._parse_string_delim(b"'"),
+            b'"': lambda: self._parse_string_delim(b'"'),
+            # 'l' = uri
+            b'l': lambda: uri(self._parse_string()),
+            # 'd' = date in seconds since epoch
+            b'd': self._parse_date,
+            # 'b' = binary
+            # *NOTE: if not self._keep_binary, maybe have a binary placeholder
+            # which has the length.
+            b'b': lambda: binary(self._parse_string_raw()) if self._keep_binary else None,
+            }
+        # But in fact it should be even faster to construct a list indexed by
+        # ord(char). Start by filling it with the 'else' case. Use offset=-1
+        # because by the time we perform this lookup, we've scanned past the
+        # lookup char.
+        self._dispatch = 256*[lambda: self._error("invalid binary token", -1)]
+        # Now use the entries in _dispatch_dict to set the corresponding
+        # entries in _dispatch.
+        for c, func in _dispatch_dict.items():
+            self._dispatch[ord(c)] = func
 
     def parse(self, buffer, ignore_binary = False):
         """
@@ -664,50 +774,12 @@ class LLSDBinaryParser(object):
     def _parse(self):
         "The actual parser which is called recursively when necessary."
         cc = self._getc()
-        if cc == b'{':
-            try:
-                return self._parse_map()
-            except IndexError:
-                self._error("Found unterminated map ")
-        elif cc == b'[':
-            return self._parse_array()
-        elif cc == b'!':
-            return None
-        elif cc == b'0':
-            return False
-        elif cc == b'1':
-            return True
-        elif cc == b'i':
-            # b'i' = integer
-            return struct.unpack("!i", self._getc(4))[0]
-        elif cc == (b'r'):
-            # b'r' = real number
-            return struct.unpack("!d", self._getc(8))[0]
-        elif cc == b'u':
-            # b'u' = uuid
-            return uuid.UUID(bytes=self._getc(16))
-        elif cc == b's':
-            # b's' = string
-            return self._parse_string()
-        elif cc in (b"'", b'"'):
-            # delimited/escaped string
-            return self._parse_string_delim(cc)
-        elif cc == b'l':
-            # b'l' = uri
-            return uri(self._parse_string())
-        elif cc == (b'd'):
-            # b'd' = date in seconds since epoch
-            seconds = struct.unpack("<d", self._getc(8))[0]
-            return datetime.datetime.utcfromtimestamp(seconds)
-        elif cc == b'b':
-            b = binary(self._parse_string_raw())
-            if self._keep_binary:
-                return b
-            # *NOTE: maybe have a binary placeholder which has the
-            # length.
-            return None
-        else:
+        try:
+            func = self._dispatch[ord(cc)]
+        except IndexError:
             self._error("invalid binary token", -1)
+        else:
+            return func()
 
     def _parse_map(self):
         "Parse a single llsd map"
@@ -762,61 +834,17 @@ class LLSDBinaryParser(object):
         rv = self._getc(size)
         return rv
 
-    def _parse_string_delim(self, delim):
-        "Parse a delimited string."
-        parts = bytearray()
-        found_escape = False
-        found_hex = False
-        found_digit = False
-        byte = 0
-        while True:
-            cc = self._getc()
-            if found_escape:
-                if found_hex:
-                    if found_digit:
-                        found_escape = False
-                        found_hex = False
-                        found_digit = False
-                        byte <<= 4
-                        byte |= _hex_as_nybble(cc)
-                        parts.append(byte)
-                        byte = 0
-                    else:
-                        found_digit = True
-                        byte = _hex_as_nybble(cc)
-                elif cc == b'x':
-                    found_hex = True
-                else:
-                    if cc == b'a':
-                        parts.extend(b'\a')
-                    elif cc == b'b':
-                        parts.extend(b'\b')
-                    elif cc == b'f':
-                        parts.extend(b'\f')
-                    elif cc == b'n':
-                        parts.extend(b'\n')
-                    elif cc == b'r':
-                        parts.extend(b'\r')
-                    elif cc == b't':
-                        parts.extend(b'\t')
-                    elif cc == b'v':
-                        parts.extend(b'\v')
-                    else:
-                        parts.extend(cc)
-                    found_escape = False
-            elif cc == b'\\':
-                found_escape = True
-            elif cc == delim:
-                break
-            else:
-                parts.extend(cc)
+    def _parse_date(self):
+        seconds = struct.unpack("<d", self._getc(8))[0]
         try:
-            return parts.decode('utf-8')
-        except UnicodeDecodeError as exc:
-            self._error(exc)
+            return datetime.datetime.utcfromtimestamp(seconds)
+        except OverflowError as exc:
+            # A garbage seconds value can cause utcfromtimestamp() to raise
+            # OverflowError: timestamp out of range for platform time_t
+            self._error(exc, -8)
 
 
-class LLSDNotationParser(object):
+class LLSDNotationParser(LLSDBaseParser):
     """
     Parse LLSD notation.
 
@@ -835,8 +863,49 @@ class LLSDNotationParser(object):
     * binary: b##"ff3120ab1" | b(size)"raw data"
     """
     def __init__(self):
-        "Construct a notation parser"
-        pass
+        super(LLSDNotationParser, self).__init__()
+        # Like LLSDBinaryParser, we want to dispatch based on the current
+        # character.
+        _dispatch_dict = {
+            # map
+            b'{': self._parse_map,
+            # array
+            b'[': self._parse_array,
+            # undefined -- have to eat the '!'
+            b'!': lambda: self._skip_then(None),
+            # false -- have to eat the '0'
+            b'0': lambda: self._skip_then(False),
+            # true -- have to eat the '1'
+            b'1': lambda: self._skip_then(True),
+            # false, must check for F|f|false|FALSE
+            b'F': lambda: self._get_re("'false'", _false_regex, False),
+            b'f': lambda: self._get_re("'false'", _false_regex, False),
+            # true, must check for T|t|true|TRUE
+            b'T': lambda: self._get_re("'true'", _true_regex, True),
+            b't': lambda: self._get_re("'true'", _true_regex, True),
+            # 'i' = integer
+            b'i': self._parse_integer,
+            # 'r' = real number
+            b'r': self._parse_real,
+            # 'u' = uuid
+            b'u': self._parse_uuid,
+            # string
+            b"'": self._parse_string,
+            b'"': self._parse_string,
+            b's': self._parse_string,
+            # 'l' = uri
+            b'l': self._parse_uri,
+            # 'd' = date in seconds since epoch
+            b'd': self._parse_date,
+            # 'b' = binary
+            b'b': self._parse_binary,
+            }
+        # Like LLSDBinaryParser, construct a lookup list from this dict. Start
+        # by filling with the 'else' case.
+        self._dispatch = 256*[lambda: self._error("Invalid notation token")]
+        # Then fill in specific entries based on the dict above.
+        for c, func in _dispatch_dict.items():
+            self._dispatch[ord(c)] = func
 
     def parse(self, buffer, ignore_binary = False):
         """
@@ -853,21 +922,6 @@ class LLSDNotationParser(object):
         self._index = 0
         return self._parse()
 
-    def _error(self, message):
-        raise LLSDParseError("%s at index %d" % (message, self._index))
-
-    def _peek(self, num=1):
-        if self._index == len(self._buffer):
-            self._error("Unexpected end of data")
-        if self._index + num > len(self._buffer):
-            self._error("Trying to read past end of buffer")
-        return self._buffer[self._index:self._index + num]
-
-    def _getc(self, num=1):
-        chars = self._peek(num)
-        self._index += num
-        return chars
-
     def _get_until(self, delim):
         start = self._index
         end = self._buffer.find(delim, start)
@@ -877,73 +931,35 @@ class LLSDNotationParser(object):
             self._index = end + 1
             return self._buffer[start:end]
 
-    def _get_re(self, regex):
+    def _skip_then(self, value):
+        # We've already _peek()ed at the current character, which is how we
+        # decided to call this method. Skip past it and return constant value.
+        self._getc()
+        return value
+
+    def _get_re(self, desc, regex, override=None):
         match = re.match(regex, self._buffer[self._index:])
         if not match:
-            return None
+            self._error("Invalid %s token" % desc)
         else:
             self._index += match.end()
-            return match.group(0)
+            return override if override is not None else match.group(0)
 
     def _parse(self):
         "The notation parser workhorse."
         cc = self._peek()
-        if cc == b'{':
-            # map
-            return self._parse_map()
-        elif cc == b'[':
-            # array
-           return self._parse_array()
-        elif cc == b'!':
-            # undefined
-            self._getc() # eat the b'!'
-            return None
-        elif cc == b'0':
-            # false
-            self._getc() # eat the b'0'
-            return False
-        elif cc == b'1':
-            # true
-            self._getc() # eat the b'1'
-            return True
-        elif cc in (b'F', b'f'):
-            # false, must check for F|f|false|FALSE
-            if self._get_re(_false_regex) is None:
-                self._error("Expected 'false' token")
-            return False
-        elif cc in (b'T', b't'):
-            # true, must check for T|t|true|TRUE
-            if self._get_re(_true_regex) is None:
-                self._error("Expected 'true' token")
-            return True
-        elif cc == b'i':
-            # b'i' = integer
-            return self._parse_integer()
-        elif cc == (b'r'):
-            # b'r' = real number
-            return self._parse_real()
-        elif cc == b'u':
-            # b'u' = uuid
-            return self._parse_uuid()
-        elif cc in (b"'", b'"', b's'):
-            # string
-            return self._parse_string()
-        elif cc == b'l':
-            # b'l' = uri
-            return self._parse_uri()
-        elif cc == (b'd'):
-            # b'd' = date in seconds since epoch
-            return self._parse_date()
-        elif cc == b'b':
-            return self._parse_binary()
-       
-        # output error if the token wasn't handled
-        self._error("Invalid token %d" % ord(cc))
+        try:
+            func = self._dispatch[ord(cc)]
+        except IndexError:
+            # output error if the token was out of range
+            self._error("Invalid notation token")
+        else:
+            return func()
 
     def _parse_binary(self):
         "parse a single binary object."
         
-        self._getc()    # eat the beginning b'b'
+        self._getc()    # eat the beginning 'b'
         cc = self._peek()
         if cc == b'(':
             # parse raw binary
@@ -973,8 +989,14 @@ class LLSDNotationParser(object):
         else:
             # get the encoding base
             base = self._getc(2)
-            if base not in (b'16', b'64'):
-                self._error('Found unsupported binary encoding')
+            try:
+                decoder = {
+                    b'16': base64.b16decode,
+                    b'64': base64.b64decode,
+                    }[base]
+            except KeyError:
+                self._error("Parser doesn't support base %s encoding" %
+                            base.decode('latin-1'))
 
             # grab the double quote
             q = self._getc()
@@ -985,14 +1007,7 @@ class LLSDNotationParser(object):
             encoded = self._get_until(q)
 
             try:
-                if base == b'16':
-                    # parse base16 encoded data
-                    return binary(base64.b16decode(encoded or b''))
-                elif base == b'64':
-                    # parse base64 encoded data
-                    return binary(base64.b64decode(encoded or b''))
-                elif base == b'85':
-                    self._error("Parser doesn't support base85 encoding")
+                return binary(decoder(encoded or b''))
             except binascii.Error as exc:
                 # convert exception class so it's more catchable
                 self._error("Encoded binary data: " + str(exc))
@@ -1009,7 +1024,7 @@ class LLSDNotationParser(object):
         rv = {}
         key = b''
         found_key = False
-        self._getc()   # eat the beginning b'{'
+        self._getc()   # eat the beginning '{'
         cc = self._peek()
         while (cc != b'}'):
             if cc is None:
@@ -1027,7 +1042,7 @@ class LLSDNotationParser(object):
                 self._getc()    # eat the space
                 pass
             elif cc == b':':
-                self._getc()    # eat the b':'
+                self._getc()    # eat the ':'
                 value = self._parse()
                 rv[key] = value
                 found_key = False
@@ -1047,7 +1062,7 @@ class LLSDNotationParser(object):
         array: [ object, object, object ]
         """
         rv = []
-        self._getc()    # eat the beginning b'['
+        self._getc()    # eat the beginning '['
         cc = self._peek()
         while (cc != b']'):
             if cc is None:
@@ -1065,35 +1080,30 @@ class LLSDNotationParser(object):
 
     def _parse_uuid(self):
         "Parse a uuid."
-        self._getc()    # eat the beginning b'u'
+        self._getc()    # eat the beginning 'u'
+        # see comment on LLSDNotationFormatter.UUID() re use of latin-1
         return uuid.UUID(hex=self._getc(36).decode('latin-1'))
 
     def _parse_uri(self):
         "Parse a URI."
-        self._getc()    # eat the beginning b'l'
+        self._getc()    # eat the beginning 'l'
         return uri(self._parse_string())
 
     def _parse_date(self):
         "Parse a date."
-        self._getc()    # eat the beginning b'd'
+        self._getc()    # eat the beginning 'd'
         datestr = self._parse_string()
         return _parse_datestr(datestr)
 
     def _parse_real(self):
         "Parse a floating point number."
-        self._getc()    # eat the beginning b'r'
-        match = self._get_re(_real_regex)
-        if match == None:
-            self._error("Invalid real token")
-        return float(match)
+        self._getc()    # eat the beginning 'r'
+        return float(self._get_re("real", _real_regex))
 
     def _parse_integer(self):
         "Parse an integer."
-        self._getc()    # eat the beginning b'i'
-        match = self._get_re(_int_regex)
-        if match == None:
-            self._error("Invalid integer token")
-        return int(match)
+        self._getc()    # eat the beginning 'i'
+        return int(self._get_re("integer", _int_regex))
 
     def _parse_string(self):
         """
@@ -1104,7 +1114,8 @@ class LLSDNotationParser(object):
         rv = ""
         delim = self._peek()
         if delim in (b"'", b'"'):
-            rv = self._parse_string_delim()
+            delim = self._getc()        # eat the beginning delim
+            rv = self._parse_string_delim(delim)
         elif delim == b's':
             rv = self._parse_string_raw()
         else:
@@ -1112,71 +1123,13 @@ class LLSDNotationParser(object):
 
         return rv
 
-    def _parse_string_delim(self):
-        """
-        Parse a delimited string
-
-        string: "g'day 'un" | 'have a "nice" day'
-        """
-        parts = bytearray()
-        found_escape = False
-        found_hex = False
-        found_digit = False
-        byte = 0
-        delim = self._getc()    # get the delimeter
-        while True:
-            cc = self._getc()
-            if found_escape:
-                if found_hex:
-                    if found_digit:
-                        found_escape = False
-                        found_hex = False
-                        found_digit = False
-                        byte <<= 4
-                        byte |= _hex_as_nybble(cc)
-                        parts.append(byte)
-                        byte = 0
-                    else:
-                        found_digit = True
-                        byte = _hex_as_nybble(cc)
-                elif cc == b'x':
-                    found_hex = True
-                else:
-                    if cc == b'a':
-                        parts.extend(b'\a')
-                    elif cc == b'b':
-                        parts.extend(b'\b')
-                    elif cc == b'f':
-                        parts.extend(b'\f')
-                    elif cc == b'n':
-                        parts.extend(b'\n')
-                    elif cc == b'r':
-                        parts.extend(b'\r')
-                    elif cc == b't':
-                        parts.extend(b'\t')
-                    elif cc == b'v':
-                        parts.extend(b'\v')
-                    else:
-                        parts.extend(cc)
-                    found_escape = False
-            elif cc == b'\\':
-                found_escape = True
-            elif cc == delim:
-                break
-            else:
-                parts.extend(cc)
-        try:
-            return parts.decode('utf-8')
-        except UnicodeDecodeError as exc:
-            raise LLSDParseError(exc)
-
     def _parse_string_raw(self):
         """
         Parse a sized specified string.
 
         string: s(size)"raw data"
         """ 
-        self._getc()    # eat the beginning b's'
+        self._getc()    # eat the beginning 's'
         # Read the (size) portion.
         cc = self._getc()
         if cc != b'(':
@@ -1230,7 +1183,7 @@ def _format_binary_recurse(something):
             return b'1'
         else:
             return b'0'
-    elif is_int_or_long(something):
+    elif is_integer(something):
         try:
             return b'i' + struct.pack('!i', something)
         except (OverflowError, struct.error) as exc:
@@ -1244,7 +1197,7 @@ def _format_binary_recurse(something):
         return b'u' + something.bytes
     elif isinstance(something, binary):
         return b'b' + struct.pack('!i', len(something)) + something
-    elif is_str_or_unicode(something):
+    elif is_string(something):
         something = _str_to_bytes(something)
         return b's' + struct.pack('!i', len(something)) + something
     elif isinstance(something, uri):

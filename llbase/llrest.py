@@ -30,8 +30,11 @@ from llbase import llsd
 from xml.etree import cElementTree as ElementTree
 from contextlib import contextmanager
 
-if llsd.PY2:
-    input = raw_input
+try:
+    user_input = raw_input
+except NameError:
+    # Python 3
+    user_input = input
 
 class RESTError(Exception):
     """Describes an error from a RESTService request"""
@@ -226,7 +229,7 @@ class RESTService(object):
         """
         from getpass import getpass
 
-        username = self.username if self.username else input("\n%s username: " % self.name)
+        username = self.username if self.username else user_input("\n%s username: " % self.name)
         password = self.password if self.password else getpass("%s password for '%s': " % (self.name, username))
         return ( username, password )
 

@@ -254,7 +254,7 @@ class LLSDFuzzer(object):
     def permute_string(self, val):
         """Generates variations on a given string or unicode.  All
         generated values are strings/unicodes."""
-        assert llsd.is_str_or_unicode(val)
+        assert llsd.is_string(val)
         def string_strgen(length = None):
             if self.random_boolean():
                 return self.random_printable(length)
@@ -306,7 +306,8 @@ class LLSDFuzzer(object):
     def _permute_map_permute_value(self, val):
         if len(val) == 0:
             return {}
-        k = self.r.choice(list(val.keys()))
+        # choose one of the keys from val
+        k = self.r.choice(list(val))
         permuted = val.copy()
         permuted[k] = next(self.structure_fuzz(val[k]))
         return permuted
@@ -314,7 +315,8 @@ class LLSDFuzzer(object):
     def _permute_map_key_delete(self, val):
         if len(val) == 0:
             return {}
-        k = self.r.choice(list(val.keys()))
+        # choose one of the keys from val
+        k = self.r.choice(list(val))
         permuted = val.copy()
         permuted.pop(k, None)
         return permuted
@@ -322,7 +324,8 @@ class LLSDFuzzer(object):
     def _permute_map_new_key(self, val):
         permuted = val.copy()
         if len(val) > 0 and self.random_boolean():
-            new_key = self.permute_string(self.r.choice(list(val.keys())))
+            # choose one of the keys from val
+            new_key = self.permute_string(self.r.choice(list(val)))
         else:
             new_key = self.random_unicode()
 
@@ -332,7 +335,8 @@ class LLSDFuzzer(object):
     def _permute_map_permute_key_names(self, val):
         if len(val) == 0:
             return {}
-        k = self.r.choice(list(val.keys()))
+        # choose one of the keys from val
+        k = self.r.choice(list(val))
         k = self.permute_string(k)
         permuted = val.copy()
         v = permuted.pop(k, None)
@@ -397,22 +401,21 @@ class LLSDFuzzer(object):
         return permuted
             
     permuters = {
-        type(None):permute_undef,
-        bool: permute_boolean,
-        int: permute_integer,
-        float: permute_real,
-        uuid.UUID: permute_uuid,
-        str: permute_string,
-        llsd.binary: permute_binary,
-        datetime: permute_date,
-        date: permute_date,
-        llsd.uri: permute_uri,
-        dict: permute_map,
-        list: permute_array,
-        tuple: permute_array}
-    if llsd.PY2:
-        permuters[long] = permute_integer
-        permuters[unicode] = permute_string
+        type(None):       permute_undef,
+        bool:             permute_boolean,
+        int:              permute_integer,
+        llsd.LongType:    permute_integer,
+        float:            permute_real,
+        uuid.UUID:        permute_uuid,
+        str:              permute_string,
+        llsd.UnicodeType: permute_string,
+        llsd.binary:      permute_binary,
+        datetime:         permute_date,
+        date:             permute_date,
+        llsd.uri:         permute_uri,
+        dict:             permute_map,
+        list:             permute_array,
+        tuple:            permute_array}
 
     def structure_fuzz(self, starting_structure):
         """ Generates a series of Python structures

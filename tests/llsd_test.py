@@ -261,7 +261,7 @@ class LLSDNotationUnitTest(unittest.TestCase):
         python_valid_date = datetime(2006, 2, 1, 14, 29, 53, 460000)
         python_valid_date_no_float = datetime(2006, 2, 1, 14, 29, 53)
         python_valid_date_zero_seconds = datetime(2006, 2, 1, 14, 29, 0)
-        python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 0o5)
+        python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 5)
         python_valid_date_19th_century = datetime(1833,2,1)
 
         python_blank_date = datetime(1970, 1, 1)
@@ -571,7 +571,9 @@ class LLSDXMLUnitTest(unittest.TestCase):
 
     def testCllsd(self):
         import sys
-        # 
+        #
+        if not llsd.PY2:
+            raise SkipTest('the C extension module is only supported for Python 2')
         if sys.platform.lower().startswith('win'):
             raise SkipTest('the C extension module can only be tested on non-windows platform')
         self.assert_(llsd.cllsd is not None)
@@ -812,7 +814,7 @@ class LLSDXMLUnitTest(unittest.TestCase):
 
         python_valid_date = datetime(2006, 2, 1, 14, 29, 53, 460000)
         python_valid_date_no_fractional = datetime(2006, 2, 1, 14, 29, 53)
-        python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 0o5)
+        python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 5)
         python_19th_century_date = datetime(1853, 2, 1)
         python_blank_date = datetime(1970, 1, 1)
         
@@ -1841,7 +1843,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
 
         python_valid_date = datetime(2006, 2, 1, 14, 29, 53, 460000)
         python_valid_date_no_fractional = datetime(2006, 2, 1, 14, 29, 53)
-        python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 0o5)
+        python_valid_date_filled = datetime(2006, 2, 1, 14, 29, 5)
         python_blank_date = datetime(1970, 1, 1)
         python_19th_century_date = datetime(1853, 2, 1)
         self.assertXMLRoundtrip(python_valid_date,
@@ -2319,7 +2321,7 @@ class LLSDFuzzTest(unittest.TestCase):
             * date objects -> datetime objects (parser only produces datetimes)
             * nan converted to None (just because nan's are incomparable)
             """
-            if llsd.is_str_or_unicode(s):
+            if llsd.is_string(s):
                 return s
             if isnan(s):
                 return None
@@ -2351,7 +2353,7 @@ class LLSDFuzzTest(unittest.TestCase):
             """
             if isnan(s):
                 return None
-            if llsd.is_int_or_long(s):
+            if llsd.is_integer(s):
                 if (s > (2<<30) - 1 or
                     s < -(2<<30)):
                     return struct.unpack('!i', struct.pack('!i', s))[0]
@@ -2383,7 +2385,7 @@ class LLSDFuzzTest(unittest.TestCase):
             * date objects -> datetime objects (parser only produces datetimes)
             * nan converted to None (just because nan's are incomparable)
             """
-            if llsd.is_str_or_unicode(s):
+            if llsd.is_string(s):
                 s = llsd.remove_invalid_xml_bytes(s)
                 s = self.newline_re.sub('\n', s)
                 if llsd.is_unicode(s):

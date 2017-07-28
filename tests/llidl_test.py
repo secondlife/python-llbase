@@ -137,6 +137,8 @@ class LLIDLTypeTests(unittest.TestCase):
         self.assert_(v.match(10.0))
         self.assert_(v.incompatible(3.14))
         if llsd.PY2:
+            # In Python 2, this would require a 'long', but it fits in a
+            # Python 3 'int' and hence is not incompatible().
             self.assert_(v.incompatible(6.02e23))
         self.assert_(v.has_defaulted(""))
         self.assert_(v.match("0"))

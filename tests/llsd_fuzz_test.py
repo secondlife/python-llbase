@@ -51,7 +51,7 @@ class Random(Base):
 
     def test_random_integer(self):
         for i in range(10):
-            self.assert_(llsd.is_int_or_long(self.lf.random_integer()))
+            self.assert_(llsd.is_integer(self.lf.random_integer()))
 
     def test_random_real(self):
         for i in range(10):
@@ -102,8 +102,9 @@ class Random(Base):
             generated = self.lf.random_map()
             self.assert_(isinstance(generated, dict))
             self.assert_(len(generated) > 0)
-            for k in generated.keys():
-                self.assert_(llsd.is_str_or_unicode(k))
+            # iterate through keys
+            for k in generated:
+                self.assert_(llsd.is_string(k))
                 
     def test_random_array(self):
         for i in range(10):
@@ -128,7 +129,7 @@ class Permute(Base):
 
     def test_permute_integer(self):        
         for i in self.permute(self.lf.permute_integer, 1):
-            self.assert_(llsd.is_int_or_long(i))
+            self.assert_(llsd.is_integer(i))
 
     def test_permute_real(self):
         for i in self.permute(self.lf.permute_real, 1.0):
@@ -140,9 +141,9 @@ class Permute(Base):
             
     def test_permute_string(self):
         for i in self.permute(self.lf.permute_string, 'abc'):
-            self.assert_(llsd.is_str_or_unicode(i))
+            self.assert_(llsd.is_string(i))
         for i in self.permute(self.lf.permute_string, u'abc'):
-            self.assert_(llsd.is_str_or_unicode(i))
+            self.assert_(llsd.is_string(i))
     
     def test_permute_binary(self):
         for i in self.permute(self.lf.permute_binary, llsd.binary(b'123')):
@@ -178,7 +179,7 @@ class Fuzz(Base):
         if self.type_map is None:
             self.type_map = llsd.LLSDXMLFormatter().type_map
         self.assert_(type(obj) in self.type_map, repr(obj))
-        if not llsd.is_str_or_unicode(obj):
+        if not llsd.is_string(obj):
             try:
                 for x in obj:
                     self.recursive_type_check(x)
@@ -190,7 +191,7 @@ class Fuzz(Base):
         """ Returns true if the object has a NaN value somewhere in it."""
         if is_nan(obj):
             return True
-        if not llsd.is_str_or_unicode(obj):
+        if not llsd.is_string(obj):
             try:
                 for x in obj:
                     if self.contains_nan(x):

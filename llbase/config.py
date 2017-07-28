@@ -198,7 +198,7 @@ class Config(object):
         """
         if isinstance(new_conf, dict):
             overrides = new_conf
-        elif llsd.is_str_or_unicode(new_conf):
+        elif llsd.is_string(new_conf):
             config_file = open(new_conf, 'rb')
             overrides = llsd.parse(config_file.read())
             config_file.close()

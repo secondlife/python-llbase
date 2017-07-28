@@ -40,7 +40,7 @@ from . import llsd
 from . import lluuid
 
 NoneType = type(None)
-StringTypes = (type(''), type(u''))
+StringTypes = llsd.StringTypes
 
 @total_ordering
 class _Result(object):
@@ -598,7 +598,8 @@ class _MapMatcher(Value):
             except MatchErrorStack as e:
                 e.push(vtype=self.__class__, val=name)
                 raise e
-        for name in actual.keys():
+        # iterates through keys
+        for name in actual:
             if name not in self._members:
                 r &= ADDITIONAL
                 if raise_level is not None and r < raise_level:
@@ -706,7 +707,8 @@ class Suite(object):
             refs |= v._variants_referenced()
         for w in self._responses.values():
             refs |= w._variants_referenced()
-        return refs - set(self._variants.keys())
+        # set of keys
+        return refs - set(self._variants)
             
     def match_request(self, name, *args, **kwargs):
         """Compare an LLSD value to a resource's request description"""
