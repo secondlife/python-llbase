@@ -2375,7 +2375,8 @@ class LLSDFuzzTest(unittest.TestCase):
 
     newline_re = re.compile(r'[\r\n]+')
     def test_xml_roundtrip(self):
-        raise SkipTest('Fails because fuzz generates invalid unicode sequences')
+        if (llsd.PY2):
+            raise SkipTest('Fails because fuzz generates invalid unicode sequences on Python 2')
         def normalize(s):
             """ Certain transformations of input data are permitted by
             the spec; this function normalizes a python data structure

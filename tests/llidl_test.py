@@ -140,6 +140,8 @@ class LLIDLTypeTests(unittest.TestCase):
             # In Python 2, this would require a 'long', but it fits in a
             # Python 3 'int' and hence is not incompatible().
             self.assert_(v.incompatible(6.02e23))
+        else:
+            self.assert_(v.match(6.02e23))
         self.assert_(v.has_defaulted(""))
         self.assert_(v.match("0"))
         self.assert_(v.match("1"))
@@ -148,6 +150,8 @@ class LLIDLTypeTests(unittest.TestCase):
         self.assert_(v.incompatible("3.14"))
         if llsd.PY2:
             self.assert_(v.incompatible("6.02e23"))
+        else:
+            self.assert_(v.match("6.02e23"))
         self.assert_(v.incompatible("blob"))
         self.assert_(v.incompatible(_dateToday()))
         self.assert_(v.incompatible(_uuid()))
