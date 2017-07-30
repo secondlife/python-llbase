@@ -1,20 +1,15 @@
 #!/usr/bin/make -f
 # -*- makefile -*-
 
-#
-# OPS-1487 - we're building this on Python 2.6, only, for now.
-# 
-#  This will need to be reverted post-wheezy.
-#  
 # PYTHON_VERSIONS := $(shell pyversions -vr)
-PYTHON_VERSIONS := 2.6
+PYTHON_VERSIONS := 2.7
 
 INSTALL_TARGETS := $(addprefix install-version-,$(PYTHON_VERSIONS))
 SOURCE_TARGETS := $(addprefix source-version-,$(PYTHON_VERSIONS))
 BUILD_TARGETS := $(addprefix build-version-,$(PYTHON_VERSIONS))
 TEST_TARGETS := $(addprefix test-version-,$(PYTHON_VERSIONS))
 RPM_TARGETS := $(addprefix rpm-version-,$(PYTHON_VERSIONS))
-VERSION=0.2.3
+
 DESTDIR=/
 NOSETESTS=`which nosetests`
 
@@ -35,6 +30,7 @@ $(SOURCE_TARGETS): source-version-%:
 test: $(TEST_TARGETS)
 
 $(TEST_TARGETS): test-version-%: build-version-%
+	test -r "$(NOSETESTS)" || exit 1; \
 	for entry in build/lib.*-$*/llbase; \
 	do \
 	  lib=$$(dirname $$entry); \

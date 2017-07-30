@@ -30,6 +30,12 @@ from llbase import llsd
 from xml.etree import cElementTree as ElementTree
 from contextlib import contextmanager
 
+try:
+    user_input = raw_input
+except NameError:
+    # Python 3
+    user_input = input
+
 class RESTError(Exception):
     """Describes an error from a RESTService request"""
     def __init__(self, service, url, status, msg):
@@ -61,7 +67,7 @@ class RESTEncodingBase(object):
     def encode(self, data):
         raise NotImplementedError
 
-class RESTEncoding:
+class RESTEncoding(object):
     """Classes that define the encoding/decoding for a RESTService"""
     class LLSD(RESTEncodingBase):
         def set_accept_header(self, session):
@@ -223,7 +229,7 @@ class RESTService(object):
         """
         from getpass import getpass
 
-        username = self.username if self.username else raw_input("\n%s username: " % self.name)
+        username = self.username if self.username else user_input("\n%s username: " % self.name)
         password = self.password if self.password else getpass("%s password for '%s': " % (self.name, username))
         return ( username, password )
 
@@ -244,7 +250,7 @@ class RESTService(object):
 
     def _url(self,query):
         """Use whichever of self.baseurl and query isn't empty. If they're both present, join them with '/'"""
-        return '/'.join(itertools.ifilter(None, (self.baseurl, query)))
+        return '/'.join(filter(None, (self.baseurl, query)))
 
     def get(self, query, params={}, **requests_params):
         """ Execute a GET request query against the service

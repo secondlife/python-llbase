@@ -27,6 +27,7 @@
 Types as well as parsing and formatting functions for handling LLSD.
 """
 from __future__ import print_function
+from __future__ import division
 
 from datetime import datetime, date
 import os.path
@@ -36,6 +37,7 @@ import unittest
 import uuid
 
 from llbase import llsd
+from nose import SkipTest
 
 values = (
     '&<>',
@@ -44,7 +46,7 @@ values = (
     uuid.UUID(int=0),
     ['thing', 123, 1.34],
     sys.maxsize + 10,
-    llsd.binary('foo'),
+    llsd.binary(b'foo'),
     {u'f&\u1212': 3},
     3.1,
     True,
@@ -55,21 +57,31 @@ values = (
 
 class CLLSDTest(unittest.TestCase):
     """
-    This class aggreates all the test cases for the C extension cllsd.
+    This class aggregates all the test cases for the C extension cllsd.
     The performance comparision between c extension and pure python of
     each value type is done in separate method.
     """
+    def get_cllsd(self):
+        try:
+            from llbase import _cllsd
+        except ImportError:
+            # We expect to be able to import _cllsd in Python 2, except for
+            # Windows.
+            if not llsd.PY2:
+                raise SkipTest('_cllsd not supported in Python 3')
+            if sys.platform.lower().startswith('win'):
+                raise SkipTest('_cllsd not supported on Windows')
+            # oh oh, something's actually wrong here
+            raise
+        
+        return _cllsd
+
     def runValueTest(self, v, times, debug=False):
         """
         Uility method to run performance comparision on passed in value.
         It will use passed-in value to construct a large llsd object.
         """
-        # check whether it's windows platform first
-        if sys.platform.lower().startswith('win'):
-            print("C extension is not supported on Windows. Test abort.")
-            return
-        
-        import llbase._cllsd as cllsd
+        cllsd = self.get_cllsd()
         
         if debug:
             print('%r => %r' % (v, cllsd.llsd_to_xml(v)))
@@ -190,12 +202,7 @@ class CLLSDTest(unittest.TestCase):
         """
         Test serialization of a date before the year 1900
         """
-        # check whether it's windows platform first
-        if sys.platform.lower().startswith('win'):
-            print("C extension is not supported on Windows. Test abort.")
-            return
-        
-        import llbase._cllsd as cllsd
+        cllsd = self.get_cllsd()
        
         a = [[{'a': values[12]}]]
         b = [[{'a': datetime(1066, 1, 1, 0, 0)}]]
