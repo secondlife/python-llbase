@@ -130,7 +130,10 @@ class RESTEncoding(object):
             # Don't make llbase unconditionally depend on beautifulsoup4:
             # put that on the consumer who chooses this codec.
             global BeautifulSoup
-            from bs4 import BeautifulSoup
+            try:
+                from bs4 import BeautifulSoup
+            except ImportError as err:
+                raise ImportError("%s\nUse 'pip install beautifulsoup4'" % err)
 
         def set_accept_header(self, session):
             session.headers['Accept'] = 'text/html'
