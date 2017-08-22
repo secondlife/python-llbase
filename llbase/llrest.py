@@ -153,8 +153,9 @@ class RESTEncoding(object):
             # The above reasoning seems perfectly sound. However, when we use
             # this HTML codec to GET from TeamCity's REST API (which sometimes
             # emits HTML, as when retrieving a build artifact), passing the
-            # above Content-Type header produces a 500 error! So... skip it.
-            del session.headers["Content-Type"]
+            # above Content-Type header produces a 500 error! So... skip it,
+            # if present.
+            session.headers.pop("Content-Type", None)
 
         def encode(self, data):
             return data
@@ -334,8 +335,12 @@ class RESTService(object):
                 return self.codec.decode(response)
             except Exception as err:
                 raise RESTError(self.name, response.request.url, response.status_code,
-                                '%s: %s decoding response from url "%s":\n%s\nresponse data:\n%s'
-                                % (self.name, err.__class__.__name__, response.request.url,
+                                '%s: %s while %s decoding response from url "%s":\n'
+                                '%s\n'
+                                'response data:\n'
+                                '%s'
+                                % (self.name, err.__class__.__name__,
+                                   self.codec.__class__.__name__, response.request.url,
                                    err, response.text))
 
     def set_codec(self, codec):
