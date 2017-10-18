@@ -1,3 +1,12 @@
+llbase (1.0.1) stable; urgency=low
+
+  * Fixed minor bug in tkrestservice: under Python 2, failed to fall back
+    to tkSimpleDialog. Turns out that (lowercase) tkinter and
+    tkinter.simpledialog both exist, but the latter fails to provide
+    askstring().
+
+ -- Nat Goodspeed <nat@lindenlab.com>  Wed, 18 Oct 2017 16:26:00 -0400
+
 llbase (1.0.0) stable; urgency=low
 
   * Thanks to Tapple Gao, made llbase compatible with both Python 2 and 3

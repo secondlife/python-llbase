@@ -12,10 +12,11 @@ $/LicenseInfo$
 from __future__ import absolute_import
 
 try:
-    from tkinter import Tk, simpledialog
+    from tkinter import Tk
+    from tkinter.simpledialog import askstring
 except ImportError: # Python 2
     from Tkinter import Tk
-    import tkSimpleDialog as simpledialog
+    from tkSimpleDialog import askstring
 
 from .llrest import RESTService, RESTError
 import os
@@ -52,15 +53,15 @@ class TkRESTService(RESTService):
         username, password = self.username, self.password
 
         if username is None:
-            username = simpledialog.askstring(title, "%s username:" % self.name)
+            username = askstring(title, "%s username:" % self.name)
             if username is None:
                 # user clicked Cancel
                 raise RESTError(self.name, '', '000', "Prompt for username canceled")
 
         if password is None:
-            password = simpledialog.askstring(title,
-                                                "%s password for '%s':" % (self.name, username),
-                                                show='*')
+            password = askstring(title,
+                                 "%s password for '%s':" % (self.name, username),
+                                 show='*')
             if password is None:
                 # user clicked Cancel
                 raise RESTError(self.name, '', '000', "Prompt for password canceled")
