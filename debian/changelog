@@ -1,3 +1,11 @@
+llbase (1.0.2) stable; urgency=high
+
+  * Fixed changed behavior of pip: setup.py's setup() call's
+    setup_requires keyword doesn't work any more. Moved 'nose' package to
+    tests_require keyword instead.
+
+ -- Nat Goodspeed <nat@lindenlab.com>  Fri, 27 Oct 2017 15:40:00 -0400
+
 llbase (1.0.1) stable; urgency=low
 
   * Fixed minor bug in tkrestservice: under Python 2, failed to fall back
