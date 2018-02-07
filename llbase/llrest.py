@@ -190,7 +190,7 @@ class RESTService(object):
     Any other keyword parameters are passed through to the requests.Session() 
     """
 
-    def __init__(self, name, baseurl, codec=RESTEncoding.LLSD, authenticated=True, username=None, password=None, proxy_hostport=None, **session_params):
+    def __init__(self, name, baseurl, codec=RESTEncoding.LLSD, authenticated=True, username=None, password=None, proxy_hostport=None, cert=None, **session_params):
         self.name = name
         self.baseurl = baseurl
 
@@ -200,6 +200,8 @@ class RESTService(object):
 
         self.session.proxies = { 'http':'http://%s' % proxy_hostport, 'https':'http://%s' % proxy_hostport } \
           if proxy_hostport else None
+        if cert:
+            self.session.cert = cert 
 
         # defer setting the Session credentials to the request methods,
         # so that the _get_credentials method can provide prompting for them
