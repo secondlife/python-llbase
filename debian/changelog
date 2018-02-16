@@ -1,3 +1,9 @@
+llbase (1.1.0) stable; urgency=high
+
+  * Added json log formatter (lljsonlog.py)
+
+ -- Oz Linden <oz@lindenlab.com>  Fri, 16 Feb 2018 11:57:00 -0400
+
 llbase (1.0.2) stable; urgency=high
 
   * Fixed changed behavior of pip: setup.py's setup() call's
