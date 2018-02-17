@@ -10,7 +10,7 @@ import traceback
 # Use handler.setFormatter() to set a handler's formatter to a `JsonFormatter` instance:
 #
 #     log_handler = logging.StreamHandler(sys.stderr)
-#     console_hdlr.setFormatter( JsonFormatter() )
+#     log_handler.setFormatter( JsonFormatter() )
 #
 # For general documentation on how to use custom log formatters, see
 # https://docs.python.org/2/library/logging.html?highlight=logging#logging.Handler.setFormatter
