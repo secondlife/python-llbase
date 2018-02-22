@@ -124,42 +124,6 @@ class RESTEncoding(object):
         def encode(self, data):
             return ElementTree.tostring(data)
 
-    class HTML(RESTEncodingBase):
-        def __init__(self):
-            # Only import BeautifulSoup if explicitly instantiated.
-            # Don't make llbase unconditionally depend on beautifulsoup4:
-            # put that on the consumer who chooses this codec.
-            global BeautifulSoup
-            try:
-                from bs4 import BeautifulSoup
-            except ImportError as err:
-                raise ImportError("%s\nUse 'pip install beautifulsoup4'" % err)
-
-        def set_accept_header(self, session):
-            session.headers['Accept'] = 'text/html'
-
-        def decode(self, response):
-            try:
-                return BeautifulSoup(response.content, 'html.parser')
-            except Exception as err:
-                raise ValueError("%s: %s parsing response as HTML: %s"
-                                 % (self.__class__.__name__, err.__class__.__name__, err))
-
-        def set_content_type_header(self, session):
-            # We have a no-op encode() method, so we'll pass caller's
-            # structured data directly into requests function, which will
-            # cause it to be form-encoded.
-##          session.headers['Content-Type'] = 'x-www-form-urlencoded'
-            # The above reasoning seems perfectly sound. However, when we use
-            # this HTML codec to GET from TeamCity's REST API (which sometimes
-            # emits HTML, as when retrieving a build artifact), passing the
-            # above Content-Type header produces a 500 error! So... skip it,
-            # if present.
-            session.headers.pop("Content-Type", None)
-
-        def encode(self, data):
-            return data
-
 class RESTService(object):
     """
     Implements a simple wrapper for calling a REST interface that returns
