@@ -532,10 +532,6 @@ class LLSDXMLUnitTest(unittest.TestCase):
     and format_xml (i.e. same as LLSD.as_xml(something).
     Note that test scenarios for the same input type are all put into single test method. And utility
     method assert_xml_roundtrip is used to test parse_xml and as_xml at the same time.
-
-    On the non-windows platform, tests in this class will be run based on the c
-    extension cllsd.c. Pure python implemention will be tested in
-    LLSDPythonXMLUnitTest.
     """
     def setUp(self):
         """
@@ -568,15 +564,6 @@ class LLSDXMLUnitTest(unittest.TestCase):
                             self.strip(xml))
             self.assertEqual(self.strip(xml),
                              self.strip(self.llsd.as_xml(parsed_py)))
-
-    def testCllsd(self):
-        import sys
-        #
-        if not llsd.PY2:
-            raise SkipTest('the C extension module is only supported for Python 2')
-        if sys.platform.lower().startswith('win'):
-            raise SkipTest('the C extension module can only be tested on non-windows platform')
-        self.assert_(llsd.cllsd is not None)
 
     def testBytesConversion(self):
         """
@@ -1585,23 +1572,11 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
     def setUp(self):
         """
         Set up the tests by creating a LLSD object and assign to seld.llsd.
-
-        Note the cllsd is disabled when setUp to make sure pure python implementation
-        for serialization is used. It will be reset when tearDown.
         """
         self.llsd = llsd.LLSD()
-        
-        # null out cllsd so that we test the pure python
-        # implementation.
-        self._cllsd = llsd.cllsd
-        llsd.cllsd = None
 
     def tearDown(self):
-        """
-        Restore the cllsd.
-        """
-        # restore the cllsd module if it was there in the first place
-        llsd.cllsd = self._cllsd
+        pass
 
     def assertXMLRoundtrip(self, py, xml, ignore_rounding=False):
         """
@@ -2416,15 +2391,6 @@ class Regression(unittest.TestCase):
 
     def test_no_newline_in_base64_xml(self):
         n = llsd.format_xml(llsd.binary(b'\0'*100))
-        self.assertEqual(n.replace(b'\n', b''), n)
-
-    def test_no_newline_in_base64_xml_sans_cllsd(self):
-        try:
-            real_cllsd = llsd.cllsd
-            llsd.cllsd = None
-            n = llsd.format_xml(llsd.binary(b'\0'*100))
-        finally:
-            llsd.cllsd = real_cllsd
         self.assertEqual(n.replace(b'\n', b''), n)
 
 if __name__ == '__main__':

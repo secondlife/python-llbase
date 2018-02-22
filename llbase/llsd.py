@@ -52,14 +52,6 @@ from .fastest_elementtree import ElementTreeError, fromstring
 
 PY2 = sys.version_info[0] == 2
 
-try:
-    if PY2:
-        from . import _cllsd as cllsd
-    else:
-        cllsd = None
-except ImportError:
-    cllsd = None
-
 XML_MIME_TYPE = 'application/llsd+xml'
 BINARY_MIME_TYPE = 'application/llsd+binary'
 NOTATION_MIME_TYPE = 'application/llsd+notation'
@@ -413,8 +405,6 @@ class LLSDXMLFormatter(LLSDBaseFormatter):
         :param something: A python object (typically a dict) to be serialized.
         :returns: Returns an XML formatted string.
         """
-        if cllsd:
-            return cllsd.llsd_to_xml(something)
         return self._format(something)
 
 _g_xml_formatter = None
@@ -445,9 +435,8 @@ class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
     standard python xml.dom DOM::toprettyxml() method which does not
     preserve significant whitespace. 
 
-    This class is not necessarily suited for serializing very large
-    objects. It is not optimized by the cllsd module, and sorts on
-    dict (llsd map) keys alphabetically to ease human reading.
+    This class is not necessarily suited for serializing very large objects.
+    It sorts on dict (llsd map) keys alphabetically to ease human reading.
     """
     def __init__(self, indent_atom = None):
         "Construct a pretty serializer."
@@ -531,8 +520,8 @@ def format_pretty_xml(something):
     standard python xml.dom DOM::toprettyxml() method which does not
     preserve significant whitespace. 
     This function is not necessarily suited for serializing very large
-    objects. It is not optimized by the cllsd module, and sorts on
-    dict (llsd map) keys alphabetically to ease human reading.
+    objects. It sorts on dict (llsd map) keys alphabetically to ease human
+    reading.
     """
     return LLSDXMLPrettyFormatter().format(something)
 
