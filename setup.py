@@ -65,6 +65,17 @@ setup(
     author_email='oz@lindenlab.com',
     url='http://bitbucket.org/lindenlab/llbase/',
     description='Base Linden Lab Python modules',
+    long_description="""
+===============
+Linden Lab Base
+===============
+
+This project manages sources for some utility modules used by `Linden Lab <https://www.lindenlab.com>`_, the creators of `Second Life <https://www.secondlife.com>`_.
+
+This source is available as open source; for details on licensing, see each file.
+
+The canonical project repository is https://bitbucket.org/lindenlab/llbase
+""",
     platforms=["any"],
     package_dir={PACKAGE_NAME:LLBASE_SOURCE},
     packages=[PACKAGE_NAME, PACKAGE_NAME + ".test"],
@@ -74,5 +85,5 @@ setup(
     install_requires=['requests'],
     cmdclass = {
                  'test': TestCommand,
-               }
+               },
     )
