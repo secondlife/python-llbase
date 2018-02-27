@@ -30,6 +30,7 @@ class LLJsonLogTester(unittest.TestCase):
         handler = logging.StreamHandler(self.stream)
         handler.setFormatter(JsonFormatter())
         self.logger.addHandler(handler)
+        self.logger.setLevel(logging.DEBUG)
 
     def tearDown(self):
         ##print("\ntearDown():", self.stream.getvalue(), file=sys.stderr)
