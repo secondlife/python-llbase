@@ -14,11 +14,11 @@ from __future__ import print_function
 
 import json
 import logging
-from StringIO import StringIO
 import sys
 import unittest
 
-from llbase.lljsonlog import JsonFormatter
+# use whichever StringIO implementation is used by lljsonlog
+from llbase.lljsonlog import JsonFormatter, StringIO
 
 class Error(Exception):
     pass

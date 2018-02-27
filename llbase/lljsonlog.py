@@ -4,9 +4,26 @@ import cgitb
 from datetime import datetime
 import json
 import logging
-from StringIO import StringIO
 import time
 import traceback
+
+try:
+    unicode
+except NameError:
+    # Python 3 compatibility: the type formerly known as unicode has become
+    # plain str, but in Python 2 land we need to still be able to invoke it as
+    # unicode.
+    unicode = str
+    # In Python 3, StringIO comes from the io module
+    from io import StringIO
+else:
+    # In Python 2, use "classic" StringIO. Even though Python 2.6 introduced
+    # an io.StringIO, the new StringIO.write() requires a unicode -- not str
+    # -- argument. But since all the write() calls we care about are within
+    # cgitb, which we don't control, we need something with a write() method
+    # accepting str. We could wrap io.StringIO; but given StringIO.StringIO,
+    # why bother?
+    from StringIO import StringIO
 
 # This module provides a Python logging formatter that serializes messages into a JSON object suitable for logging to BNW MMA.
 # 
