@@ -1,3 +1,9 @@
+llbase (1.1.2) unstable; urgency=low
+
+  * add long description for pypi.org
+
+ -- Scott Lawrence <oz@lindenlab.com>  Fri, 30 Mar 2018 10:12:38 -0400
+
 llbase (1.1.1) stable; urgency=low
 
   * Removed cllsd.c module and all references thereto.
