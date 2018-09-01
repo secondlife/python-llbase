@@ -37,13 +37,34 @@ except NameError:
     user_input = input
 
 class RESTError(Exception):
-    """Describes an error from a RESTService request"""
-    def __init__(self, service, url, status, msg):
+    """
+    Describes an error from a RESTService request
+
+    Pass:
+
+    service: the name of the RESTService instance generating the error
+    url:     the URL in question
+    status:  the HTTP status_code that failed
+    msg:     the relevant error message
+
+    'msg' will be prefixed with 'service:'.
+
+    'msg' can be complete as passed, or it can contain format string
+    references
+    https://docs.python.org/2/library/string.html#format-string-syntax
+    to {url} or {status} or any additional keyword argument passed to our
+    constructor.
+    """
+    def __init__(self, service, url, status, msg, **kwds):
+        # When you first enter a function, locals() contains only its args.
+        variables = locals().copy()
+        # Allow caller to supplement name references with whatever s/he wants.
+        variables.update(kwds)
         self.service = service
         self.url = url
         self.status = status
-        self.msg = msg
-        super(RESTError, self).__init__(msg)
+        self.msg = ': '.join((service, msg.format(variables)))
+        super(RESTError, self).__init__(self.msg)
 
 class RESTEncodingBase(object):
     """Abstract base class for REST response types"""
@@ -238,29 +259,13 @@ class RESTService(object):
             whose value describes the requested url and the error.
         """
         # Execute the request and deal with any connection or server errors
-        try:
-            url=self._url(query)
+        url=self._url(query)
+        with self._error_handling(url):
             response = self.session.get(url, auth=self._get_credentials(), params=params, **requests_params)
             response.raise_for_status() # turns any error response into an exception
 
-        except requests.exceptions.HTTPError as err:
-            if response.status_code == 404:
-                raise RESTError(self.name, response.request.url, response.status_code,
-                                "%s: URL (%s) Not found" % (self.name, response.request.url))
-            else:
-                raise RESTError(self.name, response.request.url, response.status_code,
-                                '%s: HTTP error: %s\n  for url: %s' % (self.name, err, response.request.url))
-        except requests.exceptions.ConnectionError as err:
-            raise RESTError(self.name, url, 499,
-                            '%s: HTTP Connection error: %s\n  for url: %s' % (self.name, err, url))
-
         # Request returned success code, so decode the body per the service configuration
-        try:
-            return self.codec.decode(response)
-        except ValueError as err:
-            raise RESTError(self.name, response.request.url, response.status_code,
-                            '%s: response error from url "%s":\n%s\nresponse data:\n%s'
-                            % (self.name, response.request.url, err, response.text))
+        return self._decode(response)
 
     def post(self, path, data, **requests_params):
         """
@@ -279,35 +284,58 @@ class RESTService(object):
         """
         url = self._url(path)
 
-        try:
-            encoded = self.codec.encode(data)
-        except Exception as err:
-            raise RESTError(self.name, url, '000',
-                            '%s: %s encoding data: %s\n  for url: %s' %
-                            (self.name, err.__class__.__name__, err, url))
-
-        try:
-            response = self.session.post(url, data=encoded, auth=self._get_credentials(), **requests_params)
+        with self._error_handling(url):
+            response = self.session.post(url, data=self._encode(url, data),
+                                         auth=self._get_credentials(), **requests_params)
             response.raise_for_status()
-
-        except requests.RequestException as err:
-            raise RESTError(self.name, response.request.url, response.status_code,
-                            "%s: %s: %s\n  for url: %s" %
-                            (self.name, err.__class__.__name__, err, url))
 
         # if the response body is non-empty, decode it
         if response.content:
-            try:
-                return self.codec.decode(response)
-            except Exception as err:
-                raise RESTError(self.name, response.request.url, response.status_code,
-                                '%s: %s while %s decoding response from url "%s":\n'
-                                '%s\n'
-                                'response data:\n'
-                                '%s'
-                                % (self.name, err.__class__.__name__,
-                                   self.codec.__class__.__name__, response.request.url,
-                                   err, response.text))
+            return self._decode(response)
+
+    def _encode(self, url, data):
+        try:
+            return self.codec.encode(data)
+        except Exception as err:
+            raise RESTError(self.name, url, '000',
+                            '{err.__class__.__name__} while {codec} encoding data: {err}\n'
+                            '  for url: {url}', err=err, codec=self.codec.__class__.__name__)
+
+    def _decode(self, response):
+        try:
+            return self.codec.decode(response)
+        except Exception as err:
+            raise RESTError(self.name, response.request.url, response.status_code,
+                            '{err.__class__.__name__} while {codec} decoding response from url "{url}":\n'
+                            '{err}\n'
+                            'response data:\n'
+                            '{text}', err=err, codec=self.codec.__class__.name,
+                            text=response.text)
+
+    @contextmanager
+    def _error_handling(self, url):
+        """
+        For internal use; unifies mapping requests.RequestException to RESTError.
+        """
+        try:
+            # execute the body of the 'with' statement
+            yield
+        except requests.exceptions.HTTPError as err:
+            if err.response.status_code == 404:
+                raise RESTError(self.name, err.response.request.url, err.response.status_code,
+                                "URL ({url}) Not found")
+            else:
+                raise RESTError(self.name, err.response.request.url, err.response.status_code,
+                                'HTTP error: {err}\n'
+                                '  for url: {url}', err=err)
+        except requests.exceptions.ConnectionError as err:
+            raise RESTError(self.name, url, 499,
+                            'HTTP Connection error: {err}\n'
+                            '  for url: {url}', err=err)
+        except requests.RequestException as err:
+            raise RESTError(self.name, err.response.request.url, err.response.status_code,
+                            "{err.__class__.__name__}: {err}\n"
+                            "  for url: {url}", err=err)
 
     def set_codec(self, codec):
         """
