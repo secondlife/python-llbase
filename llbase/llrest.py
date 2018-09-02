@@ -22,13 +22,14 @@
 ## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ## THE SOFTWARE.
 
-import sys
+from contextlib import contextmanager
 import itertools
 import json
-import requests
 from llbase import llsd
+from pprint import pformat
+import requests
+import sys
 from xml.etree import cElementTree as ElementTree
-from contextlib import contextmanager
 
 try:
     user_input = raw_input
@@ -377,19 +378,49 @@ class RESTService(object):
         except requests.exceptions.HTTPError as err:
             if err.response.status_code == 404:
                 raise RESTError(self.name, err.response.request.url, err.response.status_code,
-                                "URL ({url}) Not found")
+                                self._add_error(err.response,
+                                "URL ({url}) Not found"))
             else:
                 raise RESTError(self.name, err.response.request.url, err.response.status_code,
+                                self._add_error(err.response,
                                 'HTTP error: {err}\n'
-                                '  for url: {url}', err=err)
+                                '  for url: {url}', err=err))
         except requests.exceptions.ConnectionError as err:
+            # doubtful that ConnectionError produces any response content
             raise RESTError(self.name, url, 499,
                             'HTTP Connection error: {err}\n'
                             '  for url: {url}', err=err)
         except requests.RequestException as err:
             raise RESTError(self.name, err.response.request.url, err.response.status_code,
+                            self._add_error(err.response,
                             "{err.__class__.__name__}: {err}\n"
-                            "  for url: {url}", err=err)
+                            "  for url: {url}", err=err))
+
+    def _add_error(self, response, message):
+        """
+        Some services, in addition to returning an HTTP status code indicating
+        error, also provide a response body describing the nature of the
+        error. If so, append it to the text of our RESTError message.
+        """
+        # If there's no response body, return message unmodified.
+        if not response.content:
+            return message
+
+        # The response body may or may not be encoded as we expect. Try
+        # decoding it -- but in this case, a decode failure isn't an error.
+        try:
+            decoded = self.codec.decode(response)
+        except Exception:
+            # We don't care why it failed -- means it's not encoded as we
+            # expected. The likely meaning is that the message is simply
+            # formatted for a human reader instead of as JSON or whatever. In
+            # any case, append non-empty response text.
+            return '\n'.join((message, response.text))
+        else:
+            # Here we WERE able to decode the response, meaning it's probably
+            # structured Python data in some form. Use pformat() to aid
+            # human readability.
+            return '\n'.join((message, pformat(decoded)))
 
     def set_codec(self, codec):
         """
