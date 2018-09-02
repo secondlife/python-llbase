@@ -283,10 +283,54 @@ class RESTService(object):
         Any other keyword arguments are passed through to requests.post
         """
         url = self._url(path)
-
         with self._error_handling(url):
             response = self.session.post(url, data=self._encode(url, data),
                                          auth=self._get_credentials(), **requests_params)
+            response.raise_for_status()
+
+        # if the response body is non-empty, decode it
+        if response.content:
+            return self._decode(response)
+
+    def put(self, path, data, **requests_params):
+        """
+        Execute a PUT against the service
+
+        path:          url path extension
+                       if a baseurl was specified for the service, this is
+                       appended with '/'
+
+        data:          the PUT body
+                       This can be structured data, according to what the
+                       codec's encode() method expects. In particular, the XML
+                       codec expects an xml.etree.Element.
+
+        Any other keyword arguments are passed through to requests.put
+        """
+        url = self._url(path)
+        with self._error_handling(url):
+            response = self.session.put(url, data=self._encode(url, data),
+                                        auth=self._get_credentials(), **requests_params)
+            response.raise_for_status()
+
+        # if the response body is non-empty, decode it
+        if response.content:
+            return self._decode(response)
+
+    def delete(self, path, **requests_params):
+        """
+        Execute a DELETE against the service
+
+        path:          url path extension
+                       if a baseurl was specified for the service, this is
+                       appended with '/'
+
+        Any other keyword arguments are passed through to requests.delete
+        """
+        url = self._url(path)
+        with self._error_handling(url):
+            response = self.session.delete(url, auth=self._get_credentials(),
+                                           **requests_params)
             response.raise_for_status()
 
         # if the response body is non-empty, decode it
