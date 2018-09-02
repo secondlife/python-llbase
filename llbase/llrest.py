@@ -288,9 +288,8 @@ class RESTService(object):
                                          auth=self._get_credentials(), **requests_params)
             response.raise_for_status()
 
-        # if the response body is non-empty, decode it
-        if response.content:
-            return self._decode(response)
+        # decode the response body, if any
+        return self._decode(response)
 
     def put(self, path, data, **requests_params):
         """
@@ -313,9 +312,8 @@ class RESTService(object):
                                         auth=self._get_credentials(), **requests_params)
             response.raise_for_status()
 
-        # if the response body is non-empty, decode it
-        if response.content:
-            return self._decode(response)
+        # decode the response body, if any
+        return self._decode(response)
 
     def delete(self, path, **requests_params):
         """
@@ -333,9 +331,8 @@ class RESTService(object):
                                            **requests_params)
             response.raise_for_status()
 
-        # if the response body is non-empty, decode it
-        if response.content:
-            return self._decode(response)
+        # decode the response body, if any
+        return self._decode(response)
 
     def _encode(self, url, data):
         try:
@@ -346,6 +343,11 @@ class RESTService(object):
                             '  for url: {url}', err=err, codec=self.codec.__class__.__name__)
 
     def _decode(self, response):
+        # Don't bother passing an empty response body -- expected for most
+        # operations -- to our codec.
+        if not response.content:
+            return ""
+
         try:
             return self.codec.decode(response)
         except Exception as err:
