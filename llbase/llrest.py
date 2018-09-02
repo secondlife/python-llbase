@@ -351,12 +351,20 @@ class RESTService(object):
         try:
             return self.codec.decode(response)
         except Exception as err:
+            text = response.text
+            # Sometimes, as when we inadvertently reach a Google
+            # authentication page, instead of (say) JSON we get a whole ton of
+            # CSS + HTML. Building all that into the exception message doesn't
+            # actually clarify the nature of the problem.
+            limit = 512
+            if len(text) > limit:
+                text = text[:limit] + "..."
             raise RESTError(self.name, response.request.url, response.status_code,
                             '{err.__class__.__name__} while {codec} decoding response from url "{url}":\n'
                             '{err}\n'
                             'response data:\n'
                             '{text}', err=err, codec=self.codec.__class__.name,
-                            text=response.text)
+                            text=text)
 
     @contextmanager
     def _error_handling(self, url):
