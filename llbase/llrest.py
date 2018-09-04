@@ -64,7 +64,7 @@ class RESTError(Exception):
         self.service = service
         self.url = url
         self.status = status
-        self.msg = ': '.join((service, msg.format(variables)))
+        self.msg = ': '.join((service, msg.format(**variables)))
         super(RESTError, self).__init__(self.msg)
 
 class RESTEncodingBase(object):
@@ -185,7 +185,7 @@ class RESTService(object):
         self.set_codec(codec)
 
         self.session.proxies = { 'http':'http://%s' % proxy_hostport, 'https':'http://%s' % proxy_hostport } \
-          if proxy_hostport else None
+            if proxy_hostport else None
         if cert:
             self.session.cert = cert 
 
@@ -377,50 +377,75 @@ class RESTService(object):
             yield
         except requests.exceptions.HTTPError as err:
             if err.response.status_code == 404:
-                raise RESTError(self.name, err.response.request.url, err.response.status_code,
-                                self._add_error(err.response,
-                                "URL ({url}) Not found"))
+                self.RESTError_from_exc(self.name, err,
+                                        "URL ({url}) Not found")
             else:
-                raise RESTError(self.name, err.response.request.url, err.response.status_code,
-                                self._add_error(err.response,
-                                'HTTP error: {err}\n'
-                                '  for url: {url}', err=err))
+                self.RESTError_from_exc(self.name, err,
+                                        'HTTP error: {err}\n'
+                                        '  for url: {url}')
         except requests.exceptions.ConnectionError as err:
             # doubtful that ConnectionError produces any response content
             raise RESTError(self.name, url, 499,
                             'HTTP Connection error: {err}\n'
                             '  for url: {url}', err=err)
         except requests.RequestException as err:
-            raise RESTError(self.name, err.response.request.url, err.response.status_code,
-                            self._add_error(err.response,
-                            "{err.__class__.__name__}: {err}\n"
-                            "  for url: {url}", err=err))
+            self.RESTError_from_exc(self.name, err,
+                                    "{err.__class__.__name__}: {err}\n"
+                                    "  for url: {url}")
 
-    def _add_error(self, response, message):
+    def RESTError_from_exc(self, service, err, msg, **kwds):
         """
-        Some services, in addition to returning an HTTP status code indicating
-        error, also provide a response body describing the nature of the
-        error. If so, append it to the text of our RESTError message.
+        Return a RESTError instance populated with the url and status from the
+        RequestException passed as err. Also, if there is a response and its
+        body is non-empty, append the (decoded) response body to the message.
         """
-        # If there's no response body, return message unmodified.
-        if not response.content:
-            return message
+        # First, make sure the exception is available for message formatting.
+        kwds['err'] = err
 
-        # The response body may or may not be encoded as we expect. Try
-        # decoding it -- but in this case, a decode failure isn't an error.
+        # Does this exception have a response attribute?
         try:
-            decoded = self.codec.decode(response)
-        except Exception:
-            # We don't care why it failed -- means it's not encoded as we
-            # expected. The likely meaning is that the message is simply
-            # formatted for a human reader instead of as JSON or whatever. In
-            # any case, append non-empty response text.
-            return '\n'.join((message, response.text))
+            response = err.response
+            response.content
+        except AttributeError:
+            # there's no response attached to the exception, or the response
+            # has no content attribute
+            url = None
+            status = '000'
+
         else:
-            # Here we WERE able to decode the response, meaning it's probably
-            # structured Python data in some form. Use pformat() to aid
-            # human readability.
-            return '\n'.join((message, pformat(decoded)))
+            # there is a response, and it has a content attribute
+            url = response.request.url
+            status = response.status_code
+
+            # if the content is empty, don't mess with msg or kwds
+            if response.content:
+                # The response body may or may not be encoded as we expect. Try
+                # decoding it -- but in this case, a decode failure isn't an error.
+                try:
+                    decoded = self.codec.decode(response)
+                except Exception:
+                    # We don't care why it failed -- means it's not encoded as we
+                    # expected. The likely meaning is that the message is simply
+                    # formatted for a human reader instead of as JSON or whatever. In
+                    # any case, append non-empty response text.
+                    _text = response.text
+                else:
+                    # Here we WERE able to decode the response, meaning it's probably
+                    # structured Python data in some form. Use pformat() to aid
+                    # human readability.
+                    _text = pformat(decoded)
+
+                # Either way, append {_text} to the original message, and add
+                # _text to the available keywords. We do it this way instead
+                # of simply appending _text to msg because pformat() will
+                # produce curly braces, the content of which would be swallowed
+                # by formatting internal to RESTError's constructor.
+                msg = '\n'.join((msg, '{_text}'))
+                kwds['_text'] = _text
+
+        # Here we've either augmented msg and kwds, or we haven't. Either way,
+        # deliver the RESTError we promised.
+        raise RESTError(service=service, url=url, status=status, msg=msg, **kwds)
 
     def set_codec(self, codec):
         """
