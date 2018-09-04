@@ -79,6 +79,14 @@ class RESTEncodingBase(object):
         # pass set_codec() (or RESTService's constructor) a codec instance.
         # This supports the possible future case of a stateful codec.
         return self
+    @classmethod
+    def name(cls):
+        # Because we intentionally blur the distinction between passing a
+        # RESTEncodingBase subclass and passing an *instance* of such a
+        # subclass, for diagnostic purposes we want a method that will
+        # reliably report the name of either. This is that method.
+        return cls.__name__
+
     def set_accept_header(self, session): # session is the requests.Session object
         raise NotImplementedError
     def decode(self, response): # response is the requests.response object
@@ -343,7 +351,7 @@ class RESTService(object):
         except Exception as err:
             raise RESTError(self.name, url, '000',
                             '{err.__class__.__name__} while {codec} encoding data: {err}\n'
-                            '  for url: {url}', err=err, codec=self.codec.__class__.__name__)
+                            '  for url: {url}', err=err, codec=self.codec.name())
 
     def _decode(self, response):
         # Don't bother passing an empty response body -- expected for most
@@ -366,7 +374,7 @@ class RESTService(object):
                             '{err.__class__.__name__} while {codec} decoding response from url "{url}":\n'
                             '{err}\n'
                             'response data:\n'
-                            '{text}', err=err, codec=self.codec.__class__.name,
+                            '{text}', err=err, codec=self.codec.name(),
                             text=text)
 
     @contextmanager
