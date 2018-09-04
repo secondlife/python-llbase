@@ -380,10 +380,10 @@ class RESTService(object):
                 yield
         except requests.exceptions.HTTPError as err:
             if err.response.status_code == 404:
-                self.RESTError_from_exc(self.name, err,
+                self.RESTError_from_exc(url, err,
                                         "URL ({url}) Not found")
             else:
-                self.RESTError_from_exc(self.name, err,
+                self.RESTError_from_exc(url, err,
                                         'HTTP error: {err}\n'
                                         '  for url: {url}')
         except requests.exceptions.ConnectionError as err:
@@ -392,7 +392,7 @@ class RESTService(object):
                             'HTTP Connection error: {err}\n'
                             '  for url: {url}', err=err)
         except requests.RequestException as err:
-            self.RESTError_from_exc(self.name, err,
+            self.RESTError_from_exc(url, err,
                                     "{err.__class__.__name__}: {err}\n"
                                     "  for url: {url}")
 
@@ -415,11 +415,12 @@ class RESTService(object):
             if http_proxy is not None:
                 os.environ['http_proxy'] = http_proxy
 
-    def RESTError_from_exc(self, service, err, msg, **kwds):
+    def RESTError_from_exc(self, url, err, msg, **kwds):
         """
-        Return a RESTError instance populated with the url and status from the
-        RequestException passed as err. Also, if there is a response and its
-        body is non-empty, append the (decoded) response body to the message.
+        Return a RESTError instance populated with self.name, the passed url
+        and the status from the RequestException passed as err. Also, if there
+        is a response and its body is non-empty, append the (decoded) response
+        body to the message.
         """
         # First, make sure the exception is available for message formatting.
         kwds['err'] = err
@@ -427,20 +428,16 @@ class RESTService(object):
         # Does this exception have a response attribute?
         try:
             response = err.response
-            response.content
         except AttributeError:
-            # there's no response attached to the exception, or the response
-            # has no content attribute
-            url = None
+            # there's no response attached to the exception
             status = '000'
 
         else:
-            # there is a response, and it has a content attribute
-            url = response.request.url
-            status = response.status_code
+            # there is a response; doesn't necessarily imply a status_code
+            status = getattr(response, 'status_code', '000')
 
-            # if the content is empty, don't mess with msg or kwds
-            if response.content:
+            # only if there's a non-empty content attribute
+            if getattr(response, 'content', None):
                 # The response body may or may not be encoded as we expect. Try
                 # decoding it -- but in this case, a decode failure isn't an error.
                 try:
@@ -467,7 +464,7 @@ class RESTService(object):
 
         # Here we've either augmented msg and kwds, or we haven't. Either way,
         # deliver the RESTError we promised.
-        raise RESTError(service=service, url=url, status=status, msg=msg, **kwds)
+        raise RESTError(service=self.name, url=url, status=status, msg=msg, **kwds)
 
     def set_codec(self, codec):
         """
