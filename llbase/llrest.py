@@ -26,6 +26,7 @@ from contextlib import contextmanager
 import itertools
 import json
 from llbase import llsd
+import os
 from pprint import pformat
 import requests
 import sys
@@ -184,7 +185,8 @@ class RESTService(object):
         self.codec = None               # set_codec() returns previous self.codec
         self.set_codec(codec)
 
-        self.session.proxies = { 'http':'http://%s' % proxy_hostport, 'https':'http://%s' % proxy_hostport } \
+        self.session.proxies = { 'http': 'http://%s' % proxy_hostport,
+                                 'https':'http://%s' % proxy_hostport } \
             if proxy_hostport else None
         if cert:
             self.session.cert = cert 
@@ -373,8 +375,9 @@ class RESTService(object):
         For internal use; unifies mapping requests.RequestException to RESTError.
         """
         try:
-            # execute the body of the 'with' statement
-            yield
+            with self._hide_http_proxy():
+                # execute the body of the 'with' statement
+                yield
         except requests.exceptions.HTTPError as err:
             if err.response.status_code == 404:
                 self.RESTError_from_exc(self.name, err,
@@ -392,6 +395,25 @@ class RESTService(object):
             self.RESTError_from_exc(self.name, err,
                                     "{err.__class__.__name__}: {err}\n"
                                     "  for url: {url}")
+
+    @staticmethod
+    @contextmanager
+    def _hide_http_proxy():
+        """
+        The requests library is sensitive to the presence of http_proxy in the
+        environment. In fact, if http_proxy is visible to requests, any
+        proxy_hostport passed to __init__() is IGNORED. This context manager
+        temporarily hides http_proxy during the body of its 'with' statement.
+        """
+        # Remove http_proxy, if any, from this process's environment
+        http_proxy = os.environ.pop('http_proxy', None)
+        try:
+            # execute body of 'with' statement
+            yield
+        finally:
+            # restore http_proxy, if it was present to begin with
+            if http_proxy is not None:
+                os.environ['http_proxy'] = http_proxy
 
     def RESTError_from_exc(self, service, err, msg, **kwds):
         """
