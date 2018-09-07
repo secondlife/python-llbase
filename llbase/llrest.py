@@ -30,7 +30,20 @@ import os
 from pprint import pformat
 import requests
 import sys
+try:
+    # python 3
+    from urllib.parse import urlsplit, urlunsplit, SplitResult
+except ImportError:
+    # python 2
+    from urlparse import urlsplit, urlunsplit, SplitResult
 from xml.etree import cElementTree as ElementTree
+
+try:
+    unicode
+except NameError:
+    # In Python 3, str _is_ unicode; but for Python 2 it's still important to
+    # distinguish.
+    unicode = str
 
 try:
     user_input = raw_input
@@ -41,23 +54,25 @@ except NameError:
 class RESTError(Exception):
     """
     Describes an error from a RESTService request
-
-    Pass:
-
-    service: the name of the RESTService instance generating the error
-    url:     the URL in question
-    status:  the HTTP status_code that failed
-    msg:     the relevant error message
-
-    'msg' will be prefixed with 'service:'.
-
-    'msg' can be complete as passed, or it can contain format string
-    references
-    https://docs.python.org/2/library/string.html#format-string-syntax
-    to {url} or {status} or any additional keyword argument passed to our
-    constructor.
     """
     def __init__(self, service, url, status, msg, **kwds):
+        """
+        Pass:
+
+        service: the name of the RESTService instance generating the error
+        url:     the URL in question
+        status:  the HTTP status_code that failed
+        msg:     the relevant error message
+        kwds:    additional information to format into 'msg'
+
+        'msg' will be prefixed with 'service:'.
+
+        'msg' can be complete as passed, or it can contain format string
+        references
+        https://docs.python.org/2/library/string.html#format-string-syntax
+        to {url} or {status} or any additional keyword argument passed to our
+        constructor.
+        """
         # When you first enter a function, locals() contains only its args.
         variables = locals().copy()
         # Allow caller to supplement name references with whatever s/he wants.
@@ -173,19 +188,35 @@ class RESTService(object):
         log.error("Error checking for someid : %s" % err)
         raise
 
-    Parameters:
-    name:            used in generating error messages
-    baseurl:         a url prefix used for all requests to the service; may be an empty string
-    codec:           one of the constants defined by the RESTEncoding class - determines expected request/response encoding
-    authenticated:   a boolean: whether or not the service expects HTTP authentication (see get_credentials)
-    username:        the username to be used for HTTP authentication
-    password:        the password to be used for HTTP authentication
-    proxy_hostport:  an HTTP proxy hostname and port number (host:port) through which requests should be routed
-    
-    Any other keyword parameters are passed through to the requests.Session() 
+    To facilitate passing RESTService instances between unrelated modules,
+    each operation supports an optional basepath= keyword argument. If you
+    specify basepath='URL/path' instead of simply passing an operation-
+    specific suffix to baseurl, the basepath you specify *replaces* the path
+    part of the baseurl.
+
+    A particular script might instantiate a RESTService that identifies the
+    correct host, but appends 'httpAuth/app/rest' to the baseurl, since every
+    operation in that script requires that prefix. The script might pass that
+    RESTService to a function in a utility module that requires some
+    completely different URL path: a path that does NOT start with
+    'httpAuth/app/rest'. The utility function can pass its desired path as
+    basepath rather than the normal path argument, which avoids introducing an
+    undesired dependency between that module and the calling script.
     """
 
     def __init__(self, name, baseurl, codec=RESTEncoding.LLSD, authenticated=True, username=None, password=None, proxy_hostport=None, cert=None, **session_params):
+        """
+        Parameters:
+        name:            used in generating error messages
+        baseurl:         a url prefix used for all requests to the service; may be an empty string
+        codec:           one of the constants defined by the RESTEncoding class - determines expected request/response encoding
+        authenticated:   a boolean: whether or not the service expects HTTP authentication (see get_credentials)
+        username:        the username to be used for HTTP authentication
+        password:        the password to be used for HTTP authentication
+        proxy_hostport:  an HTTP proxy hostname and port number (host:port) through which requests should be routed
+
+        Any other keyword parameters are passed through to the requests.Session() 
+        """
         self.name = name
         self.baseurl = baseurl
 
@@ -250,17 +281,40 @@ class RESTService(object):
         else:
             return None
 
-    def _url(self,query):
-        """Use whichever of self.baseurl and query isn't empty. If they're both present, join them with '/'"""
-        return '/'.join(filter(None, (self.baseurl, query)))
+    def _url(self, basepath, path):
+        """
+        If basepath is None, the returned URL is (baseurl)/(path), allowing
+        for the possibility that either might be empty.
 
-    def get(self, query, params={}, **requests_params):
+        If basepath is valid, it overrides the path part of the baseurl. In
+        other words, the returned URL is composed of:
+
+        (baseurl scheme)://(baseurl host)/(basepath)/(path)
+        """
+        # if self.baseurl is None, use empty string instead
+        baseurl = self.baseurl or ""
+        if basepath:
+            # Python 2's urlparse.urlunsplit(), unlike every other operation
+            # that can mix str with unicode, complains if a SplitResult
+            # contains both types. To avoid that, uniformly convert to unicode.
+            
+            # perhaps oddly, this split/unsplit dodge works even if baseurl is
+            # the empty string
+            baseurl = urlunsplit(urlsplit(unicode(baseurl))._replace(path=unicode(basepath)))
+
+        # Use whichever of baseurl and path isn't empty. If they're both
+        # present, join them with '/'
+        return '/'.join(filter(None, (baseurl, path)))
+
+    def get(self, query, params={}, basepath=None, **requests_params):
         """ Execute a GET request query against the service
 
             query:     request url path extension
                        if a baseurl was specified for the service, this is concatenated to it with '/'
 
             params:    dict of query param names with values.
+
+            basepath:  replacement path part of baseurl
 
             Any other keyword arguments are passed through to requests.get
 
@@ -270,7 +324,7 @@ class RESTService(object):
             whose value describes the requested url and the error.
         """
         # Execute the request and deal with any connection or server errors
-        url=self._url(query)
+        url=self._url(basepath, query)
         with self._error_handling(url):
             response = self.session.get(url, auth=self._get_credentials(), params=params, **requests_params)
             response.raise_for_status() # turns any error response into an exception
@@ -278,7 +332,7 @@ class RESTService(object):
         # Request returned success code, so decode the body per the service configuration
         return self._decode(response)
 
-    def post(self, path, data, **requests_params):
+    def post(self, path, data, basepath=None, **requests_params):
         """
         Execute a POST against the service
 
@@ -291,9 +345,11 @@ class RESTService(object):
                        codec's encode() method expects. In particular, the XML
                        codec expects an xml.etree.Element.
 
+        basepath:      replacement path part of baseurl
+
         Any other keyword arguments are passed through to requests.post
         """
-        url = self._url(path)
+        url = self._url(basepath, path)
         with self._error_handling(url):
             response = self.session.post(url, data=self._encode(url, data),
                                          auth=self._get_credentials(), **requests_params)
@@ -302,7 +358,7 @@ class RESTService(object):
         # decode the response body, if any
         return self._decode(response)
 
-    def put(self, path, data, **requests_params):
+    def put(self, path, data, basepath=None, **requests_params):
         """
         Execute a PUT against the service
 
@@ -315,9 +371,11 @@ class RESTService(object):
                        codec's encode() method expects. In particular, the XML
                        codec expects an xml.etree.Element.
 
+        basepath:      replacement path part of baseurl
+
         Any other keyword arguments are passed through to requests.put
         """
-        url = self._url(path)
+        url = self._url(basepath, path)
         with self._error_handling(url):
             response = self.session.put(url, data=self._encode(url, data),
                                         auth=self._get_credentials(), **requests_params)
@@ -326,7 +384,7 @@ class RESTService(object):
         # decode the response body, if any
         return self._decode(response)
 
-    def delete(self, path, **requests_params):
+    def delete(self, path, basepath=None, **requests_params):
         """
         Execute a DELETE against the service
 
@@ -334,9 +392,11 @@ class RESTService(object):
                        if a baseurl was specified for the service, this is
                        appended with '/'
 
+        basepath:      replacement path part of baseurl
+
         Any other keyword arguments are passed through to requests.delete
         """
-        url = self._url(path)
+        url = self._url(basepath, path)
         with self._error_handling(url):
             response = self.session.delete(url, auth=self._get_credentials(),
                                            **requests_params)
