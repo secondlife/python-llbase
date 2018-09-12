@@ -1,3 +1,12 @@
+llbase (1.1.3) unstable; urgency=medium
+
+  * Added llrest.RESTService.put() and delete().
+  * Added basepath= optional param to RESTService operations.
+  * Improved error handling, notably by capturing body text provided with
+    status codes other than success.
+
+ -- Nat Goodspeed <nat@lindenlab.com>  Wed, 12 Sep 2018 09:09:00 -0400
+
 llbase (1.1.2) unstable; urgency=low
 
   * add long description for pypi.org
