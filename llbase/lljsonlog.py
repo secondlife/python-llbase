@@ -26,7 +26,7 @@ else:
     from StringIO import StringIO
 
 # This module provides a Python logging formatter that serializes messages into a JSON object suitable for logging to BNW MMA.
-# 
+#
 # Use handler.setFormatter() to set a handler's formatter to a `JsonFormatter` instance:
 #
 #     log_handler = logging.StreamHandler(sys.stderr)
@@ -36,7 +36,7 @@ else:
 # https://docs.python.org/2/library/logging.html?highlight=logging#logging.Handler.setFormatter
 #
 # In a Django project, specify it as a `json` formatter in the `LOGGING` config:
-# 
+#
 #     LOGGING = {
 #         'version': 1,
 #         'disable_existing_loggers': False,
@@ -62,9 +62,10 @@ else:
 UNINTERESTING_LOGRECORD_KEYS = {
     'args', 'created', 'exc_info', 'exc_text', 'filename', 'funcName', 'levelname', 'levelno',
     'lineno', 'module', 'msecs', 'msg', 'name', 'pathname', 'process', 'processName',
-    'relativeCreated', 'thread', 'threadName',
+    'relativeCreated', 'stack_info', 'thread', 'threadName',
 }
 """Uninteresting data found in a `logging.LogRecord` instance."""
+
 
 class JsonFormatter(logging.Formatter):
     """A `logging.Formatter` that formats records as JSON objects."""
