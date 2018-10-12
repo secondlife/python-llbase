@@ -48,7 +48,7 @@ else:
 #         'handlers': {
 #             'stdout': {
 #                 'level': 'DEBUG' if DEBUG else 'WARNING',
-#                 'class': 'logging.StreamHandler',
+#                 'class': 'llbase.logging.StreamHandler',
 #                 'formatter': 'json',
 #             },
 #         },
