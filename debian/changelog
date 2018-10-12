@@ -3,6 +3,7 @@ llbase (1.1.4) unstable; urgency=medium
   * Added "stack_info" to list of ignored fields in lljsonlog.JsonFormatter
     ("stack_info" is new in python3)
   * Updated documentation for setting up JsonFormatter in django.
+  * Tell the json library to sort keys in json going to logs.
 
  -- Logan Dethrow <log@lindenlab.com>  Fri, 12 Oct 2018 21:40:48 +0000
 

@@ -94,7 +94,7 @@ class JsonFormatter(logging.Formatter):
         data.update({k: v for k, v in record.__dict__.items()
                      if k not in UNINTERESTING_LOGRECORD_KEYS})
 
-        return json.dumps(data, default=repr)
+        return json.dumps(data, default=repr, sort_keys=True)
 
     def formatTime(self, record, datefmt=None):
         if datefmt:
