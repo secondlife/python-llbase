@@ -42,13 +42,13 @@ else:
 #         'disable_existing_loggers': False,
 #         'formatters': {
 #             'json': {
-#                 '()': 'lljsonlog.JsonFormatter',
+#                 '()': 'llbase.lljsonlog.JsonFormatter',
 #             },
 #         },
 #         'handlers': {
 #             'stdout': {
 #                 'level': 'DEBUG' if DEBUG else 'WARNING',
-#                 'class': 'llbase.logging.StreamHandler',
+#                 'class': 'logging.StreamHandler',
 #                 'formatter': 'json',
 #             },
 #         },
