@@ -1,3 +1,8 @@
+llbase (1.1.9) unstable; urgency=medium
+
+  * Modernize debian packaging and add python3 version of llbase package.
+
+ -- Log Linden <log@lindenlab.com>  Fri, 26 Oct 2018 22:29:49 +0000
 llbase (1.1.8) unstable; urgency=low
 
   * Added Python 3 compatability and warnings

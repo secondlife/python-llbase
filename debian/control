@@ -2,18 +2,31 @@ Source: llbase
 Section: python
 Priority: optional
 Maintainer: Nat Linden (nat@secondlife.com)
-Build-Depends: debhelper (>= 5.0.42), python-all-dev, python-central (>= 0.5.12), python (>= 2.6)
-Standards-Version: 3.7.2.2
-XS-Python-Version: all
+Build-Depends: debhelper (>= 9),
+ dh-python,
+ python-all,
+ python3-all,
+ python-setuptools,
+ python3-setuptools
+Standards-Version: 3.9.8 
+X-Python-Version: =2.7
+X-Python3-Version: >=3.4
 Homepage: http://bitbucket.org/lindenlab/llbase/
 
 Package: python-llbase
 Architecture: any
-Section: python
-Priority: optional
-Depends: python (>= 2.6), ${shlibs:Depends}, python-elementtree
-Recommends: python-celementtree
-Provides: ${python:Provides}
+Depends: ${python:Depends}, ${misc:depends}
 X-Python-Version: python (>= 2.6)
-Description: Base linden python modules
+Description: Base linden python modules (Python 2)
  Base linden python modules used in many python projects.
+ .
+ This package installs the library for Python 2.
+
+Package: python3-llbase
+Architecture: any
+Depends: ${python3:Depends}, ${misc:depends}
+X-Python-Version: python (>= 2.6)
+Description: Base linden python modules (Python 3)
+ Base linden python modules used in many python projects.
+ .
+ This package installs the library for Python 2.
