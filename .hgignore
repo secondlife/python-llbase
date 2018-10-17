@@ -12,6 +12,12 @@ debian/files
 debian/python-llbase
 debian/python-llbase.*.debhelper
 debian/python-llbase.substvars
+debian/python-llbase.debhelper.log
+debian/python3-llbase
+debian/python3-llbase.*.debhelper
+debian/python3-llbase.substvars
+debian/python3-llbase.debhelper.log
+.pybuild
 MANIFEST
 dist
 stage/
