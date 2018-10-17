@@ -6,6 +6,8 @@ Build-Depends: debhelper (>= 9),
  dh-python,
  python-all,
  python3-all,
+ python-nose,
+ python3-nose,
  python-setuptools,
  python3-setuptools
 Standards-Version: 3.9.8 
