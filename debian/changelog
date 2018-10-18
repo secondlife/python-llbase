@@ -1,3 +1,10 @@
+llbase (1.1.5) unstable; urgency=low
+
+  * Renamed build-cmd.sh to autobuild-build-cmd.sh
+  * Removed llbase/test/llsd_fuzz.py
+
+ -- Scott Lawrence <oz@lindenlab.com>  Thu, 08 Jun 2017 15:00:00 -0400
+
 llbase (1.1.4) unstable; urgency=medium
 
   * Added "stack_info" to list of ignored fields in lljsonlog.JsonFormatter
