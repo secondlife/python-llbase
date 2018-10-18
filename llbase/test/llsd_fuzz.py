@@ -294,7 +294,7 @@ class LLSDFuzzer(object):
         while True:
             try:
                 return self.r.choice(self.date_options)(self, val)    
-            except OverflowError:
+            except (OverflowError, OSError):
                 continue
         
     def permute_uri(self, val):
