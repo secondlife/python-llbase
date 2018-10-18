@@ -1,3 +1,8 @@
+llbase (1.1.6) unstable; urgency=medium
+
+  * Fixed problem with Python 3.4 (et al.) in which bytes interpolation
+    doesn't work
+
 llbase (1.1.5) unstable; urgency=low
 
   * Renamed build-cmd.sh to autobuild-build-cmd.sh

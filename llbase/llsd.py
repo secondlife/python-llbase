@@ -99,6 +99,62 @@ if PY2:
 else:
     BytesType = bytes
 
+try:
+    b'%s' % (b'yes',)
+except TypeError:
+    # There's a range of Python 3 versions, up through Python 3.4, for which
+    # bytes interpolation (bytes value with % operator) does not work. This
+    # hack can be removed once we no longer care about Python 3.4 -- in other
+    # words, once we're beyond jessie everywhere.
+    class B(object):
+        """
+        Instead of writing:
+        b'format string' % stuff
+        write:
+        B('format string') % stuff
+        This class performs the conversions necessary to support bytes
+        interpolation when the language doesn't natively support it.
+        (We considered naming this class b, but that would be too confusing.)
+        """
+        def __init__(self, fmt):
+            # Instead of storing the format string as bytes and converting it
+            # to string every time, convert initially and store the string.
+            try:
+                self.strfmt = fmt.decode('utf-8')
+            except AttributeError:
+                # caller passed a string literal rather than a bytes literal
+                self.strfmt = fmt
+
+        def __mod__(self, args):
+            # __mod__() is engaged for (self % args)
+            if not isinstance(args, tuple):
+                # Unify the tuple and non-tuple cases.
+                args = (args,)
+            # In principle, this is simple: convert everything to string,
+            # interpolate, convert back. It's complicated by the fact that we
+            # must handle non-bytes args.
+            strargs = []
+            for arg in args:
+                try:
+                    decoder = arg.decode
+                except AttributeError:
+                    # use arg exactly as is
+                    strargs.append(arg)
+                else:
+                    # convert from bytes to string
+                    strargs.append(decoder('utf-8'))
+            return (self.strfmt % tuple(strargs)).encode('utf-8')
+else:
+    # bytes interpolation Just Works
+    def B(fmt):
+        try:
+            # In the usual case, caller wrote B('fmt') rather than b'fmt'. But
+            # s/he really wants a bytes literal here. Encode the passed string.
+            return fmt.encode('utf-8')
+        except AttributeError:
+            # Caller wrote B(b'fmt')?
+            return fmt
+
 def is_integer(o):
     """ portable test if an object is like an int """
     return isinstance(o, IntTypes)
@@ -332,9 +388,9 @@ class LLSDXMLFormatter(LLSDBaseFormatter):
     def _elt(self, name, contents=None):
         "Serialize a single element."
         if not contents:
-            return b"<%s />" % (name,)
+            return B("<%s />") % (name,)
         else:
-            return b"<%s>%s</%s>" % (name, _str_to_bytes(contents), name)
+            return B("<%s>%s</%s>") % (name, _str_to_bytes(contents), name)
 
     def xml_esc(self, v):
         "Escape string or unicode object v for xml output"
@@ -380,7 +436,7 @@ class LLSDXMLFormatter(LLSDBaseFormatter):
     def MAP(self, v):
         return self._elt(
             b'map',
-            b''.join([b"%s%s" % (self._elt(b'key', self.xml_esc(key)),
+            b''.join([B("%s%s") % (self._elt(b'key', self.xml_esc(key)),
                                self._generate(value))
              for key, value in v.items()]))
 
@@ -466,7 +522,7 @@ class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
         rv = []
         rv.append(b'<array>\n')
         self._indent_level = self._indent_level + 1
-        rv.extend([b"%s%s\n" %
+        rv.extend([B("%s%s\n") %
                    (self._indent(),
                     self._generate(item))
                    for item in v])
@@ -483,7 +539,7 @@ class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
         # list of keys
         keys = list(v)
         keys.sort()
-        rv.extend([b"%s%s\n%s%s\n" %
+        rv.extend([B("%s%s\n%s%s\n") %
                    (self._indent(),
                     self._elt(b'key', key),
                     self._indent(),
@@ -541,9 +597,9 @@ class LLSDNotationFormatter(LLSDBaseFormatter):
         else:
             return b'false'
     def INTEGER(self, v):
-        return b"i%d" % v
+        return B("i%d") % v
     def REAL(self, v):
-        return b"r%r" % v
+        return B("r%r") % v
     def UUID(self, v):
         # latin-1 is the byte-to-byte encoding, mapping \x00-\xFF ->
         # \u0000-\u00FF. It's also the fastest encoding, I believe, from
@@ -553,20 +609,20 @@ class LLSDNotationFormatter(LLSDBaseFormatter):
         # error behavior in case someone passes an invalid hex string, with
         # things other than 0-9a-fA-F, so that they will fail in the UUID
         # decode, rather than with a UnicodeError.
-        return b"u%s" % str(v).encode('latin-1')
+        return B("u%s") % str(v).encode('latin-1')
     def BINARY(self, v):
         return b'b64"' + base64.b64encode(v).strip() + b'"'
 
     def STRING(self, v):
-        return b"'%s'" % _str_to_bytes(v).replace(b"\\", b"\\\\").replace(b"'", b"\\'")
+        return B("'%s'") % _str_to_bytes(v).replace(b"\\", b"\\\\").replace(b"'", b"\\'")
     def URI(self, v):
-        return b'l"%s"' % _str_to_bytes(v).replace(b"\\", b"\\\\").replace(b'"', b'\\"')
+        return B('l"%s"') % _str_to_bytes(v).replace(b"\\", b"\\\\").replace(b'"', b'\\"')
     def DATE(self, v):
-        return b'd"%s"' % _format_datestr(v)
+        return B('d"%s"') % _format_datestr(v)
     def ARRAY(self, v):
-        return b"[%s]" % b','.join([self._generate(item) for item in v])
+        return B("[%s]") % b','.join([self._generate(item) for item in v])
     def MAP(self, v):
-        return b"{%s}" % b','.join([b"'%s':%s" % (_str_to_bytes(key).replace(b"\\", b"\\\\").replace(b"'", b"\\'"), self._generate(value))
+        return B("{%s}") % b','.join([B("'%s':%s") % (_str_to_bytes(key).replace(b"\\", b"\\\\").replace(b"'", b"\\'"), self._generate(value))
              for key, value in v.items()])
 
     def _generate(self, something):
