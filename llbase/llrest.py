@@ -281,7 +281,7 @@ class RESTService(object):
         else:
             return None
 
-    def _url(self, basepath, path):
+    def _url(self, basepath, path, method, path_param='path', basepath_param='basepath'):
         """
         If basepath is None, the returned URL is (baseurl)/(path), allowing
         for the possibility that either might be empty.
@@ -290,7 +290,25 @@ class RESTService(object):
         other words, the returned URL is composed of:
 
         (baseurl scheme)://(baseurl host)/(basepath)/(path)
+
+        The remaining parameters are to clarify the exception message if
+        neither basepath nor path are passed.
+
+        method is the name of our caller.
+
+        path_param is the name of method's parameter passed to us as path.
+
+        basepath_param is the name of method's parameter passed to us as basepath.
         """
+        # Since caller accepts both 'basepath' and 'path', both are typically
+        # optional arguments -- though 'path' is usually first so its caller
+        # need not explicitly pass it as a keyword argument. But its caller
+        # MUST pass one or the other.
+        if not (basepath or path):
+            # When you fail to pass a non-optional parameter, the interpreter
+            # raises TypeError. Treat this similarly.
+            raise TypeError("{}() requires either {} or {}"
+                            .format(method, path_param, basepath_param))
         # if self.baseurl is None, use empty string instead
         baseurl = self.baseurl or ""
         if basepath:
@@ -306,7 +324,7 @@ class RESTService(object):
         # present, join them with '/'
         return '/'.join(filter(None, (baseurl, path)))
 
-    def get(self, query, params={}, basepath=None, **requests_params):
+    def get(self, query=None, params={}, basepath=None, **requests_params):
         """ Execute a GET request query against the service
 
             query:     request url path extension
@@ -324,7 +342,7 @@ class RESTService(object):
             whose value describes the requested url and the error.
         """
         # Execute the request and deal with any connection or server errors
-        url=self._url(basepath, query)
+        url=self._url(basepath, query, method='get', path_param='query')
         with self._error_handling(url):
             response = self.session.get(url, auth=self._get_credentials(), params=params, **requests_params)
             response.raise_for_status() # turns any error response into an exception
@@ -332,7 +350,7 @@ class RESTService(object):
         # Request returned success code, so decode the body per the service configuration
         return self._decode(response)
 
-    def post(self, path, data, basepath=None, **requests_params):
+    def post(self, path=None, data={}, basepath=None, **requests_params):
         """
         Execute a POST against the service
 
@@ -349,7 +367,7 @@ class RESTService(object):
 
         Any other keyword arguments are passed through to requests.post
         """
-        url = self._url(basepath, path)
+        url = self._url(basepath, path, method='post')
         with self._error_handling(url):
             response = self.session.post(url, data=self._encode(url, data),
                                          auth=self._get_credentials(), **requests_params)
@@ -358,7 +376,7 @@ class RESTService(object):
         # decode the response body, if any
         return self._decode(response)
 
-    def put(self, path, data, basepath=None, **requests_params):
+    def put(self, path=None, data={}, basepath=None, **requests_params):
         """
         Execute a PUT against the service
 
@@ -375,7 +393,7 @@ class RESTService(object):
 
         Any other keyword arguments are passed through to requests.put
         """
-        url = self._url(basepath, path)
+        url = self._url(basepath, path, method='put')
         with self._error_handling(url):
             response = self.session.put(url, data=self._encode(url, data),
                                         auth=self._get_credentials(), **requests_params)
@@ -384,7 +402,7 @@ class RESTService(object):
         # decode the response body, if any
         return self._decode(response)
 
-    def delete(self, path, basepath=None, **requests_params):
+    def delete(self, path=None, basepath=None, **requests_params):
         """
         Execute a DELETE against the service
 
@@ -396,7 +414,7 @@ class RESTService(object):
 
         Any other keyword arguments are passed through to requests.delete
         """
-        url = self._url(basepath, path)
+        url = self._url(basepath, path, method='delete')
         with self._error_handling(url):
             response = self.session.delete(url, auth=self._get_credentials(),
                                            **requests_params)
