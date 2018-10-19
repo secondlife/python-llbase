@@ -559,7 +559,7 @@ class LLSDBinaryUnitTest(unittest.TestCase):
         """
         Test the binary serialization and parse of llsd type : Map.
         """
-        map_xml = b"""
+        map_xml = b"""\
 <?xml version="1.0" ?>
 <llsd>
 <map>
@@ -1305,7 +1305,7 @@ class LLSDPythonXMLUnitTest(unittest.TestCase):
         Maps to test scenarios module:llsd:test# 61 - 63
         """
         # simple map
-        map_xml = b"""
+        map_xml = b"""\
 <?xml version="1.0" ?>
 <llsd>
 <map>
