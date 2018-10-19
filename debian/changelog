@@ -2,6 +2,9 @@ llbase (1.1.6) unstable; urgency=medium
 
   * Fixed problem with Python 3.4 (et al.) in which bytes interpolation
     doesn't work
+  * Suppressed fragile comparisons of serialized maps
+  * Removed now-redundant XML serialization tests, which formerly
+    exercised the defunct compiled C XML serialization module
 
 llbase (1.1.5) unstable; urgency=low
 
