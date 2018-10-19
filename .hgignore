@@ -17,6 +17,7 @@ debian/python3-llbase
 debian/python3-llbase.*.debhelper
 debian/python3-llbase.substvars
 debian/python3-llbase.debhelper.log
+debian/debhelper-build-stamp
 .pybuild
 MANIFEST
 dist

@@ -48,7 +48,7 @@ class ConfigInstanceTester(unittest.TestCase):
         """
         Loads a config file for testing.
         """
-        self._config = config.Config(r"./test_files/config_test.xml")
+        self._config = config.Config(r"./tests/config_test.xml")
 
     def tearDown(self):
         """
@@ -63,7 +63,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenario module:config:row#6
         """
-        con = config.Config(r"./test_files/config_test.xml")
+        con = config.Config(r"./tests/config_test.xml")
 
         self.assertEquals(uuid.UUID("67153d5b-3659-afb4-8510-adda2c034649"), con.get('region_id'))
         self.assertEquals('one minute', con.get('scale'))
@@ -207,7 +207,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenario module:config:row#23
         """
-        self._config.update(r"./test_files/config_update.xml")
+        self._config.update(r"./tests/config_update.xml")
 
         # check the value
         self.assertEquals('updateValue', self._config.get('scale'))
@@ -231,7 +231,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenario module:config:row#30
         """
-        config.load(r"./test_files/config_test.xml")
+        config.load(r"./tests/config_test.xml")
 
         self.assertEquals('one minute', config.get('scale'))
 
@@ -267,7 +267,7 @@ class ConfigInstanceTester(unittest.TestCase):
         Maps to test scenario module:config:row#35
         """
 
-        config.load(r"./test_files/config_test.xml")
+        config.load(r"./tests/config_test.xml")
 
         self.assertEquals(uuid.UUID("67153d5b-3659-afb4-8510-adda2c034649"),
                           config.get('region_id'))
@@ -279,7 +279,7 @@ class ConfigInstanceTester(unittest.TestCase):
         Maps to test scenario module:config:row#35
         """
 
-        config.load(r"./test_files/config_test.xml")
+        config.load(r"./tests/config_test.xml")
 
         self.assertEquals('one minute', config.get('scale'))
 
@@ -290,7 +290,7 @@ class ConfigInstanceTester(unittest.TestCase):
         Maps to test scenario module:config:row#35
         """
 
-        config.load(r"./test_files/config_test.xml")
+        config.load(r"./tests/config_test.xml")
 
         expected_result = {'total task count': 4.0, 'active task count': 0.0,
         'time dilation': 0.9878624, 'lsl instructions per second': 0.0,
@@ -312,7 +312,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenario module:config:row#35
         """
-        config.load(r"./test_files/config_test.xml")
+        config.load(r"./tests/config_test.xml")
 
         self.assertEquals(None, config.get("nonexistentkey"))
 
@@ -323,7 +323,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenario module:config:row#35
         """
-        config.load(r"./test_files/config_test.xml")
+        config.load(r"./tests/config_test.xml")
 
         self.assertEquals(None, config.get(123))
 
@@ -335,7 +335,7 @@ class ConfigInstanceTester(unittest.TestCase):
         Maps to test scenario module:config:row#37
         """
 
-        config.load(r"./test_files/config_test.xml")
+        config.load(r"./tests/config_test.xml")
 
         new_value = 'new_scale_value'
         config.set('scale', new_value)
@@ -350,7 +350,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenario module:config:row#37
         """
-        config.load(r"./test_files/config_test.xml")
+        config.load(r"./tests/config_test.xml")
 
         new_key = "key123"
         new_value = "value123"
@@ -368,7 +368,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenario module:config:row#19
         """
-        config.load(r"./test_files/config_test.xml")
+        config.load(r"./tests/config_test.xml")
 
         try:
             config.set(123, 123)
@@ -383,7 +383,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenarios module:config:row#36
         """
-        config.load(r"./test_files/config_test.xml")
+        config.load(r"./tests/config_test.xml")
 
         dict = {'scale': 'updateValue', 'id': 888}
 
@@ -400,9 +400,9 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenario module:config:row#36
         """
-        config.load(r"./test_files/config_test.xml")
+        config.load(r"./tests/config_test.xml")
 
-        config.update(r"./test_files/config_update.xml")
+        config.update(r"./tests/config_update.xml")
 
         # check the value
         self.assertEquals('updateValue', config.get('scale'))
@@ -415,7 +415,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenario module:config:row#36
         """
-        config.load(r"./test_files/config_test.xml")
+        config.load(r"./tests/config_test.xml")
 
         self.assertRaises(IOError, config.update, r"/lala/lala.x")
 
@@ -523,7 +523,7 @@ class ConfigStressTest(unittest.TestCase):
         """
         t = time.clock()
         for i in range(0, 500):
-            x = config.load(r"test_files/config_test.xml")
+            x = config.load(r"tests/config_test.xml")
         delta = time.clock() - t
         print("config.load", 500, " times takes total :", delta, "secs")
         print("average time:", delta / 500, "secs")
