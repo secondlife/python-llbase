@@ -1328,9 +1328,11 @@ def parse(something, mime_type = None):
     """
     This is the basic public interface for parsing llsd.
 
-    :param something: The data to parse.
+    :param something: The data to parse. This is expected to be bytes, not strings
     :param mime_type: The mime_type of the data if it is known.
     :returns: Returns a python object.
+    
+    Python 3 Note: when reading LLSD from a file, use open()'s 'rb' mode explicitly
     """
     if mime_type in (XML_MIME_TYPE, 'application/llsd'):
         return parse_xml(something)
@@ -1351,6 +1353,8 @@ def parse(something, mime_type = None):
             return parse_notation(something)
     except KeyError as e:
         raise LLSDParseError('LLSD could not be parsed: %s' % (e,))
+    except TypeError as e:
+        raise LLSDParseError('Input stream not of type bytes. %s' % (e,))
 
 class LLSD(object):
     "Simple wrapper class for a thing."
