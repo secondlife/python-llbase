@@ -1,3 +1,9 @@
+llbase (1.1.8) unstable; urgency=low
+
+  * Added Python 3 compatability and warnings
+
+ -- Glenn Glazer <coyot@lindenlab.com> Tue, 23 Oct 2018 13:52:58 -0800
+
 llbase (1.1.7) unstable; urgency=low
 
   * Made llrest.RESTService operation methods' optional basepath=
