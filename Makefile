@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 # -*- makefile -*-
 
-PYTHON_VERSIONS := $(shell pyversions -vr) $(shell py3versions -vr)
+PYTHON_VERSIONS := 2.7 $(shell py3versions -vr)
 
 INSTALL_TARGETS := $(addprefix install-version-,$(PYTHON_VERSIONS))
 SOURCE_TARGETS := $(addprefix source-version-,$(PYTHON_VERSIONS))
