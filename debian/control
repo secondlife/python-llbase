@@ -19,7 +19,7 @@ Homepage: http://bitbucket.org/lindenlab/llbase/
 Package: python-llbase
 Architecture: any
 Depends: ${python:Depends}, ${misc:depends}
-X-Python-Version: python (>= 2.6)
+X-Python-Version: python (>= 2.7)
 Description: Base linden python modules (Python 2)
  Base linden python modules used in many python projects.
  .
@@ -28,8 +28,8 @@ Description: Base linden python modules (Python 2)
 Package: python3-llbase
 Architecture: any
 Depends: ${python3:Depends}, ${misc:depends}
-X-Python-Version: python (>= 2.6)
+X-Python-Version: python (>= 3.4)
 Description: Base linden python modules (Python 3)
  Base linden python modules used in many python projects.
  .
- This package installs the library for Python 2.
+ This package installs the library for Python 3.
