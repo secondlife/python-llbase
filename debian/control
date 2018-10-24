@@ -1,7 +1,7 @@
 Source: llbase
 Section: python
 Priority: optional
-Maintainer: Nat Linden (nat@secondlife.com)
+Maintainer: Nat Linden <nat@secondlife.com>
 Build-Depends: debhelper (>= 9),
  dh-python,
  python-all,
@@ -13,6 +13,7 @@ Build-Depends: debhelper (>= 9),
 Standards-Version: 3.9.8 
 X-Python-Version: =2.7
 X-Python3-Version: >=3.4
+Testsuite: autopkgtest-pkg-python
 Homepage: http://bitbucket.org/lindenlab/llbase/
 
 Package: python-llbase
