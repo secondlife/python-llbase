@@ -1,3 +1,12 @@
+llbase (1.2.0) unstable; urgency=low
+
+  * Ensure that map keys are always generated as strings, even
+    if the python dict key is some non-string type.
+    It is possible that this will generate slightly different llsd
+    notation or xml representations, but they are more correct.
+
+ --
+
 llbase (1.1.9) unstable; urgency=medium
 
   * Modernize debian packaging to use dh-python.
