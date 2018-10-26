@@ -436,7 +436,7 @@ class LLSDXMLFormatter(LLSDBaseFormatter):
     def MAP(self, v):
         return self._elt(
             b'map',
-            b''.join([B("%s%s") % (self._elt(b'key', self.xml_esc(key)),
+            b''.join([B("%s%s") % (self._elt(b'key', self.xml_esc(str(key))),
                                self._generate(value))
              for key, value in v.items()]))
 
@@ -541,7 +541,7 @@ class LLSDXMLPrettyFormatter(LLSDXMLFormatter):
         keys.sort()
         rv.extend([B("%s%s\n%s%s\n") %
                    (self._indent(),
-                    self._elt(b'key', key),
+                    self._elt(b'key', str(key)),
                     self._indent(),
                     self._generate(v[key]))
                    for key in keys])
@@ -622,7 +622,7 @@ class LLSDNotationFormatter(LLSDBaseFormatter):
     def ARRAY(self, v):
         return B("[%s]") % b','.join([self._generate(item) for item in v])
     def MAP(self, v):
-        return B("{%s}") % b','.join([B("'%s':%s") % (_str_to_bytes(key).replace(b"\\", b"\\\\").replace(b"'", b"\\'"), self._generate(value))
+        return B("{%s}") % b','.join([B("'%s':%s") % (_str_to_bytes(str(key)).replace(b"\\", b"\\\\").replace(b"'", b"\\'"), self._generate(value))
              for key, value in v.items()])
 
     def _generate(self, something):

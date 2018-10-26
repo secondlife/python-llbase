@@ -1819,5 +1819,34 @@ class Regression(unittest.TestCase):
         n = llsd.format_xml(llsd.binary(b'\0'*100))
         self.assertEqual(n.replace(b'\n', b''), n)
 
+class MapConstraints(unittest.TestCase):
+    '''
+    Implied type conversion tests
+    '''
+
+    def test_int_map_key(self):
+        '''
+        LLSD Map keys are supposed to be strings; convert a map with an int key
+        '''
+        llsdmap=llsd.LLSD({5 : 'int'})
+        self.assertEqual(llsd.format_xml(llsdmap), b'<?xml version="1.0" ?><llsd><map><key>5</key><string>int</string></map></llsd>')
+        self.assertEqual(llsd.format_notation(llsdmap), b"{'5':'int'}")
+
+    def test_date_map_key(self):
+        '''
+        LLSD Map keys are supposed to be strings; convert a map with a date key
+        '''
+        llsdmap=llsd.LLSD({datetime(2006, 2, 1, 14, 29, 53, 460000) : 'date'})
+        self.assertEqual(llsd.format_xml(llsdmap), b'<?xml version="1.0" ?><llsd><map><key>2006-02-01 14:29:53.460000</key><string>date</string></map></llsd>')
+        self.assertEqual(llsd.format_notation(llsdmap), b"{'2006-02-01 14:29:53.460000':'date'}")
+
+    def test_uuid_map_key(self):
+        '''
+        LLSD Map keys are supposed to be strings; convert a map with a uuid key
+        '''
+        llsdmap=llsd.LLSD({uuid.UUID(int=0) : 'uuid'})
+        self.assertEqual(llsd.format_xml(llsdmap), b'<?xml version="1.0" ?><llsd><map><key>00000000-0000-0000-0000-000000000000</key><string>uuid</string></map></llsd>')
+        self.assertEqual(llsd.format_notation(llsdmap), b"{'00000000-0000-0000-0000-000000000000':'uuid'}")
+
 if __name__ == '__main__':
     unittest.main()
