@@ -249,22 +249,26 @@ class RESTService(object):
         self.username = username
         self.password = password
 
-    def clone(self, basepath=None):
+    def clone(self, **kwds):
         """
         Return a RESTService instance configured the same as self, but with a
         different requests.Session instance for concurrent queries.
 
-        The basepath can optionally be overridden for the new instance.
+        Any constructor parameters can optionally be overridden for the new
+        instance.
         """
+        # Start with the relevant state from self
+        newkwds = dict(name=self.name, baseurl=self.baseurl, codec=self.codec,
+                       authenticated=self.authenticated,
+                       username=self.username, password=self.password,
+                       proxy_hostport=self.proxy_hostport,
+                       cert=self.session.cert, **self.session_params)
+        # then apply any overrides from parameters
+        newkwds.update(kwds)
         # Allow for the possibility that we might actually be dealing with a
         # subclass -- which constrains subclasses to accept constructor params
         # just like our own.
-        return self.__class__(name=self.name, baseurl=self.baseurl, codec=self.codec,
-                              authenticated=self.authenticated,
-                              username=self.username, password=self.password,
-                              proxy_hostport=self.proxy_hostport,
-                              cert=self.session.cert, basepath=basepath,
-                              **self.session_params)
+        return self.__class__(**newkwds)
 
     def set_username(self, username):
         """Associate a username with the service; subsequent query calls to the service will use this"""
