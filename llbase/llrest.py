@@ -80,7 +80,10 @@ class RESTError(Exception):
         self.service = service
         self.url = url
         self.status = status
-        self.msg = ': '.join((service, msg.format(**variables)))
+        # If 'msg' is passed as 8-bit str, but any of the 'variables' are
+        # unicode, str.format() tries to encode them as 'ascii'. Ensure that
+        # 'msg' is itself unicode before formatting.
+        self.msg = ': '.join((service, unicode(msg).format(**variables)))
         super(RESTError, self).__init__(self.msg)
 
 class RESTEncodingBase(object):
@@ -204,11 +207,12 @@ class RESTService(object):
     undesired dependency between that module and the calling script.
     """
 
-    def __init__(self, name, baseurl, codec=RESTEncoding.LLSD, authenticated=True, username=None, password=None, proxy_hostport=None, cert=None, **session_params):
+    def __init__(self, name, baseurl, codec=RESTEncoding.LLSD, authenticated=True, username=None, password=None, proxy_hostport=None, cert=None, basepath='', **session_params):
         """
         Parameters:
         name:            used in generating error messages
         baseurl:         a url prefix used for all requests to the service; may be an empty string
+        basepath:        a url path that overrides the path part of baseurl
         codec:           one of the constants defined by the RESTEncoding class - determines expected request/response encoding
         authenticated:   a boolean: whether or not the service expects HTTP authentication (see get_credentials)
         username:        the username to be used for HTTP authentication
@@ -219,11 +223,18 @@ class RESTService(object):
         """
         self.name = name
         self.baseurl = baseurl
+        if basepath:
+            # _url() returns a URL in which the path component of self.baseurl
+            # is overridden by basepath. When basepath is passed to this
+            # constructor, actually update self.baseurl with the result.
+            self.baseurl = self._url(basepath, path='', method='__init__')
 
+        self.session_params = session_params
         self.session = requests.Session(**session_params)
         self.codec = None               # set_codec() returns previous self.codec
         self.set_codec(codec)
 
+        self.proxy_hostport = proxy_hostport
         self.session.proxies = { 'http': 'http://%s' % proxy_hostport,
                                  'https':'http://%s' % proxy_hostport } \
             if proxy_hostport else None
@@ -237,6 +248,23 @@ class RESTService(object):
         self.authenticated = authenticated
         self.username = username
         self.password = password
+
+    def clone(self, basepath=None):
+        """
+        Return a RESTService instance configured the same as self, but with a
+        different requests.Session instance for concurrent queries.
+
+        The basepath can optionally be overridden for the new instance.
+        """
+        # Allow for the possibility that we might actually be dealing with a
+        # subclass -- which constrains subclasses to accept constructor params
+        # just like our own.
+        return self.__class__(name=self.name, baseurl=self.baseurl, codec=self.codec,
+                              authenticated=self.authenticated,
+                              username=self.username, password=self.password,
+                              proxy_hostport=self.proxy_hostport,
+                              cert=self.session.cert, basepath=basepath,
+                              **self.session_params)
 
     def set_username(self, username):
         """Associate a username with the service; subsequent query calls to the service will use this"""
@@ -533,7 +561,7 @@ class RESTService(object):
                     # expected. The likely meaning is that the message is simply
                     # formatted for a human reader instead of as JSON or whatever. In
                     # any case, append non-empty response text.
-                    _text = response.text
+                        _text = response.text
                 else:
                     # Here we WERE able to decode the response, meaning it's probably
                     # structured Python data in some form. Use pformat() to aid
