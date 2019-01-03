@@ -561,7 +561,7 @@ class RESTService(object):
                     # expected. The likely meaning is that the message is simply
                     # formatted for a human reader instead of as JSON or whatever. In
                     # any case, append non-empty response text.
-                        _text = response.text
+                    _text = response.text
                 else:
                     # Here we WERE able to decode the response, meaning it's probably
                     # structured Python data in some form. Use pformat() to aid
