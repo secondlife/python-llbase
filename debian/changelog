@@ -1,3 +1,9 @@
+llbase (1.2.1) unstable; urgency=low
+
+  * Added llrest.RESTService(basepath=), also RESTService.clone()
+
+ -- Nat Goodspeed <nat@lindenlab.com>  Fri, 04 Jan 2019 15:10:00 -0400
+
 llbase (1.2.0) unstable; urgency=low
 
   * Ensure that map keys are always generated as strings, even
