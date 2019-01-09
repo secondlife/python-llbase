@@ -228,7 +228,7 @@ def _parse_datestr(datestr):
 def _bool_to_python(node):
     "Convert boolean node to a python object."
     val = node.text or ''
-    if val in ('1', '1.0', 'true'):
+    if val in ('1', '1.0', 'true', 'True'):
         return True
     else:
         return False
