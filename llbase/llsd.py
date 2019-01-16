@@ -228,10 +228,12 @@ def _parse_datestr(datestr):
 def _bool_to_python(node):
     "Convert boolean node to a python object."
     val = node.text or ''
-    if val in ('1', '1.0', 'true', 'True'):
-        return True
-    else:
-        return False
+    try:
+        # string value, accept 'true' or 'True' or whatever
+        return (val.lower() == 'true')
+    except AttributeError:
+       # not a string (no lower() method), use normal Python rules
+       return bool(val)
 
 def _int_to_python(node):
     "Convert integer node to a python object."
