@@ -41,6 +41,12 @@ import base64
 import binascii
 import calendar
 import datetime
+try:
+    # if future is installed, then we support it
+    from future.types.newstr import newstr
+except ImportError:
+    # otherwise we pass over it in silence
+    newstr = str
 import re
 import struct
 import time
@@ -79,7 +85,7 @@ class uri(str):
 # simply (str,). Either way, it's valid to test isinstance(somevar,
 # StringTypes). (Some consumers test (type(somevar) in StringTypes), so we do
 # want (str,) rather than plain str.)
-StringTypes = tuple(set((type(''), type(u''))))
+StringTypes = tuple(set((type(''), type(u''), newstr)))
 
 try:
     LongType = long
@@ -363,6 +369,7 @@ class LLSDBaseFormatter(object):
             binary :              self.BINARY,
             str :                 self.STRING,
             UnicodeType :         self.STRING,
+            newstr :              self.STRING,
             uri :                 self.URI,
             datetime.datetime :   self.DATE,
             datetime.date :       self.DATE,
