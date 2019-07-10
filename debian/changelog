@@ -1,3 +1,9 @@
+llbase (1.2.3) unstable; urgency=low
+
+  * Supported future.types.newstr.newstr as one of the viable string types.
+
+ -- Brad Kittenbrink <brad@lindenlab.com> Mon Jul 01 13:39:32 2019 -0700
+
 llbase (1.2.2) unstable; urgency=low
 
   * Fixed SL-10103 so that True is parsed as True
