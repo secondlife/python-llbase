@@ -42,7 +42,10 @@ import binascii
 import calendar
 import datetime
 try:
-    # if future is installed, then we support it
+    # If the future package is installed, then we support it.  Any clients in
+    # python 2 using its str builtin replacement will actually be using instances
+    # of newstr, so we need to properly detect that as a string type
+    # for details see the docs: http://python-future.org/str_object.html
     from future.types.newstr import newstr
 except ImportError:
     # otherwise we pass over it in silence
