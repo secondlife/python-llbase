@@ -118,20 +118,6 @@ class RESTEncodingBase(object):
 
 class RESTEncoding(object):
     """Classes that define the encoding/decoding for a RESTService"""
-    class LLSDXML(RESTEncodingBase):
-        def set_accept_header(self, session):
-            session.headers['Accept'] = 'application/llsd+xml'
-
-        def set_content_type_header(self, session):
-            session.headers['Content-Type'] = 'application/llsd+xml'
-
-        def decode(self, data):
-            return llsd.parse_xml(data.content)
-
-        def encode(self, data):
-            return llsd.format_xml(data)
-
-
     class LLSD(RESTEncodingBase):
         def set_accept_header(self, session):
             # for most SL services, llsd is the default and we don't use a mime type to select it
@@ -152,6 +138,25 @@ class RESTEncoding(object):
             # introduce an LLSDXML codec for the purpose... otherwise, use
             # notation.
             return llsd.format_notation(data)
+
+    class LLSDXML(LLSD):
+
+        """
+            Some legacy applications that say they consume LLSD in their APIs actually consume
+            LLSD+XML, so the LLSD codec above doesn't work.
+
+            Almost all applications should be able to use the LLSD codec above,
+            and this one shouldn't be used.
+        """
+
+        def set_accept_header(self, session):
+            session.headers['Accept'] = 'application/llsd+xml'
+
+        def set_content_type_header(self, session):
+            session.headers['Content-Type'] = 'application/llsd+xml'
+
+        def encode(self, data):
+            return llsd.format_xml(data)
 
     class JSON(RESTEncodingBase):
         def set_accept_header(self, session):
