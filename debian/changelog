@@ -1,3 +1,9 @@
+llbase (1.2.4) unstable; urgency=low
+
+  * Added llbase.llrest.RESTEncoding.LLSDXML.
+
+ -- Steven Harrison <steven@lindenlab.com> Fri Jul 12 11:18:27 2019 -0400
+
 llbase (1.2.3) unstable; urgency=low
 
   * Supported future.types.newstr.newstr as one of the viable string types.
