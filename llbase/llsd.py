@@ -239,7 +239,7 @@ def _bool_to_python(node):
     val = node.text or ''
     try:
         # string value, accept 'true' or 'True' or whatever
-        return (val.lower() == 'true')
+        return (val.lower() in ('true', '1', '1.0'))
     except AttributeError:
        # not a string (no lower() method), use normal Python rules
        return bool(val)
