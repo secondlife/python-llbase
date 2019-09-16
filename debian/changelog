@@ -1,3 +1,9 @@
+llbase (1.2.5) unstable; urgency=high
+
+  * Fixed SL-11966: restore recognizing XML bool 1 and 1.0 as True.
+
+ -- Nat Goodspeed <nat@lindenlab.com> Mon Sep 16 17:20:07 2019 -0400
+
 llbase (1.2.4) unstable; urgency=low
 
   * Added llbase.llrest.RESTEncoding.LLSDXML.
