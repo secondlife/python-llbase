@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""\
+"""
 @file   lljsonlog_test.py
 @author Nat Goodspeed
 @date   2018-02-21
@@ -23,18 +23,14 @@ from llbase.lljsonlog import JsonFormatter, StringIO
 class Error(Exception):
     pass
 
-class LLJsonLogTester(unittest.TestCase):
-    def setUp(self):
+class LLJsonLogTestCase(unittest.TestCase):
+    def setUp(self, *formatter_args, **formatter_kwargs):
         self.logger = logging.getLogger("test")
         self.stream = StringIO()
         handler = logging.StreamHandler(self.stream)
-        handler.setFormatter(JsonFormatter())
+        handler.setFormatter(JsonFormatter(*formatter_args, **formatter_kwargs))
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.DEBUG)
-
-    def tearDown(self):
-        ##print("\ntearDown():", self.stream.getvalue(), file=sys.stderr)
-        pass
 
     def parseLastLine(self):
         # It would be good to also verify that the number of lines in
@@ -51,6 +47,7 @@ class LLJsonLogTester(unittest.TestCase):
         blob["msg"]
         return blob
 
+class LLJsonLogTester(LLJsonLogTestCase):
     def test_info(self):
         self.logger.info("info message")
         lines = self.stream.getvalue().splitlines()
@@ -73,6 +70,13 @@ class LLJsonLogTester(unittest.TestCase):
         self.assertEqual(blob["level"], "WARNING")
         self.assertEqual(blob["msg"], "warning message")
 
+    def test_filter_nonjson(self):
+        self.logger.info("info message", extra={"include": "value", "exclude": JsonFormatter})
+        blob = self.parseLastLine()
+        self.assertEqual(blob["include"], "value")
+        self.assertNotIn("exclude", blob)
+
+class LLJsonLogTracebackTests(LLJsonLogTestCase):
     def test_exception(self):
         try:
             raise Error("sample exception")
@@ -87,7 +91,30 @@ class LLJsonLogTester(unittest.TestCase):
         self.assertEqual(blob["error_type"], "Error")
 
         traceback = blob["traceback"]
-        # look for certain signature cgitb output, in plain-text form (not HTML)
+        # look for portion of traceback in text form
+        assert 'raise Error("sample exception")' in traceback
+        # ensure cgitb output is not present
+        assert "\nA problem occurred in a Python script." not in traceback
+
+class LLJsonLogCGITBTests(LLJsonLogTestCase):
+    def setUp(self):
+        super(LLJsonLogCGitBTests, self).setUp(exception_formatter="cgitb")
+
+    def test_cgitb_exception(self):
+        try:
+            raise Error("sample exception")
+        except Error:
+            self.logger.exception("exception happened")
+
+        blob = self.parseLastLine()
+        self.assertEqual(blob["name"], "test")
+        self.assertEqual(blob["level"], "ERROR")
+        self.assertEqual(blob["msg"], "exception happened")
+        self.assertEqual(blob["error_message"], "sample exception")
+        self.assertEqual(blob["error_type"], "Error")
+
+        traceback = blob["traceback"]
+        # look for certain signature of cgitb output, in plain-text form (not HTML)
         assert "\nA problem occurred in a Python script." in traceback
         assert "\nThe above is a description of an error in a Python program." in traceback
 

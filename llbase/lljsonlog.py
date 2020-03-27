@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
-import cgitb
 from datetime import datetime
+import cgitb
 import json
 import logging
 import time
@@ -24,6 +24,14 @@ else:
     # accepting str. We could wrap io.StringIO; but given StringIO.StringIO,
     # why bother?
     from StringIO import StringIO
+
+try:
+    dict.iteritems
+except AttributeError:
+    # Additional Python 3 compatability. Python 2's dict.iteritems is 3's dict.items
+    iteritems = dict.items
+else:
+    iteritems = dict.iteritems
 
 # This module provides a Python logging formatter that serializes messages into a JSON object suitable for logging to BNW MMA.
 #
@@ -66,14 +74,23 @@ UNINTERESTING_LOGRECORD_KEYS = {
 }
 """Uninteresting data found in a `logging.LogRecord` instance."""
 
+try:
+    # Python 2's basestring and long classes do not exist in Python 3
+    DOCUMENTED_JSON_TYPES = (basestring, long)
+except NameError:
+    DOCUMENTED_JSON_TYPES = (str,)
+
+DOCUMENTED_JSON_TYPES += (dict, list, tuple, int, float, bool, type(None))
+
 
 class JsonFormatter(logging.Formatter):
     """A `logging.Formatter` that formats records as JSON objects."""
 
-    def __init__(self):
+    def __init__(self, exception_formatter='traceback'):
         # Format times in GMT
         # https://docs.python.org/2/library/logging.html#formatter-objects
         self.converter = time.gmtime
+        self._fmt_exc = self._fmt_exc_cgitb if exception_formatter == 'cgitb' else self._fmt_exc_traceback
 
     def format(self, record):
         data = {
@@ -90,11 +107,14 @@ class JsonFormatter(logging.Formatter):
                 'traceback': self.formatException(record.exc_info),
             })
 
-        # Include any 'extra' data.
-        data.update({k: v for k, v in record.__dict__.items()
-                     if k not in UNINTERESTING_LOGRECORD_KEYS})
+        # Include any 'extra' data filtered by a couple predicates. Generators are chained together
+        # before enumeration to avoid extra work.
+        items = iteritems(record.__dict__)
+        items = ((k, v) for k, v in items if k not in UNINTERESTING_LOGRECORD_KEYS)
+        items = ((k, v) for k, v in items if isinstance(v, DOCUMENTED_JSON_TYPES))
+        data.update(items)
 
-        return json.dumps(data, default=repr, sort_keys=True)
+        return json.dumps(data, sort_keys=True)
 
     def formatTime(self, record, datefmt=None):
         if datefmt:
@@ -109,6 +129,15 @@ class JsonFormatter(logging.Formatter):
             return datetime.fromtimestamp(record.created).isoformat() + 'Z'
 
     def formatException(self, exc_info):
+        return self._fmt_exc(exc_info)
+
+    @staticmethod
+    def _fmt_exc_traceback(exc_info):
+        _, _, exc_trace = exc_info
+        return ''.join(traceback.format_tb(exc_trace, 10))
+
+    @staticmethod
+    def _fmt_exc_cgitb(exc_info):
         # cgitb.Hook writes its output to the file-like object provided to its
         # constructor. As we don't want to accumulate successive formatted
         # exceptions, we need a new StringIO instance every time. (There is no
@@ -116,6 +145,6 @@ class JsonFormatter(logging.Formatter):
         # to replace the stream used by a Hook instance, we must therefore
         # instantiate a new Hook every time.
         stream = StringIO()
-        hook = cgitb.Hook(file=stream, format="text")
+        hook = cgitb.Hook(file=stream, format='text')
         hook.handle(exc_info)
         return stream.getvalue()
