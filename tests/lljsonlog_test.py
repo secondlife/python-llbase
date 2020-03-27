@@ -98,7 +98,7 @@ class LLJsonLogTracebackTests(LLJsonLogTestCase):
 
 class LLJsonLogCGITBTests(LLJsonLogTestCase):
     def setUp(self):
-        super(LLJsonLogCGitBTests, self).setUp(exception_formatter="cgitb")
+        super(LLJsonLogCGITBTests, self).setUp(exception_formatter="cgitb")
 
     def test_cgitb_exception(self):
         try:
