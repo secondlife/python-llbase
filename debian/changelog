@@ -1,3 +1,9 @@
+llbase (1.2.7) unstable; urgency=low
+
+  * Fixed broken lljsonlog_test from previous commit
+
+ -- Signal Linden <signal@lindenlab.com>  Fri, 27 Mar 2020 16:21:09 -0400
+
 llbase (1.2.6) unstable; urgency=medium
 
   * Switched JsonFormatter's default exception formatting from cgitb to
