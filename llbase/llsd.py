@@ -406,7 +406,13 @@ class LLSDXMLFormatter(LLSDBaseFormatter):
 
     def xml_esc(self, v):
         "Escape string or unicode object v for xml output"
-        if is_string(v):
+
+        # Use is_unicode() instead of is_string() because in python 2, str is
+        # bytes, not unicode, and should not be "encode()"'d. attempts to
+        # encode("utf-8") a bytes type will result in an implicit
+        # decode("ascii") that will throw a UnicodeDecodeError if the string
+        # contains non-ascii characters
+        if is_unicode(v):
             # we need to drop these invalid characters because they
             # cannot be parsed (and encode() doesn't drop them for us)
             v = v.replace(u'\uffff', u'')

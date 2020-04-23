@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # file: llsd_test.py
 #
 # $LicenseInfo:firstyear=2006&license=mit$
@@ -1818,6 +1819,40 @@ class Regression(unittest.TestCase):
     def test_no_newline_in_base64_xml(self):
         n = llsd.format_xml(llsd.binary(b'\0'*100))
         self.assertEqual(n.replace(b'\n', b''), n)
+
+    def test_SL_13073(self):
+        # "new note" in Russian with Cyrillic characters.
+        good_xml = u'<?xml version="1.0" ?><llsd><string>Новая заметка</string></llsd>'.encode('utf8')
+        new_note_unicode = u"Новая заметка"
+        new_note_str = "Новая заметка"
+
+        # Py2 unicode
+        # Py3 str (unicode)
+        self.assertEqual(llsd.format_xml(new_note_unicode), good_xml)
+
+        # Py2 LLSD(unicode)
+        # Py3 LLSD(str (unicode))
+        self.assertEqual(llsd.format_xml(llsd.LLSD(new_note_unicode)), good_xml)
+
+        # Py2 str (b"")
+        # Py3 str (unicode)
+        self.assertEqual(llsd.format_xml(new_note_str), good_xml)
+
+        # Py2 LLSD(str (b""))
+        # Py3 LLSD(str (unicode))
+        self.assertEqual(llsd.format_xml(llsd.LLSD(new_note_str)), good_xml)
+
+        if llsd.PY2:
+            bytes_xml = good_xml
+        else:
+            bytes_xml = b'<?xml version="1.0" ?><llsd><binary>0J3QvtCy0LDRjyDQt9Cw0LzQtdGC0LrQsA==</binary></llsd>'
+        # Py2 str (b"")
+        # Py3 bytes (turned into binary type by llsd)
+        self.assertEqual(llsd.format_xml(new_note_unicode.encode("utf-8")), bytes_xml)
+
+        # Py2 LLSD(str (b""))
+        # Py3 LLSD(bytes) (turned into binary type by llsd)
+        self.assertEqual(llsd.format_xml(llsd.LLSD(new_note_unicode.encode("utf-8"))), bytes_xml)
 
 class MapConstraints(unittest.TestCase):
     '''
