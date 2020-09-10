@@ -29,6 +29,7 @@ from llbase import llsd
 import os
 from pprint import pformat
 import requests
+import ssl
 import sys
 try:
     # python 3
@@ -36,6 +37,7 @@ try:
 except ImportError:
     # python 2
     from urlparse import urlsplit, urlunsplit, SplitResult
+from urllib3 import poolmanager
 from xml.etree import cElementTree as ElementTree
 
 try:
@@ -331,6 +333,14 @@ class RESTService(object):
             return ( self.username, self.password )
         else:
             return None
+
+    def enable_old_tls(self):
+        """
+        As of 2020-09-10, Debian has disabled default support for TLS 1.0 and
+        1.1. But sometimes we must contact one of our own older services. This
+        workaround is from https://github.com/psf/requests/issues/4775.
+        """
+        self.session.mount('https://', _OldTLS())
 
     def _url(self, basepath, path, method, path_param='path', basepath_param='basepath'):
         """
@@ -635,6 +645,22 @@ class RESTService(object):
             yield                       # execute 'with' body
         finally:
             self.set_codec(prev)
+
+class _OldTLS(requests.adapters.HTTPAdapter):
+    """
+    Helper for RESTService.enable_old_tls(), derived from
+    https://github.com/psf/requests/issues/4775
+    """
+    def init_poolmanager(self, connections, maxsize, block=False):
+        """Create and initialize the urllib3 PoolManager."""
+        ctx = ssl.create_default_context()
+        ctx.set_ciphers('DEFAULT@SECLEVEL=1')
+        self.poolmanager = poolmanager.PoolManager(
+                num_pools=connections,
+                maxsize=maxsize,
+                block=block,
+                ssl_version=ssl.PROTOCOL_TLS,
+                ssl_context=ctx)
 
 class SimpleRESTService(RESTService):
     """
