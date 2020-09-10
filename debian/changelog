@@ -1,3 +1,9 @@
+llbase (1.2.9) unstable; urgency=low
+
+  * Added llrest.RESTService.enable_old_tls().
+
+ -- Nat Goodspeed <nat@lindenlab.com>  Thu, 10 Sep 2020 15:02:36 +0000
+
 llbase (1.2.8) unstable; urgency=medium
 
   * Fixed SL-13073: UnicodeDecodeError when formatting non-ascii characters to
