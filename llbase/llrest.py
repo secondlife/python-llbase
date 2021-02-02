@@ -34,9 +34,11 @@ import sys
 try:
     # python 3
     from urllib.parse import urlsplit, urlunsplit, SplitResult
+    from http import cookiejar
 except ImportError:
     # python 2
     from urlparse import urlsplit, urlunsplit, SplitResult
+    import cookielib as cookiejar
 from urllib3 import poolmanager
 from xml.etree import cElementTree as ElementTree
 
@@ -228,17 +230,28 @@ class RESTService(object):
     undesired dependency between that module and the calling script.
     """
 
-    def __init__(self, name, baseurl, codec=RESTEncoding.LLSD, authenticated=True, username=None, password=None, proxy_hostport=None, cert=None, basepath='', **session_params):
+    def __init__(self, name, baseurl, codec=RESTEncoding.LLSD, authenticated=True,
+                 username=None, password=None, proxy_hostport=None, cert=None, basepath='',
+                 cookie_policy=None, **session_params):
         """
         Parameters:
         name:            used in generating error messages
-        baseurl:         a url prefix used for all requests to the service; may be an empty string
+        baseurl:         a url prefix used for all requests to the service; may be an
+                         empty string
         basepath:        a url path that overrides the path part of baseurl
-        codec:           one of the constants defined by the RESTEncoding class - determines expected request/response encoding
-        authenticated:   a boolean: whether or not the service expects HTTP authentication (see get_credentials)
+        codec:           one of the constants defined by the RESTEncoding class -
+                         determines expected request/response encoding
+        authenticated:   a boolean: whether or not the service expects HTTP
+                         authentication (see get_credentials)
         username:        the username to be used for HTTP authentication
         password:        the password to be used for HTTP authentication
-        proxy_hostport:  an HTTP proxy hostname and port number (host:port) through which requests should be routed
+        proxy_hostport:  an HTTP proxy hostname and port number (host:port)
+                         through which requests should be routed
+        cert:            string .pem pathname or (cert, key) pathname pair
+                         https://2.python-requests.org/en/master/api/#requests.Session.cert
+        cookie_policy:   http.cookiejar.CookiePolicy subclass for the session
+                         https://docs.python.org/3/library/http.cookiejar.html#http.cookiejar.CookiePolicy
+                         Special value cookie_policy=False blocks all cookies.
 
         Any other keyword parameters are passed through to the requests.Session() 
         """
@@ -260,7 +273,15 @@ class RESTService(object):
                                  'https':'http://%s' % proxy_hostport } \
             if proxy_hostport else None
         if cert:
-            self.session.cert = cert 
+            self.session.cert = cert
+        if cookie_policy is not None:
+            if cookie_policy == False:
+                # request implicit blocking
+                cookie_policy = _BlockAllCookies()
+            elif issubclass(cookie_policy, cookiejar.CookiePolicy):
+                # set_policy() wants an instance, not a class
+                cookie_policy = cookie_policy()
+            self.session.cookies.set_policy(cookie_policy)
 
         # defer setting the Session credentials to the request methods,
         # so that the _get_credentials method can provide prompting for them
@@ -655,12 +676,31 @@ class _OldTLS(requests.adapters.HTTPAdapter):
         """Create and initialize the urllib3 PoolManager."""
         ctx = ssl.create_default_context()
         ctx.set_ciphers('DEFAULT@SECLEVEL=1')
+        # https://stackoverflow.com/a/59059052
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
         self.poolmanager = poolmanager.PoolManager(
                 num_pools=connections,
                 maxsize=maxsize,
                 block=block,
                 ssl_version=ssl.PROTOCOL_TLS,
                 ssl_context=ctx)
+
+class _BlockAllCookies(cookiejar.CookiePolicy):
+    """
+    Helper for RESTService(cookie_policy=False), derived from
+    https://stackoverflow.com/a/21714597
+    """
+    netscape = True
+    rfc2965 = False
+    hide_cookie2 = False
+
+    def return_ok(self, *args, **kwds):
+        return False
+
+    set_ok = return_ok
+    domain_return_ok = return_ok
+    path_return_ok = return_ok
 
 class SimpleRESTService(RESTService):
     """
