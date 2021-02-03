@@ -1,3 +1,9 @@
+llbase (1.2.10) unstable; urgency=low
+
+  * Added llrest.RESTService(cookie_policy)
+
+ -- Nat Goodspeed <nat@lindenlab.com>  Wed, 03 Feb 2021 09:20:11 -0500
+
 llbase (1.2.9) unstable; urgency=low
 
   * Added llrest.RESTService.enable_old_tls().
