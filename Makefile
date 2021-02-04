@@ -47,6 +47,7 @@ $(TEST_TARGETS): test-version-%: build-version-%
 build: $(BUILD_TARGETS)
 
 $(BUILD_TARGETS): build-version-%:
+	python$* -m pip install --user setuptools
 	python$* setup.py build
 
 doc:
