@@ -10,7 +10,7 @@ TEST_TARGETS := $(addprefix test-version-,$(PYTHON_VERSIONS))
 RPM_TARGETS := $(addprefix rpm-version-,$(PYTHON_VERSIONS))
 
 DESTDIR=/
-NOSETESTS=`which nosetests`
+NOSETESTS=$(shell which nosetests)
 
 all:
 	@echo "make source - Create source package"
