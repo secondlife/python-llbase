@@ -29,13 +29,18 @@ $(SOURCE_TARGETS): source-version-%:
 test: $(TEST_TARGETS)
 
 $(TEST_TARGETS): test-version-%: build-version-%
-	test -r "$(NOSETESTS)" || exit 1; \
+	nosetests=$(NOSETESTS); \
+	if [ -z "$$nosetests" ]; \
+	then pip install nose mock; \
+	     nosetests="$$(which nosetests)"; \
+	fi; \
+	test -r "$$nosetests" || exit 1; \
 	for entry in build/lib.*-$*/llbase; \
 	do \
 	  lib=$$(dirname $$entry); \
 	  ver=$$(echo $$lib | sed 's/.*-//'); \
-	  echo PYTHONPATH=$$entry:$$lib python$$ver $(NOSETESTS); \
-	  PYTHONPATH=$$entry:$$lib python$$ver $(NOSETESTS) || rc=$$?; \
+	  echo PYTHONPATH=$$entry:$$lib python$$ver "$$nosetests"; \
+	  PYTHONPATH=$$entry:$$lib python$$ver "$$nosetests" || rc=$$?; \
 	done; \
 	exit $$rc
 
