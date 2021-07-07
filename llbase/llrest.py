@@ -196,8 +196,11 @@ class RESTEncoding(object):
         def encode(self, data):
             return ElementTree.tostring(data)
 
-class RESTService(object):
+class _RESTService(object):
     """
+    The _RESTService base class provides most of the implementation for
+    RESTService. The RESTService subclass adds some parameter validation.
+
     Implements a simple wrapper for calling a REST interface that returns
     either llsd or json, with optional authentication.
 
@@ -229,6 +232,11 @@ class RESTService(object):
     basepath rather than the normal path argument, which avoids introducing an
     undesired dependency between that module and the calling script.
     """
+
+    # describe __init__() params; used by _resolve_args()
+    init_params = ('name', 'baseurl', 'codec', 'authenticated',
+                   'username', 'password', 'proxy_hostport', 'cert', 'basepath',
+                   'cookie_policy')
 
     def __init__(self, name, baseurl, codec=RESTEncoding.LLSD, authenticated=True,
                  username=None, password=None, proxy_hostport=None, cert=None, basepath='',
@@ -382,15 +390,6 @@ class RESTService(object):
 
         basepath_param is the name of method's parameter passed to us as basepath.
         """
-        # Since caller accepts both 'basepath' and 'path', both are typically
-        # optional arguments -- though 'path' is usually first so its caller
-        # need not explicitly pass it as a keyword argument. But its caller
-        # MUST pass one or the other.
-        if not (basepath or path):
-            # When you fail to pass a non-optional parameter, the interpreter
-            # raises TypeError. Treat this similarly.
-            raise TypeError("{}() requires either {} or {}"
-                            .format(method, path_param, basepath_param))
         # if self.baseurl is None, use empty string instead
         baseurl = self.baseurl or ""
         if basepath:
@@ -667,6 +666,26 @@ class RESTService(object):
         finally:
             self.set_codec(prev)
 
+class RESTService(_RESTService):
+    # We want the following validation for a consumer-instantiated
+    # RESTService, just not for _RESTService instances implicitly constructed
+    # by _resolve_args()
+    def _url(self, basepath, path, method, path_param='path', basepath_param='basepath'):
+        # Since caller accepts both 'basepath' and 'path', both are typically
+        # optional arguments -- though 'path' is usually first so its caller
+        # need not explicitly pass it as a keyword argument. But its caller
+        # MUST pass one or the other.
+        if not (basepath or path):
+            # When you fail to pass a non-optional parameter, the interpreter
+            # raises TypeError. Treat this similarly.
+            raise TypeError("{}() requires either {} or {}"
+                            .format(method, path_param, basepath_param))
+
+        # we have one or the other, pass to base-class method
+        return super(RESTService, self)._url(
+            basepath=basepath, path=path, method=method,
+            path_param=path_param, basepath_param=basepath_param)
+
 class _OldTLS(requests.adapters.HTTPAdapter):
     """
     Helper for RESTService.enable_old_tls(), derived from
@@ -709,3 +728,72 @@ class SimpleRESTService(RESTService):
     """
     def __init__(self, name, baseurl, *args, **kwds):
         RESTService.__init__(self, name, baseurl, authenticated=False, *args, **kwds)
+
+
+# convenience functions for simple one-shot use cases
+def get(url, **kwds):
+    """
+    url is the target URL; everything else must be keyword arguments
+
+    RESTService.__init__() keywords are passed to RESTService constructor;
+    the rest are passed to requests.get()
+    """
+    svc, kwds = _resolve_args('get', url, kwds)
+    return svc.get(query='', basepath='', **kwds)
+
+def post(url, **kwds):
+    """
+    url is the target URL; everything else must be keyword arguments
+
+    RESTService.__init__() keywords are passed to RESTService constructor;
+    data (if passed) is encoded according to the RESTService codec;
+    the rest are passed to requests.post()
+    """
+    svc, kwds = _resolve_args('post', url, kwds)
+    return svc.post(path='', basepath='', **kwds)
+
+def put(url, **kwds):
+    """
+    url is the target URL; everything else must be keyword arguments
+
+    RESTService.__init__() keywords are passed to RESTService constructor;
+    data (if passed) is encoded according to the RESTService codec;
+    the rest are passed to requests.put()
+    """
+    svc, kwds = _resolve_args('put', url, kwds)
+    return svc.put(path='', basepath='', **kwds)
+
+def delete(url, **kwds):
+    """
+    url is the target URL; everything else must be keyword arguments
+
+    RESTService.__init__() keywords are passed to RESTService constructor;
+    the rest are passed to requests.delete()
+    """
+    svc, kwds = _resolve_args('delete', url, kwds)
+    return svc.delete(path='', basepath='', **kwds)
+
+def _resolve_args(func, url, kwds):
+    """
+    Given a dict of **kwds, split them into _RESTService constructor params
+    versus anything else, which we assume to be extra keywords to pass to
+    'func'.
+
+    Return (_RESTService instance, remaining kwds).
+    """
+    # _RESTService.init_params includes the first two parameters, name and
+    # baseurl, to simplify maintenance. But since we pass those explicitly
+    # here, remove from the set of keywords we recognize.
+    init_params = set(_RESTService.init_params[2:])
+    init_kwds = {}
+    func_kwds = {}
+    for key, value in kwds.items():
+        if key in init_params:
+            dest_kwds = init_kwds
+        else:
+            dest_kwds = func_kwds
+        dest_kwds[key] = value
+    return (_RESTService(name='temp ' + func, baseurl=url, **init_kwds),
+            func_kwds)
+
+    

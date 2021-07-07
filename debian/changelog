@@ -1,3 +1,9 @@
+llbase (1.2.11) unstable; urgency=low
+
+  * Added llrest.get(), post(), put(), delete()
+
+ -- Nat Goodspeed <nat@lindenlab.com>  Wed, 07 Jul 2021 14:01:32 -0400
+
 llbase (1.2.10) unstable; urgency=low
 
   * Added llrest.RESTService(cookie_policy)
