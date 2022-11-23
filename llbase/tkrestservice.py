@@ -1,14 +1,3 @@
-#!/usr/bin/python
-"""\
-@file   tkrestservice.py
-@author Nat Goodspeed
-@date   2016-10-30
-@brief  Provide TkRESTService, an llrest.RESTService with Tk credentials prompts.
-
-$LicenseInfo:firstyear=2016&license=internal$
-Copyright (c) 2016, Linden Research, Inc.
-$/LicenseInfo$
-"""
 from __future__ import absolute_import
 
 try:
@@ -18,8 +7,9 @@ except ImportError: # Python 2
     from Tkinter import Tk
     from tkSimpleDialog import askstring
 
-from .llrest import RESTService, RESTError
 import os
+
+from llbase.llrest import RESTService, RESTError
 import __main__                         # for filename of main script
 
 root = None

@@ -1,33 +1,4 @@
-# file: config_test.py
-#
-# $LicenseInfo:firstyear=2009&license=mit$
-#
-# Copyright (c) 2009, Linden Research, Inc.
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-# $/LicenseInfo$
-
-"""
-Test the config module
-"""
-from __future__ import print_function
-from __future__ import division
+from __future__ import print_function, division
 
 import mock
 import os
@@ -37,8 +8,14 @@ import time
 import unittest
 import uuid
 
-from llbase import config
 from llbase import llsd
+from llbase import config
+
+try:
+    perf_counter = time.clock
+except AttributeError:
+    perf_counter = time.perf_counter
+
 
 class ConfigInstanceTester(unittest.TestCase):
     """
@@ -65,8 +42,8 @@ class ConfigInstanceTester(unittest.TestCase):
         """
         con = config.Config(r"./tests/config_test.xml")
 
-        self.assertEquals(uuid.UUID("67153d5b-3659-afb4-8510-adda2c034649"), con.get('region_id'))
-        self.assertEquals('one minute', con.get('scale'))
+        self.assertEqual(uuid.UUID("67153d5b-3659-afb4-8510-adda2c034649"), con.get('region_id'))
+        self.assertEqual('one minute', con.get('scale'))
 
     def testNonExistentConfigFile(self):
         """
@@ -87,7 +64,7 @@ class ConfigInstanceTester(unittest.TestCase):
         """
         c = config.Config(None)
 
-        self.assertEquals(0, c._get_last_modified_time())
+        self.assertEqual(0, c._get_last_modified_time())
 
     def testGet1(self):
         """
@@ -95,7 +72,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenario module:config:row#11
         """
-        self.assertEquals(uuid.UUID("67153d5b-3659-afb4-8510-adda2c034649"),
+        self.assertEqual(uuid.UUID("67153d5b-3659-afb4-8510-adda2c034649"),
                           self._config.get('region_id'))
 
     def testGet2(self):
@@ -104,7 +81,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenario module:config:row#12
         """
-        self.assertEquals('one minute', self._config.get('scale'))
+        self.assertEqual('one minute', self._config.get('scale'))
 
     def testGet3(self):
         """
@@ -123,7 +100,7 @@ class ConfigInstanceTester(unittest.TestCase):
         'image ms': 0.01865955, 'sim physics ms': 0.04323055,
         'child agent count': 0.0, 'sim fps': 44.38898}
 
-        self.assertEquals(expected_result, self._config.get('simulator statistics'))
+        self.assertEqual(expected_result, self._config.get('simulator statistics'))
 
     def testNonExistentKey(self):
         """
@@ -132,7 +109,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenario module:config:row#14
         """
-        self.assertEquals(None, self._config.get("nonexistentkey"))
+        self.assertEqual(None, self._config.get("nonexistentkey"))
 
     def testNonStringKey(self):
         """
@@ -141,7 +118,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         Maps to test scenario module:config:row#15
         """
-        self.assertEquals(None, self._config.get(123))
+        self.assertEqual(None, self._config.get(123))
 
     def testSet1(self):
         """
@@ -154,7 +131,7 @@ class ConfigInstanceTester(unittest.TestCase):
         self._config.set('scale', new_value)
 
         # check whether the value is updated
-        self.assertEquals(new_value, self._config.get('scale'));
+        self.assertEqual(new_value, self._config.get('scale'));
 
     def testSet2(self):
         """
@@ -169,7 +146,7 @@ class ConfigInstanceTester(unittest.TestCase):
         self._config.set(new_key, new_value)
 
         # check
-        self.assertEquals(new_value, self._config.get(new_key))
+        self.assertEqual(new_value, self._config.get(new_key))
 
     def testSet3(self):
         """
@@ -198,8 +175,8 @@ class ConfigInstanceTester(unittest.TestCase):
         self._config.update(dict);
 
         # chech the update
-        self.assertEquals('updateValue', self._config.get('scale'))
-        self.assertEquals(888, self._config.get('id'))
+        self.assertEqual('updateValue', self._config.get('scale'))
+        self.assertEqual(888, self._config.get('id'))
 
     def testUpdateFile(self):
         """
@@ -210,8 +187,8 @@ class ConfigInstanceTester(unittest.TestCase):
         self._config.update(r"./tests/config_update.xml")
 
         # check the value
-        self.assertEquals('updateValue', self._config.get('scale'))
-        self.assertEquals(888, self._config.get('id'))
+        self.assertEqual('updateValue', self._config.get('scale'))
+        self.assertEqual(888, self._config.get('id'))
 
         self._config.as_dict()
 
@@ -233,9 +210,9 @@ class ConfigInstanceTester(unittest.TestCase):
         """
         config.load(r"./tests/config_test.xml")
 
-        self.assertEquals('one minute', config.get('scale'))
+        self.assertEqual('one minute', config.get('scale'))
 
-        self.assertEquals(uuid.UUID("67153d5b-3659-afb4-8510-adda2c034649"),
+        self.assertEqual(uuid.UUID("67153d5b-3659-afb4-8510-adda2c034649"),
                           config.get('region_id'))
 
         expected_result = {'total task count': 4.0, 'active task count': 0.0,
@@ -249,7 +226,7 @@ class ConfigInstanceTester(unittest.TestCase):
         'image ms': 0.01865955, 'sim physics ms': 0.04323055,
         'child agent count': 0.0, 'sim fps': 44.38898}
 
-        self.assertEquals(expected_result, config.get('simulator statistics'))
+        self.assertEqual(expected_result, config.get('simulator statistics'))
 
     def testLoadWithNonExistentFile(self):
         """
@@ -269,7 +246,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         config.load(r"./tests/config_test.xml")
 
-        self.assertEquals(uuid.UUID("67153d5b-3659-afb4-8510-adda2c034649"),
+        self.assertEqual(uuid.UUID("67153d5b-3659-afb4-8510-adda2c034649"),
                           config.get('region_id'))
 
     def testGlobalGet2(self):
@@ -281,7 +258,7 @@ class ConfigInstanceTester(unittest.TestCase):
 
         config.load(r"./tests/config_test.xml")
 
-        self.assertEquals('one minute', config.get('scale'))
+        self.assertEqual('one minute', config.get('scale'))
 
     def testGlobalGet3(self):
         """
@@ -303,7 +280,7 @@ class ConfigInstanceTester(unittest.TestCase):
         'image ms': 0.01865955, 'sim physics ms': 0.04323055,
         'child agent count': 0.0, 'sim fps': 44.38898}
 
-        self.assertEquals(expected_result, self._config.get('simulator statistics'))
+        self.assertEqual(expected_result, self._config.get('simulator statistics'))
 
     def testGlobalGetNonExistentKey(self):
         """
@@ -314,7 +291,7 @@ class ConfigInstanceTester(unittest.TestCase):
         """
         config.load(r"./tests/config_test.xml")
 
-        self.assertEquals(None, config.get("nonexistentkey"))
+        self.assertEqual(None, config.get("nonexistentkey"))
 
     def testGlobalGetNonStringKey(self):
         """
@@ -325,7 +302,7 @@ class ConfigInstanceTester(unittest.TestCase):
         """
         config.load(r"./tests/config_test.xml")
 
-        self.assertEquals(None, config.get(123))
+        self.assertEqual(None, config.get(123))
 
     def testGlobalSet1(self):
         """
@@ -341,7 +318,7 @@ class ConfigInstanceTester(unittest.TestCase):
         config.set('scale', new_value)
 
         # check whether the value is updated
-        self.assertEquals(new_value, config.get('scale'));
+        self.assertEqual(new_value, config.get('scale'));
 
     def testGlobalSet2(self):
         """
@@ -358,7 +335,7 @@ class ConfigInstanceTester(unittest.TestCase):
         config.set(new_key, new_value)
 
         # check
-        self.assertEquals(new_value, config.get(new_key))
+        self.assertEqual(new_value, config.get(new_key))
 
     def testGlobalSet3(self):
         """
@@ -391,8 +368,8 @@ class ConfigInstanceTester(unittest.TestCase):
         config.update(dict);
 
         # chech the update
-        self.assertEquals('updateValue', config.get('scale'))
-        self.assertEquals(888, config.get('id'))
+        self.assertEqual('updateValue', config.get('scale'))
+        self.assertEqual(888, config.get('id'))
 
     def testGlobalUpdateFile(self):
         """
@@ -405,8 +382,8 @@ class ConfigInstanceTester(unittest.TestCase):
         config.update(r"./tests/config_update.xml")
 
         # check the value
-        self.assertEquals('updateValue', config.get('scale'))
-        self.assertEquals(888, config.get('id'))
+        self.assertEqual('updateValue', config.get('scale'))
+        self.assertEqual(888, config.get('id'))
 
     def testGlobalUpdateWithNonExistentFile(self):
         """
@@ -426,19 +403,19 @@ class ConfigInstanceTester(unittest.TestCase):
         """
         config._g_config = None
 
-        self.assert_(config.get("123") == None);
+        self.assertTrue(config.get("123") == None);
 
         config._g_config = None
 
         config.update({"123": "123"})
 
-        self.assertEquals("123", config.get("123"))
+        self.assertEqual("123", config.get("123"))
 
         config._g_config = None
 
         config.set("k1", "v1")
 
-        self.assertEquals("v1", config.get("k1"))
+        self.assertEqual("v1", config.get("k1"))
 
 
     def testUpdateFilelike(self):
@@ -451,8 +428,8 @@ class ConfigInstanceTester(unittest.TestCase):
         filelike = BytesIO(llsd.format_xml(new))
         self._config.update(filelike)
 
-        self.assertEquals('new_value', self._config.get('k1'))
-        self.assertEquals('v3', self._config.get('k3'))
+        self.assertEqual('new_value', self._config.get('k1'))
+        self.assertEqual('v3', self._config.get('k3'))
 
 class ConfigInstanceFileTester(unittest.TestCase):
     """
@@ -486,15 +463,15 @@ class ConfigInstanceFileTester(unittest.TestCase):
         """
         Check the initial config of file.
         """
-        self.assertEquals('v1', self.conf.get('k1'))
-        self.assertEquals('v2', self.conf.get('k2'))
+        self.assertEqual('v1', self.conf.get('k1'))
+        self.assertEqual('v2', self.conf.get('k2'))
 
     def testReload(self):
         """
         Test reoload function.
         """
-        self.assertEquals('v1', self.conf.get('k1'))
-        self.assertEquals('v2', self.conf.get('k2'))
+        self.assertEqual('v1', self.conf.get('k1'))
+        self.assertEqual('v2', self.conf.get('k2'))
 
         now = time.time()
 
@@ -506,8 +483,8 @@ class ConfigInstanceFileTester(unittest.TestCase):
         mock_time = mock.Mock(return_value=now + 60) # 60 seconds into future
         @mock.patch('time.time', mock_time)
         def _check_reload(self):
-            self.assertEquals('new value', self.conf.get('k1'))
-            self.assertEquals('v2', self.conf.get('k2'))
+            self.assertEqual('new value', self.conf.get('k1'))
+            self.assertEqual('v2', self.conf.get('k2'))
         _check_reload(self)
 
 
@@ -521,10 +498,10 @@ class ConfigStressTest(unittest.TestCase):
 
         Maps to test scenario module:config:row#41
         """
-        t = time.clock()
+        t = perf_counter()
         for i in range(0, 500):
             x = config.load(r"tests/config_test.xml")
-        delta = time.clock() - t
+        delta = perf_counter() - t
         print("config.load", 500, " times takes total :", delta, "secs")
         print("average time:", delta / 500, "secs")
 

@@ -1,20 +1,7 @@
-#!/usr/bin/python
-"""
-@file   lljsonlog_test.py
-@author Nat Goodspeed
-@date   2018-02-21
-@brief  test lljsonlog module
-
-$LicenseInfo:firstyear=2018&license=mit$
-Copyright (c) 2018, Linden Research, Inc.
-$/LicenseInfo$
-"""
-
 from __future__ import print_function
 
 import json
 import logging
-import sys
 import unittest
 
 # use whichever StringIO implementation is used by lljsonlog
@@ -117,6 +104,3 @@ class LLJsonLogCGITBTests(LLJsonLogTestCase):
         # look for certain signature of cgitb output, in plain-text form (not HTML)
         assert "\nA problem occurred in a Python script." in traceback
         assert "\nThe above is a description of an error in a Python program." in traceback
-
-if __name__ == '__main__':
-    unittest.main()

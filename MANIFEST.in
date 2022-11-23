@@ -1,9 +1,0 @@
-recursive-include llbase *
-recursive-include tests *.py
-recursive-include docs *
-include INSTALL
-include Makefile
-include MANIFEST.in
-include setup.py setup.cfg
-include debian/changelog
-global-exclude *.pyc
