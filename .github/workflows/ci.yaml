@@ -42,6 +42,7 @@ jobs:
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
+        if: matrix.python-version == '3.8'
         with:
           env_vars: PYTHON
           fail_ci_if_error: true
