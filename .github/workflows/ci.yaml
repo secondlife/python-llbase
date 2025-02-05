@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, signal/gh]
+    branches: [main]
     tags: [v*.*.*]
 
 jobs:
@@ -27,7 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # fetch all history for setuptools_scm to be able to read tags
+          # Fetch all the history so setuptools_scm can version relative to the
+          # most recent version tag.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v4
         # Only set up Python if we're running directly on an agent. If we're in
