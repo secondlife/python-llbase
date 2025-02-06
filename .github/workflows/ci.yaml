@@ -31,7 +31,7 @@ jobs:
           # most recent version tag.
           fetch-depth: 0
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         # Only set up Python if we're running directly on an agent. If we're in
         # a container, the image should already provide the intended Python.
         if: '! matrix.container-image'
