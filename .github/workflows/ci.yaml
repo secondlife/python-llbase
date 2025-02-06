@@ -9,18 +9,30 @@ on:
 jobs:
   build:
     name: Test & Build
-    strategy:
-      matrix:
-        python-version: ['2.7', '3.7', '3.8', '3.10']
-    runs-on: [ubuntu-20.04]
+    container:
+      # Run some matrix cases in a container. If `container-image` is blank, the
+      # job will run conventionally on the agent.
+      image: ${{ matrix.container-image }}
     env:
       PYTHON: ${{ matrix.python-version }}
+    runs-on: [ubuntu-20.04]
+    strategy:
+      # Finish the other builds even if one fails.
+      fail-fast: false
+      matrix:
+        python-version: ['2.7', '3.7', '3.8', '3.10']
+        include:
+          - python-version: '2.7'
+            container-image: python:2.7
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0 # fetch all history for setuptools_scm to be able to read tags
 
       - uses: actions/setup-python@v4
+        # Only set up Python if we're running directly on an agent. If we're in
+        # a container, the image should already provide the intended Python.
+        if: '! matrix.container-image'
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -45,7 +57,8 @@ jobs:
         if: matrix.python-version == '3.8'
         with:
           env_vars: PYTHON
-          fail_ci_if_error: true
+          # TODO: re-enable errors when rate limit is resolved?
+          # fail_ci_if_error: true
           files: .coverage.${{ steps.pyenv.outputs.value }}.xml
 
       - uses: actions/upload-artifact@v4
