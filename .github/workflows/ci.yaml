@@ -25,7 +25,7 @@ jobs:
           - python-version: '2.7'
             container-image: python:2.7
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # Fetch all the history so setuptools_scm can version relative to the
           # most recent version tag.
