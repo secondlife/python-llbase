@@ -15,7 +15,7 @@ jobs:
       image: ${{ matrix.container-image }}
     env:
       PYTHON: ${{ matrix.python-version }}
-    runs-on: [ubuntu-20.04]
+    runs-on: [ubuntu-latest]
     strategy:
       # Finish the other builds even if one fails.
       fail-fast: false
@@ -24,19 +24,45 @@ jobs:
         include:
           - python-version: '2.7'
             container-image: python:2.7
+          - python-version: '3.7'
+            container-image: python:3.7
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # Fetch all the history so setuptools_scm can version relative to the
           # most recent version tag.
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         # Only set up Python if we're running directly on an agent. If we're in
         # a container, the image should already provide the intended Python.
         if: '! matrix.container-image'
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Let git run in the containerized workspace
+        if: matrix.container-image
+        run: |
+          set -euxo pipefail
+
+          # Actions will create the workspace directory as runner (uid 1001) on
+          # the "real" agent host before it runs the container. actions/checkout
+          # will set `safe.directory` so it can check out the project as the
+          # container user to runner's workspace directory, but it does so with
+          # a temporary $HOME set, so `safe.directory` appears unset by the time
+          # we're in another step. For containers with git 2.30.2+, like
+          # python:3.7, that means git operations will exit with a "dubious
+          # ownership" error.
+          id -u
+          ls -lAd "$GITHUB_WORKSPACE"
+          ls -lA "$GITHUB_WORKSPACE"
+          git config --get-all safe.directory || true
+
+          # Set safe.directory on the workspace so that setuptools-scm can
+          # identify the version of the package we're packaging.
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+        shell: bash
 
       - name: Install python dependencies
         run: |
@@ -55,7 +81,7 @@ jobs:
         run: python -m build
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         if: matrix.python-version == '3.8'
         with:
           env_vars: PYTHON
@@ -63,7 +89,7 @@ jobs:
           # fail_ci_if_error: true
           files: .coverage.${{ steps.pyenv.outputs.value }}.xml
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: matrix.python-version == '2.7' || matrix.python-version == '3.8'
         with:
           name: dist-${{ matrix.python-version }}
@@ -77,7 +103,7 @@ jobs:
       id-token: write
     if: github.event_name != 'pull_request'
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
 
       - name: Organize files for upload
         run: |
