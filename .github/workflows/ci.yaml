@@ -55,7 +55,7 @@ jobs:
         run: python -m build
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         if: matrix.python-version == '3.8'
         with:
           env_vars: PYTHON
