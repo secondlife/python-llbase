@@ -20,7 +20,10 @@ setup(
     extras_require={
         "dev": ["pytest", "mock", "pytest-cov<3"],
     },
-    setup_requires=["setuptools_scm<6"],
+    setup_requires=[
+        "setuptools_scm<6;python_version<'3.9'",
+        "setuptools_scm;python_version>'3.8'",
+    ],
     use_scm_version={
         'local_scheme': 'no-local-version', # disable local-version to allow uploads to test.pypi.org
     },
