@@ -15,6 +15,8 @@ jobs:
       image: ${{ matrix.container-image }}
     env:
       PYTHON: ${{ matrix.python-version }}
+    permissions:
+      contents: read
     runs-on: [ubuntu-latest]
     strategy:
       # Finish the other builds even if one fails.
@@ -27,13 +29,13 @@ jobs:
           - python-version: '3.7'
             container-image: python:3.7
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           # Fetch all the history so setuptools_scm can version relative to the
           # most recent version tag.
           fetch-depth: 0
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         # Only set up Python if we're running directly on an agent. If we're in
         # a container, the image should already provide the intended Python.
         if: '! matrix.container-image'
@@ -81,7 +83,7 @@ jobs:
         run: python -m build
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         if: matrix.python-version == '3.8'
         with:
           env_vars: PYTHON
@@ -89,7 +91,7 @@ jobs:
           # fail_ci_if_error: true
           files: .coverage.${{ steps.pyenv.outputs.value }}.xml
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: matrix.python-version == '2.7' || matrix.python-version == '3.8'
         with:
           name: dist-${{ matrix.python-version }}
@@ -103,7 +105,7 @@ jobs:
       id-token: write
     if: github.event_name != 'pull_request'
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
 
       - name: Organize files for upload
         run: |
